@@ -59,7 +59,9 @@ public static class DataLoader
             var folder = Path.GetFileName(folderPath);
             if (SkippedFolders.Contains(folder)) continue;
 
-            foreach (var filePath in Directory.EnumerateFiles(folderPath, "*.json", SearchOption.TopDirectoryOnly))
+            // AllDirectories so nested subtrees like data/interactions/plotIAs/ are picked up.
+            // Real game data has 12+ files under interactions/ alone in subdirs; previously invisible.
+            foreach (var filePath in Directory.EnumerateFiles(folderPath, "*.json", SearchOption.AllDirectories))
             {
                 JsonDocument? doc;
                 try

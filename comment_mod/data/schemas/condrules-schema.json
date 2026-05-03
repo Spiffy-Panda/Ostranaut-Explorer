@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "strName": {
+                "type": "string",
+                "description": "The code name of the condrule, as referred to in other files."
+            },
+            "strCond": {
+                "type": "string",
+                "description": "Target stat condition this rule observes — refers to entry within conditions.json. CondRules emit a 'target' refKind for this field; the per-threshold Dc* effects under aThresholds use a distinct 'threshold-effect' refKind (see CLAUDE.md).",
+                "x-source": "https://ostranauts.wiki.gg/wiki/Condition_Rules"
+            }
+        }
+    }
+}

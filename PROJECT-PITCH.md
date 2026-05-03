@@ -60,10 +60,13 @@ OstranautDataExplorer/
 
 1. **Discover schemas.** Load every `data/schemas/*-schema.json`. Parse field descriptions for the phrase patterns (`refers to entry within X.json`, `Found in X.json`, `Check X.json`) to auto-derive a reference map: *field `strItemDef` on a condowner points into `items/`*. Where the schema is silent or ambiguous, fall back to a small hand-curated overrides file.
 2. **Load all data.** Walk `data/`, parse every JSON array, build a flat `Map<(folder, strName), JsonObject>` registry.
-3. **Extract references.** For each object, walk every field; consult the reference map to know which fields contain refs. Handle three shapes:
+3. **Extract references.** For each object, walk every field; consult the reference map to know which fields contain refs. Handle four shapes:
    - Plain `string` field (`strItemDef`)
    - `array<string>` field (`aInteractions`, `aSocketReqs`)
-   - **Encoded condition strings** in `aStartingConds` etc. — strip the `=x.yzN` suffix to get the condition name.
+   - **Encoded condition strings** in `aStartingConds` etc. — `Name=value x duration`. Strip the suffix to get the condition name; preserve value + duration on the edge.
+   - **Encoded loot strings** in `Loot.aCOs` / `Loot.aLoots` — `Name=chance x min-max`, comma-delimited, `|` for cumulative sublists, leading `-` for negation. Preserve chance + min/max + sign on the edge. The target folder for `aCOs` is **type-routed** by the parent's `strType` field (`item` → `condowners/`, `condition` → `conditions/`, `trigger` → `condtrigs/`, `interaction` → `interactions/`, `condrule` → `condrules/`, `lifeevent` → `lifeevents/`, `ship` → `ships/`). The reference map therefore needs **conditional rules** (target depends on a sibling field), not just fixed field→folder mappings. `aLoots` always points into `loot/`.
+
+   CondRules deserve their own note: each rule's outgoing edges are (a) the target stat condition and (b) one edge per threshold to its discomfort (`Dc*`) condition. Carry a distinct `refKind` on each so the condition detail page can split "I am the target of N rules" from "I am applied at threshold X of M rules." `Thresh<StatName>` conditions are a naming-convention derived link to `<StatName>`, not a strName ref.
 4. **Build the graph.** Forward: `(source) → [refKind] → (target)`. Reverse: same edges, indexed the other way. Detect dangling refs (target not in registry) and ambiguous refs (target name exists in multiple folders).
 5. **Emit JSON for the site.** A node list (id, folder, strName, friendly name, brief), an edge list (source, target, refKind, sourceField), and per-object pages.
 

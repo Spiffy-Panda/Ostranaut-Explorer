@@ -1,0 +1,18 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "strPledgeAdd": {
+                "type": "string",
+                "description": "Pledge added when this interaction executes. Refers to entry within pledges.json."
+            },
+            "strPledgeRemove": {
+                "type": "string",
+                "description": "Pledge removed when this interaction executes. Refers to entry within pledges.json."
+            }
+        }
+    }
+}

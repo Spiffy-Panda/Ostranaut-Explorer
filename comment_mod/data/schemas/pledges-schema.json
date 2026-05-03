@@ -5,10 +5,31 @@
         "type": "object",
         "additionalProperties": true,
         "properties": {
+            "strName": {
+                "type": "string",
+                "description": "The code name of the pledge, as referred to in other files."
+            },
+            "strType": {
+                "type": "string",
+                "description": "Enum tag dispatching to game code (repeat, surviveo2, ...). NOT a strName reference; render as a badge.",
+                "x-enum": true
+            },
+            "strIATrigger": {
+                "type": "string",
+                "description": "Interaction whose execution triggers / re-triggers this pledge. Refers to entry within interactions.json."
+            },
             "aIAEnd": {
                 "type": "array",
-                "description": "string[] No Array of interaction names that complete pledge. Refers to entry within interactions.json.",
+                "description": "Array of interaction names that complete this pledge. Each refers to entry within interactions.json.",
                 "x-source": "https://ostranauts.wiki.gg/wiki/Modding/Pledges#aIAEnd"
+            },
+            "strIAEmergency": {
+                "type": "string",
+                "description": "Emergency interaction associated with this pledge. Refers to entry within interactions.json."
+            },
+            "strThemID": {
+                "type": "string",
+                "description": "Target [them] this pledge is bound to (often null or a placeholder pronoun). When a real strName, refers to entry within condowners.json."
             }
         }
     }

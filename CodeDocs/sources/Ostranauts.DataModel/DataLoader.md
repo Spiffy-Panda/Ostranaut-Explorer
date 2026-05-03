@@ -27,6 +27,10 @@ public static class DataLoader
 
 Throws `DirectoryNotFoundException` if `dataRoot` doesn't exist. Everything else (parse errors, non-array roots, entries missing `strName`) is reported via `onWarning` and skipped — never throws mid-stream.
 
+## Subdirectory traversal
+
+Walks each in-scope folder with `SearchOption.AllDirectories` so nested subtrees like `data/interactions/plotIAs/` are picked up. The base game has ~10–15 nested `*.json` files across `interactions/`, `archived_content/`, `attackmodes/`, `blueprints/`, `market/`, `racing/` — all previously invisible when this used `TopDirectoryOnly`.
+
 ## Folder filter
 
 Hardcoded skip list in `SkippedFolders`:

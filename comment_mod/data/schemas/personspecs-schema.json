@@ -1,0 +1,18 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "strName": {
+                "type": "string",
+                "description": "The code name of the personspec, as referred to in other files."
+            },
+            "strLootIAAdds": {
+                "type": "string",
+                "description": "Loot table that adds interactions (and thereby pledges via strPledgeAdd). Refers to entry within loot.json. Forms the third link in the PersonSpec → Loot → Interaction → Pledge chain (see CLAUDE.md)."
+            }
+        }
+    }
+}

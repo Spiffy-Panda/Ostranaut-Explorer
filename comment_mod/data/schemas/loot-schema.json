@@ -11,21 +11,18 @@
             },
             "strType": {
                 "type": "string",
-                "description": "Declares what kind of reward the table emits (condition, item, trigger, etc.). JSON field on each loot definition. Refers to entry within loot.json.",
-                "x-source": "https://ostranauts.wiki.gg/wiki/Modding/Loot#strType"
+                "description": "Enum tag dispatching to game code (condition, item, trigger, interaction, condrule, lifeevent, ship, repeat, surviveo2, ...). NOT a strName reference; render as a badge on detail pages and use to route aCOs targets per the type-routed-refs design.",
+                "x-source": "https://ostranauts.wiki.gg/wiki/Modding/Loot#strType",
+                "x-enum": true
             },
             "aCOs": {
                 "type": "array",
-                "description": "Condition strings (Name=value*duration) applied by this loot entry — each name refers to entry within conditions.json"
+                "description": "Condition strings (Name=chance x min-max) applied by this loot entry. Target folder is type-routed by sibling strType (condition→conditions, item→condowners, trigger→condtrigs, interaction→interactions, condrule→condrules, lifeevent→lifeevents, ship→ships); the v1 fallback treats them as refs to entry within conditions.json which catches the most common case.",
+                "x-source": "https://ostranauts.wiki.gg/wiki/Modding/Loot#aCOs"
             },
             "aLoots": {
                 "type": "array",
                 "description": "Nested loot entries; each refers to entry within loot.json"
-            },
-            "LootUnit": {
-                "type": "string",
-                "description": "One weighted entry inside a loot table (chance, min/max, sign). Parsed by Loot.ParseLootDef(). Refers to entry within loot.json.",
-                "x-source": "https://ostranauts.wiki.gg/wiki/Modding/Loot#LootUnit"
             }
         }
     }

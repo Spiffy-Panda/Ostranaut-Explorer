@@ -1,0 +1,62 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "strName": {
+                "type": "string",
+                "description": "The code name of the job, as referred to in other files."
+            },
+            "strPSpecClient": {
+                "type": "string",
+                "description": "PersonSpec used to spawn the client/target. Refers to entry within personspecs.json."
+            },
+            "strIASetupClient": {
+                "type": "string",
+                "description": "Setup interaction performed on the client when the job activates. Refers to entry within interactions.json."
+            },
+            "strIASetupPlayer": {
+                "type": "string",
+                "description": "Setup interaction performed on the player when the job activates. Refers to entry within interactions.json."
+            },
+            "strIAAbandonClient": {
+                "type": "string",
+                "description": "Interaction performed on the client when the job is abandoned. Refers to entry within interactions.json."
+            },
+            "strIAAbandonPlayer": {
+                "type": "string",
+                "description": "Interaction performed on the player when the job is abandoned. Refers to entry within interactions.json."
+            },
+            "strIAFinishClient": {
+                "type": "string",
+                "description": "Interaction performed on the client on successful completion. Refers to entry within interactions.json."
+            },
+            "strIAFinishPlayer": {
+                "type": "string",
+                "description": "Interaction performed on the player on successful completion. Refers to entry within interactions.json."
+            },
+            "strIADo": {
+                "type": "string",
+                "description": "The 'do' interaction the player picks up to perform the job. Refers to entry within interactions.json."
+            },
+            "strLootTxt1": {
+                "type": "string",
+                "description": "Loot table for setup-client text snippets. Refers to entry within loot.json."
+            },
+            "strLootJobItems": {
+                "type": "string",
+                "description": "Loot table that produces the items the job centers on. Refers to entry within loot.json."
+            },
+            "strLootRegIDsOrigin": {
+                "type": "string",
+                "description": "Loot table for the registration IDs at the origin. Refers to entry within loot.json."
+            },
+            "strLootRegIDsDest": {
+                "type": "string",
+                "description": "Loot table for the registration IDs at the destination. Refers to entry within loot.json."
+            }
+        }
+    }
+}

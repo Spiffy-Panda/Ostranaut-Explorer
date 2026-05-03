@@ -1,0 +1,32 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "strName": {
+                "type": "string",
+                "description": "The code name of the crime entry."
+            },
+            "strLaw": {
+                "type": "string",
+                "description": "Jurisdiction / law authority code (CCRE, OKLG, etc.). Enum-like; not currently a strName reference to any data folder.",
+                "x-enum": true
+            },
+            "strCrime": {
+                "type": "string",
+                "description": "Crime category enum (damage, theft, ...). Enum tag, not a strName reference.",
+                "x-enum": true
+            },
+            "strLootCondsPerp": {
+                "type": "string",
+                "description": "Loot table applied to the perpetrator (commonly applies arrest/penalty conditions). Refers to entry within loot.json."
+            },
+            "strPledge": {
+                "type": "string",
+                "description": "Pledge enacted on the perpetrator (e.g. arrest behavior). Refers to entry within pledges.json."
+            }
+        }
+    }
+}

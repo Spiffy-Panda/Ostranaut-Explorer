@@ -65,7 +65,7 @@ Detail in `PROJECT-PITCH.md`.
 
 ## Status by file (current truth)
 
-All `Ostranauts.DataModel` types are now real implementations. Real-data smoke test (with the Comment Mod overlay applied): ~29k objects, **~61k references, 40 rules**. (Without the overlay: ~7,900 references, 26 rules — the base game's stock schemas are very sparse. The wiki-derived schema additions in `comment_mod/` raise this by an order of magnitude.)
+All `Ostranauts.DataModel` types are now real implementations. Real-data smoke test (with the Comment Mod overlay applied): **~31k objects, ~56k references, 62 rules**. The 31k object count includes ~1,800 entries previously invisible because `DataLoader` skipped nested subdirectories like `interactions/plotIAs/`. The 56k reference count is *cleaner* than the previous 61k — removing the `loot.strType` enum-as-ref misclassification dropped ~6k dangling edges, while adding real schemas for `condrules`, `pledges`, `personspecs`, `homeworlds`, `crime`, `jobs` plus the `interactions` pledge fields added ~1.1k real edges across the pledge-attach chain and condrule wiring. (Vanilla `data/` only: ~7,900 references — the wiki-derived + hand-curated schemas in `comment_mod/` are doing all the work.)
 
 Outstanding v1 polish (not blocking):
 - ~1,500 dangling references — partly legitimate "missing data" findings, partly a known false-positive rule (`interactions.strTargetPoint` is matched as `→ condowners` because its description says *"(assigned in condowners.json)"*; it's not actually a strName ref). Fix is to clarify the schema description, intended for the future Comment Mod.
