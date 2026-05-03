@@ -16,7 +16,15 @@ public static class ReferenceExtractor
         @"^\[\w+\]$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-    public static IEnumerable<Reference> Extract(DataObject obj, SchemaCatalog catalog)
+    /// <summary>
+    /// <paramref name="exists"/> is the existence checker for fallback target
+    /// resolution (Phase 3). Pass null to skip fallback resolution — every
+    /// edge then routes to the primary <c>rule.TargetFolder</c>.
+    /// </summary>
+    public static IEnumerable<Reference> Extract(
+        DataObject obj,
+        SchemaCatalog catalog,
+        Func<string, string, bool>? exists = null)
     {
         if (obj.Fields.ValueKind != JsonValueKind.Object) yield break;
 
@@ -28,15 +36,15 @@ public static class ReferenceExtractor
             switch (rule.Shape)
             {
                 case SchemaCatalog.FieldShape.Direct:
-                    foreach (var r in ExtractDirect(obj, field, rule)) yield return r;
+                    foreach (var r in ExtractDirect(obj, field, rule, exists)) yield return r;
                     break;
 
                 case SchemaCatalog.FieldShape.StringArray:
-                    foreach (var r in ExtractStringArray(obj, field, rule)) yield return r;
+                    foreach (var r in ExtractStringArray(obj, field, rule, exists)) yield return r;
                     break;
 
                 case SchemaCatalog.FieldShape.CondStringArray:
-                    foreach (var r in ExtractCondStringArray(obj, field, rule)) yield return r;
+                    foreach (var r in ExtractCondStringArray(obj, field, rule, exists)) yield return r;
                     break;
 
                 case SchemaCatalog.FieldShape.LootEntryArray:
@@ -56,6 +64,27 @@ public static class ReferenceExtractor
                     break;
             }
         }
+    }
+
+    /// <summary>
+    /// Picks the effective target folder for a given value. Tries the primary
+    /// (<paramref name="primary"/>) first; if <paramref name="exists"/> says
+    /// the value isn't there, walks <paramref name="fallbacks"/> in order and
+    /// returns the first folder that contains it. Falls back to primary
+    /// (= dangling edge) if nothing matches.
+    /// </summary>
+    private static string ResolveExistingTarget(
+        string primary,
+        IReadOnlyList<string>? fallbacks,
+        string value,
+        Func<string, string, bool>? exists)
+    {
+        if (exists is null || fallbacks is null || fallbacks.Count == 0)
+            return primary;
+        if (exists(primary, value)) return primary;
+        foreach (var f in fallbacks)
+            if (exists(f, value)) return f;
+        return primary;
     }
 
     /// <summary>
@@ -80,20 +109,21 @@ public static class ReferenceExtractor
             : rule.TargetFolder;
     }
 
-    private static IEnumerable<Reference> ExtractDirect(DataObject obj, JsonProperty field, SchemaCatalog.FieldRule rule)
+    private static IEnumerable<Reference> ExtractDirect(DataObject obj, JsonProperty field, SchemaCatalog.FieldRule rule, Func<string, string, bool>? exists)
     {
         if (field.Value.ValueKind != JsonValueKind.String) yield break;
         var target = field.Value.GetString();
         if (string.IsNullOrEmpty(target)) yield break;
         if (PlaceholderToken.IsMatch(target!)) yield break;
 
+        var folder = ResolveExistingTarget(rule.TargetFolder, rule.FallbackTargets, target!, exists);
         yield return new Reference(
             obj.Folder, obj.StrName, field.Name,
-            rule.TargetFolder, target!,
+            folder, target!,
             RefKind.Direct);
     }
 
-    private static IEnumerable<Reference> ExtractStringArray(DataObject obj, JsonProperty field, SchemaCatalog.FieldRule rule)
+    private static IEnumerable<Reference> ExtractStringArray(DataObject obj, JsonProperty field, SchemaCatalog.FieldRule rule, Func<string, string, bool>? exists)
     {
         if (field.Value.ValueKind != JsonValueKind.Array) yield break;
 
@@ -104,14 +134,15 @@ public static class ReferenceExtractor
             if (string.IsNullOrEmpty(target)) continue;
             if (PlaceholderToken.IsMatch(target!)) continue;
 
+            var folder = ResolveExistingTarget(rule.TargetFolder, rule.FallbackTargets, target!, exists);
             yield return new Reference(
                 obj.Folder, obj.StrName, field.Name,
-                rule.TargetFolder, target!,
+                folder, target!,
                 RefKind.DirectInArray);
         }
     }
 
-    private static IEnumerable<Reference> ExtractCondStringArray(DataObject obj, JsonProperty field, SchemaCatalog.FieldRule rule)
+    private static IEnumerable<Reference> ExtractCondStringArray(DataObject obj, JsonProperty field, SchemaCatalog.FieldRule rule, Func<string, string, bool>? exists)
     {
         if (field.Value.ValueKind != JsonValueKind.Array) yield break;
 
@@ -125,9 +156,10 @@ public static class ReferenceExtractor
             if (parsed is null) continue;
             if (PlaceholderToken.IsMatch(parsed.Name)) continue;
 
+            var folder = ResolveExistingTarget(rule.TargetFolder, rule.FallbackTargets, parsed.Name, exists);
             yield return new Reference(
                 obj.Folder, obj.StrName, field.Name,
-                rule.TargetFolder, parsed.Name,
+                folder, parsed.Name,
                 RefKind.Condition,
                 Metadata: new Dictionary<string, object>
                 {

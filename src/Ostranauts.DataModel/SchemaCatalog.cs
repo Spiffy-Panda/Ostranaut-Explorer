@@ -51,7 +51,13 @@ public sealed class SchemaCatalog
         string? RoutingSibling = null,
         IReadOnlyDictionary<string, string>? RoutingTargets = null,
         bool IsGhost = false,
-        string? Description = null);  // schema description text, for site tooltips
+        string? Description = null,    // schema description text, for site tooltips
+        IReadOnlyList<string>? FallbackTargets = null); // existence-aware alternatives;
+        // when set, ReferenceExtractor checks each in [TargetFolder, ...FallbackTargets]
+        // until it finds the value, then routes the edge to that folder. Falls back
+        // to TargetFolder (primary) if none has it (= dangling). Used for fields
+        // where the target value can live in multiple folders, e.g. condtrigs.aReqs
+        // (a string is either a condtrig name OR a condition name).
 
     private readonly List<FieldRule> _rules;
     private readonly Dictionary<(string folder, string field), FieldRule> _byKey;

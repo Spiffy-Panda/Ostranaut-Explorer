@@ -218,6 +218,24 @@ public static class SchemaLoader
             }
         }
 
+        // x-targets — existence-aware fallback list. When set, the first folder
+        // becomes the primary target (overriding regex-derived); the rest are
+        // fallbacks the extractor tries when the value isn't in the primary.
+        IReadOnlyList<string>? fallbackTargets = null;
+        if (fieldDef.TryGetProperty("x-targets", out var targetsProp)
+            && targetsProp.ValueKind == JsonValueKind.Array)
+        {
+            var list = new List<string>();
+            foreach (var t in targetsProp.EnumerateArray())
+                if (t.ValueKind == JsonValueKind.String) list.Add(t.GetString()!);
+            if (list.Count > 0)
+            {
+                targetFolder = list[0];
+                if (list.Count > 1)
+                    fallbackTargets = list.Skip(1).ToList();
+            }
+        }
+
         // x-ghost — field documented by schema but decomp says game doesn't
         // deserialize it. Rule still emits (in case real data uses it); the
         // flag rides through to the site for visual distinction.
@@ -229,7 +247,8 @@ public static class SchemaLoader
             RoutingSibling: routingSibling,
             RoutingTargets: routingTargets,
             IsGhost: isGhost,
-            Description: description);
+            Description: description,
+            FallbackTargets: fallbackTargets);
     }
 
     private static string? ExtractTargetFolder(string description)

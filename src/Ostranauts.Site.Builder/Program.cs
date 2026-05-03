@@ -58,7 +58,13 @@ internal static class Program
             .Load(roots, warning => { Console.Error.WriteLine(warning); warnings++; })
             .ToList();
 
-        var references = objects.SelectMany(o => ReferenceExtractor.Extract(o, catalog)).ToList();
+        // Build the existence lookup once so ReferenceExtractor can resolve
+        // fallback targets (FieldRule.FallbackTargets) per-value. Cheap: HashSet.
+        var existenceSet = new HashSet<(string folder, string name)>(
+            objects.Select(o => (o.Folder, o.StrName)));
+        bool Exists(string folder, string name) => existenceSet.Contains((folder, name));
+
+        var references = objects.SelectMany(o => ReferenceExtractor.Extract(o, catalog, Exists)).ToList();
         var index = new ObjectIndex(
             objects,
             references,

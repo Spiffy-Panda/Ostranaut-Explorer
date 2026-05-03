@@ -11,15 +11,18 @@
             },
             "aCondsCitizen": {
                 "type": "array",
-                "description": "Conditions applied to NPCs born here as citizens. Most entries refer to entry within conditions_simple.json (life-traits, language allowances); a minority live in conditions/. Multi-folder targets are a known v1 limitation — see PROJECT-PITCH.md."
+                "description": "Conditions applied to NPCs born here as citizens. Most entries refer to entry within conditions_simple.json (life-traits, language allowances); a minority live in conditions/. Multi-target via x-targets — extractor checks conditions_simple first, falls back to conditions.",
+                "x-targets": ["conditions_simple", "conditions"]
             },
             "aCondsResident": {
                 "type": "array",
-                "description": "Conditions applied to NPCs spawning here as permanent residents. Refers to entry within conditions_simple.json (mostly)."
+                "description": "Conditions applied to NPCs spawning here as permanent residents. Refers to entry within conditions_simple.json (mostly), with conditions/ fallback.",
+                "x-targets": ["conditions_simple", "conditions"]
             },
             "aCondsIllegal": {
                 "type": "array",
-                "description": "Conditions applied to NPCs spawning here illegally. Refers to entry within conditions_simple.json (mostly)."
+                "description": "Conditions applied to NPCs spawning here illegally. Refers to entry within conditions_simple.json (mostly), with conditions/ fallback.",
+                "x-targets": ["conditions_simple", "conditions"]
             }
         }
     }

@@ -15,15 +15,23 @@
             },
             "aReqs": {
                 "type": "array",
-                "description": "Conditions that must be present for this trigger to fire — each refers to entry within conditions.json"
+                "description": "Conditions OR condition triggers that must be present for this trigger to fire. Per IVerifiable / CondTrigger, each entry is dual-type: checked against condtrigs/ first, then conditions/. Refers to entry within condtrigs.json with fallback to conditions.json.",
+                "x-targets": ["condtrigs", "conditions"]
             },
             "aForbids": {
                 "type": "array",
-                "description": "Conditions that must NOT be present for this trigger to fire — each refers to entry within conditions.json"
+                "description": "Conditions OR condition triggers that must NOT be present for this trigger to fire. Dual-type per IVerifiable. Refers to entry within condtrigs.json with fallback to conditions.json.",
+                "x-targets": ["condtrigs", "conditions"]
             },
             "aTriggers": {
                 "type": "array",
-                "description": "Other condition triggers chained by this one — each refers to entry within condtrigs.json"
+                "description": "Other condition triggers chained by this one. Per IVerifiable, dual-type with condition-name fallback. Refers to entry within condtrigs.json with fallback to conditions.json.",
+                "x-targets": ["condtrigs", "conditions"]
+            },
+            "aTriggersForbid": {
+                "type": "array",
+                "description": "Other condition triggers / conditions whose presence forbids this trigger from chaining further. Dual-type per IVerifiable. Refers to entry within condtrigs.json with fallback to conditions.json.",
+                "x-targets": ["condtrigs", "conditions"]
             }
         }
     }
