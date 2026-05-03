@@ -1,0 +1,22 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "strName": {
+                "type": "string",
+                "description": "The code name of the charge profile (often pattern + use-case suffix, e.g. 'FireExCheck' = pattern 'FireEx' + suffix 'Check')."
+            },
+            "strCondName": {
+                "type": "string",
+                "description": "Condition this profile reads/affects (e.g. StatFireChem). Refers to entry within conditions.json. (Per JsonChargeProfile decomp.)"
+            },
+            "strItemCT": {
+                "type": "string",
+                "description": "Condition trigger applied to the consumed item. Refers to entry within condtrigs.json."
+            }
+        }
+    }
+}

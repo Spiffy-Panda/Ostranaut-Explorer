@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "strName": {
+                "type": "string",
+                "description": "The code name of the ticker, as referred to from JsonCondOwner.aTickers."
+            },
+            "strCondLoot": {
+                "type": "string",
+                "description": "Loot table fired each tick. Refers to entry within loot.json. (Per JsonTicker decomp.)"
+            },
+            "strCondLootCoeff": {
+                "type": "string",
+                "description": "Coefficient condition whose value scales the per-tick loot effect. Refers to entry within conditions.json."
+            },
+            "strCondUpdate": {
+                "type": "string",
+                "description": "Condition updated by this ticker each tick. Refers to entry within conditions.json."
+            }
+        }
+    }
+}

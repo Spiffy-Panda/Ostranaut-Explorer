@@ -1,0 +1,22 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "strName": {
+                "type": "string",
+                "description": "The code name of the ship spec, as referred to from JsonInteraction.ShipTest{Us,Them,3rd}."
+            },
+            "strLootRegIDs": {
+                "type": "string",
+                "description": "Loot table producing registration IDs (regional/authority labels). Refers to entry within loot.json."
+            },
+            "strLootATCRegions": {
+                "type": "string",
+                "description": "Loot table producing ATC regions. Refers to entry within loot.json."
+            }
+        }
+    }
+}
