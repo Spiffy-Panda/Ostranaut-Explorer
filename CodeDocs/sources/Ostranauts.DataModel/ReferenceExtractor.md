@@ -1,11 +1,13 @@
 # ReferenceExtractor.cs
 
 **Path:** `src/Ostranauts.DataModel/ReferenceExtractor.cs`
-**Status:** **stubbed (v1 work)** — currently returns `Enumerable.Empty<Reference>()`.
+**Status:** real
 
 ## Purpose
 
-Given a `DataObject` and the `SchemaCatalog`, walks the object's fields and emits one `Reference` per outgoing cross-reference. Dispatches per `FieldShape` so condition-string fields, plain string fields, and string-array fields are each handled correctly.
+Walks a `DataObject`'s top-level fields against the `SchemaCatalog`, emits one `Reference` per outgoing cross-reference. Dispatches per `FieldShape` so plain strings, string arrays, and condition-string arrays are each handled correctly. Pronoun/placeholder tokens (regex `^\[\w+\]$`) are not real references and are skipped.
+
+Real-data run: 26 rules over 29k objects produce ~7,900 edges. ~1,500 of those dangle (target not in index) — a mix of legitimate "missing data" findings and one false-positive rule (`strTargetPoint` → `condowners`) caused by an ambiguous schema description; both surface naturally on the health page.
 
 ## Public API
 
@@ -16,19 +18,28 @@ public static class ReferenceExtractor
 }
 ```
 
-## Implementation plan (v1)
+Stateless. Streams via yield. Returns no edges (yield break) if `obj.Fields` isn't a JSON object.
 
-1. Parse `obj.RawJson` (or use the parsed shape once `DataObject` is updated).
-2. For each top-level field `(name, value)` on the object, look up `catalog.RuleFor(obj.Folder, name)`. If null, skip.
-3. Dispatch by `rule.Shape`:
-   - **Direct** — `value` is a string. Skip if it matches the placeholder regex `\[\w+\]`. Otherwise emit one `Reference` with `Kind=Direct`.
-   - **StringArray** — for each string element, same as Direct but `Kind=DirectInArray`.
-   - **CondStringArray** — for each element, parse via `CondStringParser.TryParse`. If non-null and the name isn't a placeholder, emit `Reference` with `Kind=Condition` and `Metadata={"value": cs.Value, "duration": cs.Duration}`.
+## Per-shape behavior
+
+| Shape | Source field | Yields |
+|---|---|---|
+| `Direct` | string value | One `Reference(Kind=Direct)` per non-empty, non-placeholder string. |
+| `StringArray` | array of strings | One `Reference(Kind=DirectInArray)` per non-empty, non-placeholder element. |
+| `CondStringArray` | array of condition strings (`Name=value xduration`) | One `Reference(Kind=Condition)` per parseable element. `Metadata` carries `value` (double) and `duration` (int). |
+
+For each shape, values that fail their kind check (wrong JSON value type, empty string, malformed cond-string, placeholder token) are silently dropped — never throws.
+
+## Placeholder token rule
+
+Anything matching the full-string regex `^\[\w+\]$` — `[us]`, `[them]`, `[3rd]`, `[me]`, etc. — is skipped. These are pronouns the game substitutes at runtime, not real references. The match is **anchored** so a value that *contains* `[us]` mid-string (e.g. `"chat,[us],[them]"`) wouldn't be skipped by the placeholder rule alone; that's by design — those are interaction-name suffixes, a separate concern.
 
 ## Depends on
 
 - `DataObject`, `Reference`, `SchemaCatalog`, `CondStringParser`.
+- `System.Text.Json`, `System.Text.RegularExpressions`.
 
 ## Used by
 
 - `Program.Main` — `objects.SelectMany(o => ReferenceExtractor.Extract(o, catalog))`.
+- `ReferenceExtractorTests` — 9 unit tests covering each shape, placeholders, nulls, malformed values, missing rules.

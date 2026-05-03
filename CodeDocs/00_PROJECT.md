@@ -65,5 +65,8 @@ Detail in `PROJECT-PITCH.md`.
 
 ## Status by file (current truth)
 
-Real implementations: `DataObject`, `Reference`, `CondString`/`CondStringParser`, `SchemaCatalog`, `ObjectIndex` (with last-wins duplicate handling), `DataLoader` (parses ~29k objects from base data), `SchemaLoader` (regex-driven; ~26 rules from current schemas), `GraphExporter` (schema v1 — emits real nodes, edges still empty until extractor lands), `Program`.
-Stubbed (v1 work remaining): `ReferenceExtractor`. Has a `TODO(v1)` comment pointing at the next step.
+All `Ostranauts.DataModel` types are now real implementations. Real-data smoke test: ~29k objects, ~7,900 references, 26 rules, 5.4 MB → 6.7 MB graph.json.
+
+Outstanding v1 polish (not blocking):
+- ~1,500 dangling references — partly legitimate "missing data" findings, partly a known false-positive rule (`interactions.strTargetPoint` is matched as `→ condowners` because its description says *"(assigned in condowners.json)"*; it's not actually a strName ref). Fix is to clarify the schema description, intended for the future Comment Mod.
+- `CondStringArray` rules: 0 today. Base schemas don't document the cond-string DSL fields (`aStartingConds`, etc.). Same fix path — schema additions.
