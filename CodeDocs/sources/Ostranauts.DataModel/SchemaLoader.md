@@ -1,39 +1,53 @@
 # SchemaLoader.cs
 
 **Path:** `src/Ostranauts.DataModel/SchemaLoader.cs`
-**Status:** **stubbed (v1 work)** — currently returns `SchemaCatalog.Empty`.
+**Status:** real
 
 ## Purpose
 
-Reads `data/schemas/*-schema.json`, parses the field descriptions, and derives `FieldRule`s by regex-matching phrases like *"refers to entry within items.json"*, *"Found in lights.json"*. The resulting `SchemaCatalog` is the source of truth for which fields are cross-references.
+Reads `data/schemas/*-schema.json` and derives `SchemaCatalog.FieldRule`s by regex-matching reference phrases in field descriptions (e.g. *"reffers to entry within items.json"*, *"Found in lights.json"*). Strict schema-driven: no description, no rule. Coverage grows by improving the schemas themselves, not by adding hand-curated rules.
+
+Real-data run against base game schemas (5 files: conditions, condowners, interactions, items, plot) produces ~26 rules.
 
 ## Public API
 
 ```csharp
 public static class SchemaLoader
 {
-    public static SchemaCatalog Load(string schemaDir);
+    public static SchemaCatalog Load(string schemaDir, Action<string>? onWarning = null);
 }
 ```
 
-`schemaDir` should be `<dataRoot>/schemas`. Returns `SchemaCatalog.Empty` until the v1 implementation lands.
+If `schemaDir` doesn't exist: warns once, returns `SchemaCatalog.Empty` (does not throw — schemas are optional input). Per-file parse errors warn and continue.
 
-## Implementation plan (v1)
+## Rule derivation
 
-1. Glob `schemaDir/*-schema.json`.
-2. Each schema is a JSON Schema for an array of objects of one type. The array's element folder is named in the filename (`items-schema.json` → `items`).
-3. Walk `properties.<field>.description`. Apply regex rules:
-   - `refers to entry within (\w+)\.json` → `Direct` shape, target = match.
-   - `Found in (\w+)\.json` → look at the field name; if it's `aFoo` → `StringArray`, else `Direct`.
-   - Field names matching `aStartingConds`, `aCond*`, etc. → `CondStringArray`.
-4. Yield one `FieldRule` per matched field.
-5. Hand-curated overrides may be added later (per Q2: schema-driven, comments-only overrides).
+For each file `<folder>-schema.json`, source folder = `<folder>` (e.g. `items-schema.json` → `items`). Walks `items.properties.<field>` for each schema. A rule is emitted only when:
+
+1. The field has a `description` string property.
+2. The field's JSON `type` accepts strings — `string`, `array`, `["string", "null"]`, `["array", "null"]`. Numeric/boolean/object types are skipped *even if* their description happens to mention an `X.json`.
+3. The description matches one of the reference patterns below; the captured group is the target folder.
+
+`FieldShape` is `Direct` for string-shaped fields, `StringArray` for array-shaped fields. `CondStringArray` is currently never derived — base-game schemas don't document the cond-string DSL fields. Future schema improvements (intended Comment Mod) can add this coverage.
+
+## Description patterns (ordered, first match wins)
+
+1. `(?:refers?|reffers?) to entr(y|ies) (in|within) (\w+)\.json` — handles base-game "reffers" typo
+2. `(?:found|located) in (\w+)\.json`
+3. `from (\w+)\.json`
+4. `entr(y|ies) (in|from|within) (\w+)\.json`
+5. `(\w+)\.json entry`
+6. `(?:check|see) (\w+)\.json`
+7. `(?:in|within) (\w+)\.json` — broad fallback, last so specifics win
+
+When a description names two files (e.g. `"loot.json or loot_self_reference.json"`), the first match wins — captures the canonical folder.
 
 ## Depends on
 
+- `System.Text.Json`, `System.Text.RegularExpressions`.
 - `SchemaCatalog`.
-- (Future) JSON parser of choice — System.Text.Json is the leading candidate, may need a NuGet package on netstandard2.1.
 
 ## Used by
 
-- `Program.Main` calls `SchemaLoader.Load(Path.Combine(dataRoot, "schemas"))`.
+- `Program.Main` — `SchemaLoader.Load(Path.Combine(dataRoot, "schemas"), warning => ...)`.
+- `SchemaLoaderTests` — fixture at `tests/.../fixtures/data_tiny/schemas/condowners-schema.json`.

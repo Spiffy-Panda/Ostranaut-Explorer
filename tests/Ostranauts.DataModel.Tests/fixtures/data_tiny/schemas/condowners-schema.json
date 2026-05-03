@@ -1,0 +1,40 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "strName": {
+                "type": "string",
+                "description": "The code name of the condowner."
+            },
+            "strItemDef": {
+                "type": "string",
+                "description": "The item definition, reffers to entry within items.json"
+            },
+            "strLoot": {
+                "type": "string",
+                "description": "Loot the condowner spawns with, reffers to entry within loot.json"
+            },
+            "aInteractions": {
+                "type": "array",
+                "description": "List of interactions; entries from interactions.json"
+            },
+            "aLights": {
+                "type": "array",
+                "description": "Lights emitted by this condowner. Found in lights.json"
+            },
+            "strNoDescriptionField": {
+                "type": "string"
+            },
+            "strBoringField": {
+                "type": "string",
+                "description": "A field with no .json reference at all."
+            },
+            "nNotAReference": {
+                "type": "integer",
+                "description": "An integer that lives in items.json — not a reference, but description mentions a json file."
+            }
+        }
+    }
+}

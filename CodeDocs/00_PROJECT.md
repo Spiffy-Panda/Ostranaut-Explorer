@@ -65,5 +65,5 @@ Detail in `PROJECT-PITCH.md`.
 
 ## Status by file (current truth)
 
-Real implementations: `DataObject`, `Reference`, `CondString`/`CondStringParser`, `SchemaCatalog`, `ObjectIndex` (with last-wins duplicate handling), `DataLoader` (parses ~29k objects from base data), `GraphExporter` (schema v1 — emits real nodes, edges still empty until extractor lands), `Program`.
-Stubbed (v1 work remaining): `SchemaLoader`, `ReferenceExtractor`. Each stub has a `TODO(v1)` comment pointing at the next step.
+Real implementations: `DataObject`, `Reference`, `CondString`/`CondStringParser`, `SchemaCatalog`, `ObjectIndex` (with last-wins duplicate handling), `DataLoader` (parses ~29k objects from base data), `SchemaLoader` (regex-driven; ~26 rules from current schemas), `GraphExporter` (schema v1 — emits real nodes, edges still empty until extractor lands), `Program`.
+Stubbed (v1 work remaining): `ReferenceExtractor`. Has a `TODO(v1)` comment pointing at the next step.

@@ -40,9 +40,11 @@ internal static class Program
         }
 
         var schemaDir = Path.Combine(dataRoot, "schemas");
-        var catalog = SchemaLoader.Load(schemaDir);
-
         var warnings = 0;
+        var catalog = SchemaLoader.Load(
+            schemaDir,
+            warning => { Console.Error.WriteLine(warning); warnings++; });
+
         var objects = DataLoader
             .Load(dataRoot, warning => { Console.Error.WriteLine(warning); warnings++; })
             .ToList();
