@@ -4,6 +4,20 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-03 — User stories from `testdata_mods/` source mods
+
+Five new story files in `notes/user-stories/`, derived from studying two real mods sitting in a local `testdata_mods/` working tree (jwebmeister's `FreeTraits_and_StarterShipPlus`, Voideka's `HygieneStation`). Same modder-as-audience framing as the rest of the user-stories folder.
+
+- `mod-free-traits.md` — tuning mod (`traitscores.json` `aValues` cond-string, position 2 = age years; flip non-zero rows to `0`). Covers the careers `aSkillsHobby` companion override.
+- `mod-hygiene-station.md` — full "add a new installable" mod, exercising condowners (installed + loose variants), items, conditions_simple, condtrigs, the `aInverse` interaction state machine, loot (`bNested`/`bSuppress` spawn-contents, `strType: interaction` destroy delegate), and installables (install / uninstall / dismantle / undamage).
+- `mod-starter-ship.md` — character-creation chain `loot[strType:ship] ← lifeevents[strShipRewards] ← career[aEventsShip]`, plus the `bShipOwned` / `fShipMortgage` / `fShipDmgMax` / `fStartATCRange` / `strStartATC` field set on the life-event side.
+- `mod-suppress-needs.md` — captured Discord exchange about a player-trait that flatlines needs. The mod path is the `Thresh<StatName>` pattern (additive, save-safe). Includes an explicit acceptance criterion ("…without needing to ask on Discord").
+- `explore-needs-loop.md` — a meta-story (explicitly disclaimed up top as "designer exploration, not a mod-making story") on what the explorer needs to surface so a designer can see why the needs loop reads as a treadmill. Two paths: (1) conversational agency — `StatSocialization` / `StatBelonging` are real but `nDisplaySelf=0` until crisis; (2) drain/refill asymmetry — passive drain vs. active refill, rates buried in tick-effect loot edges. Findings feed into `mod-suppress-needs.md` and into UX 1.1 / 1.4 / 1.10 component requirements.
+
+`.gitignore` adds `/testdata_mods/` — the source mods are local working material, not redistributable. Stories cite their paths but the trees themselves stay local.
+
+---
+
 ## 2026-05-03 — Standup: discoverability + PLAN.md + audience framing + Makefile fix
 
 Standup-driven batch of housekeeping after a multi-session burst of UX/notes work. Three logical clusters of change.

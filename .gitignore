@@ -9,6 +9,9 @@
 # Scratch / exploratory scripts (per CLAUDE.md convention)
 /scrap_*/
 
+# Test mod data — local modding experiments, not redistributable
+/testdata_mods/
+
 # Wiki page cache — fetch-once, re-read locally. See CLAUDE.md.
 /wiki_cache/
 
