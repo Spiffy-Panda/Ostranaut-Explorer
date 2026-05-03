@@ -7,7 +7,7 @@ Operating notes for Claude Code working in this repo. Keep this file tight.
 - `data/` — read-only mirror of the Ostranauts game data tree (~70 folders of JSON arrays). Source of truth for the parser. Do not modify.
 - `data/schemas/*-schema.json` — authoritative reference rules. The parser **derives** which fields are cross-references from the schema's field descriptions. A hand-curated overrides file may add comments, but should never invent reference rules the schema does not imply. Prefer upstreaming useful comments into the schema files themselves.
 - `src/Ostranauts.DataModel/` — C# parsing/indexing library. Targets **`netstandard2.1`** (so it can be loaded by Ostranauts/BepInEx-side mods later).
-- `src/Ostranauts.Site.Builder/` — CLI that consumes the library and emits `graph.json` + per-object detail JSON. Targets **`net8.0`**.
+- `src/Ostranauts.Site.Builder/` — CLI that consumes the library and emits `graph.js` (a JS-wrapped JSON payload — script-tag-loadable so the static site works from `file://` URLs without needing a local server). Targets **`net8.0`**.
 - `src/Ostranauts.Site/` — static vanilla-JS frontend (Cytoscape.js for graph view). No build framework; deploy is "copy folder."
 - `build/` — Makefile output. Ready to publish to GitHub Pages.
 

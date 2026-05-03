@@ -40,7 +40,7 @@ The base-game data files are not redistributed in this repo — there's no publi
 
    Both `data/` and `data.original/` are gitignored. The snapshot is your recovery point if you mutate schema files locally and want to diff against vanilla. (Once mod-overlay support lands in v2, those local edits migrate into a "Comment Mod" and `data/` returns to vanilla.)
 
-Because the data files aren't in the repo, **CI builds aren't wired up yet**. Builds happen on contributor machines for now. GitHub Actions is on the table once we have a sanctioned source for the data — or once the build can be split so the parser runs locally and only the resulting `graph.json` is published.
+Because the data files aren't in the repo, **CI builds aren't wired up yet**. Builds happen on contributor machines for now. GitHub Actions is on the table once we have a sanctioned source for the data — or once the build can be split so the parser runs locally and only the resulting `graph.js` is published.
 
 ## Building
 
@@ -51,7 +51,7 @@ make           # from Git Bash on Windows, or any POSIX shell
 build.bat      # double-clickable wrapper that invokes `make` under Git Bash
 ```
 
-The build runs the C# parser against `data/`, emits `graph.json`, and assembles the static site under `build/`. Open `build/index.html` to browse offline, or push `build/` to GitHub Pages.
+The build runs the C# parser against `data/`, emits `graph.js` (a JS-wrapped JSON payload), and assembles the static site under `build/`. Open `build/index.html` directly in a browser to use the explorer offline — no local server needed — or push `build/` to GitHub Pages.
 
 ## Project layout
 
@@ -62,7 +62,7 @@ OstranautDataExplorer/
 ├── src/
 │   ├── Ostranauts.DataModel/      # C# library — parsing, indexing, graph
 │   │                              # targets netstandard2.1 (mod-loadable)
-│   ├── Ostranauts.Site.Builder/   # CLI: net8.0, emits graph.json + page data
+│   ├── Ostranauts.Site.Builder/   # CLI: net8.0, emits graph.js (JS-wrapped JSON)
 │   └── Ostranauts.Site/           # vanilla JS + Cytoscape.js frontend
 ├── scrap_scripts/                 # exploratory / one-off scripts (gitignored)
 ├── build/                         # `make` output, ready for GitHub Pages

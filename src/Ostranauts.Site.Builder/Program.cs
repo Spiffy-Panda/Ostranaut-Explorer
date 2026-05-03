@@ -55,7 +55,10 @@ internal static class Program
             references,
             warning => { Console.Error.WriteLine(warning); warnings++; });
 
-        var graphPath = Path.Combine(outDir, "graph.json");
+        // .js (not .json) so the static site can load via <script src> from file:// URLs.
+        // The site fetches via script tag rather than fetch() because browsers block
+        // fetch against local files. See GraphExporter for the wrapper format.
+        var graphPath = Path.Combine(outDir, "graph.js");
         GraphExporter.WriteJson(index, graphPath);
 
         Console.WriteLine($"wrote {graphPath}");

@@ -37,4 +37,4 @@ For `RefKind.Condition`, `Metadata` is expected to contain `"value"` (double) an
 
 - `ReferenceExtractor` (produces these).
 - `ObjectIndex` (stores and indexes these by both endpoints).
-- `GraphExporter` (serializes them as edges in `graph.json`).
+- `GraphExporter` (serializes them as edges in `graph.js`).

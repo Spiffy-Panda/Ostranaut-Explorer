@@ -2,20 +2,33 @@
 
 The Builder produces a small set of artifacts under `build/`. The static site files (`index.html`, `app.js`, `style.css`) are documented by themselves; this file covers everything generated.
 
-## `build/data/graph.json`
+## `build/data/graph.js`
 
-The single payload the site frontend fetches. Schema is versioned via the `$schema_version` field. Written by `GraphExporter.WriteJson` via `Utf8JsonWriter` (streamed). Always overwrites; parent dirs are created if missing.
+The single payload the static site loads. **Format: JS-wrapped JSON.** The literal text `window.GRAPH_DATA = ` is prepended to a JSON object, and `;\n` is appended:
+
+```js
+window.GRAPH_DATA = {
+  "$schema_version": 1,
+  ...
+};
+```
+
+### Why JS-wrapped, not plain `.json`
+
+Browsers (Firefox, Chrome) block `fetch()` against `file://` URLs by default for security. That makes a plain `data/graph.json` unloadable from the site when `index.html` is opened directly from disk — which is the most common local-dev workflow. Loading via `<script src="data/graph.js">` works under both `file://` and HTTP, so the same site assets serve both local browsing and a GitHub Pages deploy with no behavior change.
+
+The bytes between `window.GRAPH_DATA = ` and `;` are still valid JSON, so non-browser consumers (a future LSP, mod editor, or CI script) can extract the payload by skipping the prefix and trimming the trailing `;\n`.
 
 ### Schema version 1 (current)
 
-`nodes` are populated; `edges` remain `[]` until `ReferenceExtractor` lands.
+`nodes` and `edges` both populate. Schema is versioned via `$schema_version` inside the payload; the site checks it and refuses to render with a clear message on mismatch.
 
 ```jsonc
 {
   "$schema_version": 1,
   "generated_by": "Ostranauts.Site.Builder",
   "object_count": <int>,                                 // index.Objects.Count (~29k vs base data)
-  "reference_count": <int>,                              // index.References.Count (0 today)
+  "reference_count": <int>,                              // index.References.Count (~7900 vs base data)
   "nodes": [
     {
       "id": "<folder>:<strName>",                        // composite key; matches edge endpoints
@@ -26,7 +39,6 @@ The single payload the site frontend fetches. Schema is versioned via the `$sche
     ...
   ],
   "edges": [
-    // populates once ReferenceExtractor is implemented:
     {
       "source": "<folder>:<strName>",
       "target": "<folder>:<strName>",
@@ -39,17 +51,17 @@ The single payload the site frontend fetches. Schema is versioned via the `$sche
 }
 ```
 
-Bump `$schema_version` whenever the structure changes incompatibly. The site's `app.js` reads `$schema_version` and can refuse / warn on mismatch.
+Bump `$schema_version` whenever the structure changes incompatibly. The site's `app.js` reads `$schema_version` and refuses to render on mismatch.
 
-Real-data size today: **~5.4 MB** for ~29k nodes (no edges yet). Comfortable for a static fetch; sharding decision deferred until well past 10 MB.
-
-### Schema version 0 (historical — pre-v1 scaffold)
-
-Empty-payload version: only `$schema_version` (0), `generated_by`, `object_count` (0), `reference_count` (0), and empty `nodes`/`edges`. Replaced when `DataLoader` went live.
+Real-data size today: **~6.9 MB** for ~29k nodes + ~7.9k edges. The JS wrapper adds ~22 bytes — negligible. Static-fetch territory; sharding decision deferred until well past 10 MB.
 
 ### Sharding (future)
 
-If `graph.json` grows past comfortable browser memory, split per source folder: `build/data/graph.json` becomes a manifest, each folder gets `build/data/<folder>.json`. Decision deferred until the file exceeds a few MB.
+If `graph.js` grows past comfortable browser memory, split per source folder: `build/data/graph.js` becomes a manifest, each folder gets `build/data/<folder>.js`. Each shard would still use the `window.GRAPH_DATA_<folder> = ...;` wrapper or merge into a single global on load. Decision deferred until needed.
+
+### Schema version 0 (historical — pre-v1 scaffold)
+
+Empty-payload version emitted as plain `graph.json`: only `$schema_version` (0), `generated_by`, `object_count` (0), `reference_count` (0), and empty `nodes`/`edges`. Replaced when `DataLoader` went live; format then changed to JS-wrapped JSON when the site needed `file://` compatibility.
 
 ## `build/index.html`, `build/app.js`, `build/style.css`
 
@@ -57,7 +69,8 @@ Copied verbatim from `src/Ostranauts.Site/`. No transformation. Self-explanatory
 
 ## Future outputs
 
-- **Per-object detail JSON** — possibly `build/data/objects/<folder>/<strName>.json`, if we want lazy-loading rather than shipping everything in `graph.json`.
+- **Per-object detail JSON** — possibly `build/data/objects/<folder>/<strName>.js` (also JS-wrapped if browser-loaded, JSON if API-served), if we want lazy-loading rather than shipping everything in `graph.js`.
 - **Sitemap / search index** — if search grows beyond client-side scan of the node list.
+- **AI-generated descriptions** (late v1, see PROJECT-PITCH.md) — `build/data/descriptions/<folder>/<strName>.json` cached per object.
 
-When either lands, add a section to this file.
+When any of these land, add a section to this file.

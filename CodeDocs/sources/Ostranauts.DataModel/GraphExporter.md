@@ -5,7 +5,9 @@
 
 ## Purpose
 
-Serializes an `ObjectIndex` to the JSON shape the static site reads (`graph.json`). Schema version is recorded as `$schema_version` in the file; bump on incompatible changes and update `CodeDocs/io/outputs.md` in lockstep.
+Serializes an `ObjectIndex` to the file the static site reads. Schema version is recorded as `$schema_version` in the payload; bump on incompatible changes and update `CodeDocs/io/outputs.md` in lockstep.
+
+The output is **JS-wrapped JSON**: literal text `window.GRAPH_DATA = ` followed by the JSON payload, followed by `;\n`. The reason: browsers block `fetch()` against `file://` URLs, so the static site can't read a plain `.json` from disk without a local server. Loading via `<script src="graph.js">` works on `file://` and on HTTP equally well. The bytes between the assignment and the trailing `;` are still valid JSON, so non-browser consumers can extract the payload by skipping the prefix and trailing semicolon.
 
 ## Public API
 
@@ -16,7 +18,7 @@ public static class GraphExporter
 }
 ```
 
-Creates parent directories if missing. Always overwrites. Streams via `Utf8JsonWriter` to avoid building the entire string in memory (the real graph.json is several MB).
+Despite the method name, callers pass a `.js` path (e.g. `build/data/graph.js`). Creates parent directories if missing. Always overwrites. Streams via `Utf8JsonWriter` to avoid building the entire payload in memory (the real file is ~7 MB).
 
 ## Output shape — schema version 1
 
@@ -27,7 +29,7 @@ Edge `metadata` is serialized as a JSON object with keys preserved as-is. Scalar
 ## Depends on
 
 - `ObjectIndex`, `Reference`, `DataObject`.
-- `System.Text.Json` (`Utf8JsonWriter`).
+- `System.Text.Json` (`Utf8JsonWriter`), `System.Text.Encoding.UTF8` (for the JS prefix/suffix).
 
 ## Used by
 

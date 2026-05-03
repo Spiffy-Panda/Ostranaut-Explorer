@@ -42,7 +42,7 @@ OstranautDataExplorer/
 │   │   ├── CondStringParser.cs        # cracks "IsSystem=1.0x1"; preserves value + duration on the edge
 │   │   ├── Index.cs                   # forward + reverse indexes, lookup by strName/folder
 │   │   └── GraphExporter.cs           # serialize to JSON for the web frontend
-│   ├── Ostranauts.Site.Builder/       # CLI: net8.0, references DataModel, writes graph.json
+│   ├── Ostranauts.Site.Builder/       # CLI: net8.0, references DataModel, writes graph.js
 │   └── Ostranauts.Site/               # vanilla JS + Cytoscape.js, no build framework
 ├── scrap_scripts/                     # see CLAUDE.md — exploratory throwaway scripts live here
 ├── build/                             # Makefile output, deployable to GitHub Pages
@@ -54,7 +54,7 @@ OstranautDataExplorer/
 
 **Why split DataModel from the Builder CLI:** the library targets `netstandard2.1` so it can be loaded inside an Ostranauts BepInEx mod later (e.g. an in-game data linter). The Builder is a normal `net8.0` console app that references the library and produces site assets. The library carries no `net8.0`-only dependencies.
 
-**Site stack:** vanilla JS + Cytoscape.js. Static SPA, single `graph.json` (sharded if size demands), GitHub-Pages-friendly with a configurable base path. Spiritually similar to Quartz (Obsidian → static site): build-time parser + thin JS frontend.
+**Site stack:** vanilla JS + Cytoscape.js. Static SPA, single `graph.js` payload (a JS-wrapped JSON object — `<script src>`-loadable so `file://` works without a local server), GitHub-Pages-friendly with a configurable base path. Spiritually similar to Quartz (Obsidian → static site): build-time parser + thin JS frontend.
 
 ## What the parser actually does
 
@@ -128,7 +128,7 @@ Ordered by dependency, not effort.
 | 5 | **Build orchestrator:** `make`, run from Git Bash on Windows. A `build.bat` wraps it for double-click / `cmd` invocation. |
 | 6 | **Condition strings** (`"IsSystem=1.0x1"`): keep value + duration on the edge. Condition detail pages aggregate incoming edges by value — "default 1.0 across N owners," etc. |
 | 7 | **Pronoun / placeholder tokens:** allowlist by regex `\[\w+\]` (covers `[us]`, `[them]`, `[me]`, `[here]`, anything in that shape). Not enumerated. |
-| 8 | **Graph scale:** static JSON for v1. Manual node positions persist in localStorage (auto-layouts bunch up). Shard per-folder if the single `graph.json` gets too big. |
+| 8 | **Graph scale:** static JS-wrapped JSON for v1. Manual node positions persist in localStorage (auto-layouts bunch up). Shard per-folder if the single `graph.js` gets too big. |
 | 9 | **.NET targets:** `Ostranauts.DataModel` → `netstandard2.1` (the wiki's BepInEx mod target, so the library can be reused inside a mod). `Ostranauts.Site.Builder` → `net8.0`. |
 | 10 | **Hosting:** GitHub Pages. Site needs a configurable base path so `/OstranautDataExplorer/` works. |
 | 11 | **Per-folder summaries:** hybrid (c) — schema's top-level `description` → `data/<folder>/_README.md` → parser-generated stats, fall through in that order. |

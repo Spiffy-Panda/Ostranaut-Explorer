@@ -25,18 +25,15 @@ let incoming = new Map();  // targetId -> [edges]
 let nodesByFolder = new Map(); // folder -> [nodes] (sorted by strName)
 let folderCounts = [];     // [{folder, count}] sorted
 
-async function main() {
-  try {
-    const res = await fetch('data/graph.json');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    graph = await res.json();
-  } catch (err) {
-    statusEl.textContent = `couldn't load data/graph.json — run \`make\` (or \`build.bat\`) first. (${err.message})`;
+function main() {
+  graph = window.GRAPH_DATA;
+  if (!graph) {
+    statusEl.textContent = `data/graph.js didn't load — run the builder first (see README).`;
     return;
   }
 
   if (graph.$schema_version !== SCHEMA_VERSION) {
-    statusEl.textContent = `graph.json schema v${graph.$schema_version} not understood (expected v${SCHEMA_VERSION}).`;
+    statusEl.textContent = `graph schema v${graph.$schema_version} not understood (expected v${SCHEMA_VERSION}).`;
     return;
   }
 

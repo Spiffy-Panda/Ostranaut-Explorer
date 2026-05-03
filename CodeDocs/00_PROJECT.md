@@ -11,7 +11,7 @@ Static-site explorer for the Ostranauts game data tree. Every entry under `data/
 ```
 OstranautDataExplorer.sln
 ├── src/Ostranauts.DataModel/          netstandard2.1   parser/indexer library
-├── src/Ostranauts.Site.Builder/       net8.0           CLI that writes graph.json
+├── src/Ostranauts.Site.Builder/       net8.0           CLI that writes graph.js
 ├── src/Ostranauts.Site/               (no .csproj)     vanilla HTML/CSS/JS
 └── tests/Ostranauts.DataModel.Tests/  net8.0, xunit
 ```
@@ -38,18 +38,18 @@ DataLoader    ──►  IEnumerable<DataObject>
                  ObjectIndex (forward + reverse maps, dangling-ref scan)
                        │
                        ▼
-                 GraphExporter  ──►  build/data/graph.json
+                 GraphExporter  ──►  build/data/graph.js  (window.GRAPH_DATA = {...};)
                                           │
                                           ▼
                               src/Ostranauts.Site/* (copied to build/)
-                              fetches graph.json client-side, renders
+                              loads graph.js via <script src>, renders client-side
 ```
 
 The Builder CLI (`Program.cs`) is the orchestrator — it runs that whole pipeline.
 
 ## Roadmap snapshot
 
-- **v0** ✓ — repo scaffolding, baseline data snapshot, build chain, scaffold-mode pipeline that emits an empty but valid `graph.json`.
+- **v0** ✓ — repo scaffolding, baseline data snapshot, build chain, scaffold-mode pipeline.
 - **v1** — fill in the stubs: `SchemaLoader` parses field descriptions to derive reference rules, `DataLoader` walks the data tree, `ReferenceExtractor` walks fields against the rules. Then the site grows from "render placeholder summary" to "search + detail pages + Cytoscape graph view."
 - **v2** — mod-overlay loader, VS Code language server (LSP), save inspector/editor, map explorer.
 
@@ -65,7 +65,7 @@ Detail in `PROJECT-PITCH.md`.
 
 ## Status by file (current truth)
 
-All `Ostranauts.DataModel` types are now real implementations. Real-data smoke test: ~29k objects, ~7,900 references, 26 rules, 5.4 MB → 6.7 MB graph.json.
+All `Ostranauts.DataModel` types are now real implementations. Real-data smoke test: ~29k objects, ~7,900 references, 26 rules, 6.9 MB `graph.js`.
 
 Outstanding v1 polish (not blocking):
 - ~1,500 dangling references — partly legitimate "missing data" findings, partly a known false-positive rule (`interactions.strTargetPoint` is matched as `→ condowners` because its description says *"(assigned in condowners.json)"*; it's not actually a strName ref). Fix is to clarify the schema description, intended for the future Comment Mod.

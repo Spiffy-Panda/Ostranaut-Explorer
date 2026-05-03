@@ -47,7 +47,7 @@ CodeDocs/
 
 The signatures should be complete enough that you can call into the API correctly without opening the `.cs`. Internal/private members are omitted.
 
-**`io/inputs.md` and `io/outputs.md`** — file-format specs for things the system reads or produces, when those formats aren't already documented by a JSON schema. The Ostranauts data tree's `data/schemas/*-schema.json` files ARE authoritative for the shape of input data — `inputs.md` only adds context the schemas don't cover (which folders are in scope, how files are discovered, what the loader does with them). `outputs.md` describes our generated artifacts (`graph.json`, future per-object files, `build/` layout).
+**`io/inputs.md` and `io/outputs.md`** — file-format specs for things the system reads or produces, when those formats aren't already documented by a JSON schema. The Ostranauts data tree's `data/schemas/*-schema.json` files ARE authoritative for the shape of input data — `inputs.md` only adds context the schemas don't cover (which folders are in scope, how files are discovered, what the loader does with them). `outputs.md` describes our generated artifacts (`graph.js`, future per-object files, `build/` layout).
 
 Self-explanatory formats — HTML, CSS, JS — don't need entries. The HTML is the spec.
 

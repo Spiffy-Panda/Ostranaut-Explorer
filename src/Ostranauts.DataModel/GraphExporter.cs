@@ -16,12 +16,26 @@ public static class GraphExporter
         Indented = true,
     };
 
+    /// <summary>
+    /// Writes the graph as a JS file containing
+    /// <c>window.GRAPH_DATA = { ... };</c>. This form loads via
+    /// <c>&lt;script src=...&gt;</c> with no fetch, which is the only way
+    /// the static site works from a <c>file://</c> URL — browsers block
+    /// fetch() against local files for security.
+    /// The bytes between the assignment and the trailing <c>;</c> are
+    /// valid JSON, so non-browser consumers can still extract the payload.
+    /// </summary>
     public static void WriteJson(ObjectIndex index, string outPath)
     {
         var dir = Path.GetDirectoryName(outPath);
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
 
         using var stream = File.Create(outPath);
+        // Prefix the JSON payload with a JS assignment so a <script src> tag
+        // populates window.GRAPH_DATA when the file is loaded.
+        var prefix = System.Text.Encoding.UTF8.GetBytes("window.GRAPH_DATA = ");
+        stream.Write(prefix, 0, prefix.Length);
+
         using var writer = new Utf8JsonWriter(stream, WriterOptions);
 
         writer.WriteStartObject();
@@ -62,6 +76,11 @@ public static class GraphExporter
         writer.WriteEndArray();
 
         writer.WriteEndObject();
+
+        // Flush the JsonWriter, then append the JS terminator so the file is valid JS.
+        writer.Flush();
+        var suffix = System.Text.Encoding.UTF8.GetBytes(";\n");
+        stream.Write(suffix, 0, suffix.Length);
     }
 
     private static void WriteScalar(Utf8JsonWriter writer, string key, object value)

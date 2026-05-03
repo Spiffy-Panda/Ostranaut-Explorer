@@ -5,7 +5,7 @@
 
 ## Purpose
 
-CLI entry point for the Builder. Parses arguments, runs the parser pipeline, writes `graph.json`. Designed to be the only consumer of `Ostranauts.DataModel`'s top-level static methods so the orchestration is in one place.
+CLI entry point for the Builder. Parses arguments, runs the parser pipeline, writes `graph.js` (script-tag-loadable; see `GraphExporter`). Designed to be the only consumer of `Ostranauts.DataModel`'s top-level static methods so the orchestration is in one place.
 
 ## Public API (CLI)
 
@@ -35,7 +35,7 @@ var index = new ObjectIndex(
     objects, references,
     w => { Console.Error.WriteLine(w); warnings++; });
 
-GraphExporter.WriteJson(index, Path.Combine(outDir, "graph.json"));
+GraphExporter.WriteJson(index, Path.Combine(outDir, "graph.js"));
 ```
 
 Stdout summary: written-path plus `objects`, `references`, `rules` counts; if any warnings fired, the count is reported pointing at stderr.
