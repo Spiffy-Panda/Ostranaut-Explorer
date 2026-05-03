@@ -7,7 +7,7 @@
 //   #/f/<folder>             — folder index
 //   (anything else)           — empty hint
 
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 const SEARCH_LIMIT = 50;
 const FOLDER_LIMIT = 500; // cap per-folder list to keep render snappy
 
@@ -38,6 +38,15 @@ function main() {
   if (graph.$schema_version !== SCHEMA_VERSION) {
     statusEl.textContent = `graph schema v${graph.$schema_version} not understood (expected v${SCHEMA_VERSION}).`;
     return;
+  }
+
+  // Sibling payloads: properties + code_refs. Both optional — site degrades
+  // gracefully if either is missing (no fields shown / no code-refs block).
+  if (typeof window.NODE_PROPS === 'undefined') {
+    console.info('properties.js not loaded — Fields block on detail pages will be empty.');
+  }
+  if (typeof window.CODE_REFS === 'undefined') {
+    console.info('code_refs.js not loaded — Code references block will be omitted. Run scrap_scripts/python/10_emit_code_refs.py to generate it.');
   }
 
   buildIndexes();
@@ -236,7 +245,8 @@ function renderObjectDetail(folder, strName) {
       <div class="file">${escapeHtml(node.file)}</div>
     </div>
 
-    ${renderFieldsBlock(folder, node.fields)}
+    ${renderFieldsBlock(folder, (window.NODE_PROPS ?? {})[id])}
+    ${renderCodeRefsBlock(strName)}
 
     <div class="refs-block">
       <h3>References out (${out.length})</h3>
@@ -291,6 +301,25 @@ function renderEdgeGroups(edges, perspective, viewFolder) {
       </div>
     `;
   }).join('');
+}
+
+function renderCodeRefsBlock(strName) {
+  // window.CODE_REFS keys by strName (decomp doesn't know our folder
+  // namespacing). Hits look like { file, line, text }.
+  const refs = (window.CODE_REFS ?? {})[strName];
+  if (!refs || refs.length === 0) return '';
+  const rows = refs.map(r => `<li>
+    <span class="code-loc">${escapeHtml(r.file)}:${r.line}</span>
+    <pre class="code-line">${escapeHtml(r.text)}</pre>
+  </li>`).join('');
+  return `
+    <div class="code-refs-block">
+      <h3>Code references (${refs.length})
+        <span class="muted-note">— ${escapeHtml(strName)}<wbr> appears as a hardcoded string literal in decomp</span>
+      </h3>
+      <ul>${rows}</ul>
+    </div>
+  `;
 }
 
 function renderFieldsBlock(folder, fields) {

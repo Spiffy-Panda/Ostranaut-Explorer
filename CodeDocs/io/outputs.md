@@ -19,14 +19,26 @@ Browsers (Firefox, Chrome) block `fetch()` against `file://` URLs by default for
 
 The bytes between `window.GRAPH_DATA = ` and `;` are still valid JSON, so non-browser consumers (a future LSP, mod editor, or CI script) can extract the payload by skipping the prefix and trimming the trailing `;\n`.
 
-### Schema version 4 (current)
+### Schema version 5 (current) — split-payload layout
 
-Two additive surfaces on top of v3:
+Per-node `fields` are now in a sibling file (`properties.js`) instead of inlined on each node. The graph file stays graph-only (nodes + edges + rules); the site loads both. Three files now sit under `build/data/`:
 
-- **Per-node `fields` object**: each node carries the scalar fields (string / number / bool / null) from its parsed JSON. Arrays and nested objects are skipped (they're either represented by edges or omitted by design). `strName` is omitted to avoid duplication with the node header. Powers the "Fields" block on the object detail page so users can see e.g. `homeworlds:MHNG.strColonyName = "Hangzhou Orbital, Mars"` without grepping the source file.
-- **Per-rule `description` field** (optional, omitted when empty): the schema's free-text description for the field. Surfaced as a browser-native `title=` tooltip on field-group headers and field-name labels — hover for the schema's documentation.
+| File | Global set | Required? | What's in it |
+|---|---|---|---|
+| `graph.js` | `window.GRAPH_DATA` | yes | nodes, edges, rules — exactly v3's shape |
+| `properties.js` | `window.NODE_PROPS` | optional (Builder always emits it; site degrades to empty Fields blocks if missing) | `{ "<folder>:<strName>": { fieldName: scalarValue, ... } }` for nodes that have any scalar fields |
+| `code_refs.js` | `window.CODE_REFS` | optional (only generated when `decomp/` is present + `10_emit_code_refs.py` is run) | `{ "<strName>": [ {file, line, text}, ... ] }` — hardcoded `"<strName>"` quoted-literal hits in `decomp/` C# source |
 
-Size impact: real-data graph.js grew from ~19 MB (v3) to **~32 MB** with v4. Mostly the per-node scalars. Sharding decision moves up the priority list if this grows much further.
+graph.js's payload shape is unchanged from v4 except `nodes[*].fields` is removed. Per-rule `description` still lives on rules. Site checks `$schema_version === 5` and refuses to render on mismatch.
+
+Real-data sizes (Comment Mod overlay applied, decomp populated):
+- `graph.js`: ~23 MB (was ~32 MB in v4)
+- `properties.js`: ~8.9 MB
+- `code_refs.js`: ~658 KB (1,321 strNames have at least one code reference; 3,309 total occurrences)
+
+### Schema version 4 (historical)
+
+Inlined per-node `fields` on every node + per-rule `description`. Replaced by the split layout in v5.
 
 ### Schema version 3 (historical)
 

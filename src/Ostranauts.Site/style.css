@@ -294,6 +294,43 @@ section#detail {
 }
 .fields-block em.muted { color: var(--muted); font-style: italic; }
 
+/* code-refs block — hardcoded string literals found in decomp */
+.code-refs-block {
+  margin-top: 1.25rem;
+}
+.code-refs-block h3 {
+  font-size: 0.875rem;
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+.code-refs-block .muted-note {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.75rem;
+}
+.code-refs-block ul { list-style: none; padding: 0; margin: 0; }
+.code-refs-block li {
+  margin-bottom: 0.5rem;
+}
+.code-refs-block .code-loc {
+  display: block;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  margin-bottom: 0.15rem;
+}
+.code-refs-block .code-line {
+  margin: 0;
+  padding: 0.4rem 0.65rem;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
 /* dotted underline + help cursor on field-group headers when they have a tooltip */
 .refs-block .group-head[title] {
   border-bottom: 1px dotted var(--border);

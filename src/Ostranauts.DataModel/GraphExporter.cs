@@ -9,7 +9,7 @@ namespace Ostranauts.DataModel;
 /// </summary>
 public static class GraphExporter
 {
-    private const int SchemaVersion = 4;
+    private const int SchemaVersion = 5;
 
     private static readonly JsonWriterOptions WriterOptions = new()
     {
@@ -17,22 +17,30 @@ public static class GraphExporter
     };
 
     /// <summary>
-    /// Writes the graph as a JS file containing
-    /// <c>window.GRAPH_DATA = { ... };</c>. This form loads via
-    /// <c>&lt;script src=...&gt;</c> with no fetch, which is the only way
-    /// the static site works from a <c>file://</c> URL — browsers block
-    /// fetch() against local files for security.
-    /// The bytes between the assignment and the trailing <c>;</c> are
-    /// valid JSON, so non-browser consumers can still extract the payload.
+    /// Writes graph.js (the direct graph) and properties.js (per-node scalar
+    /// fields) as a pair under <paramref name="outPath"/>'s directory. v5
+    /// schema split: the graph file no longer carries per-node fields — those
+    /// move to a separate <c>window.NODE_PROPS</c> payload so the graph file
+    /// can stay smaller for graph-only consumers (LSPs, future tooling).
+    /// Both files are JS-wrapped JSON (literal <c>window.X = {...};</c>) so
+    /// they load via <c>&lt;script src&gt;</c> without fetch (browsers block
+    /// fetch from <c>file://</c>).
     /// </summary>
     public static void WriteJson(ObjectIndex index, string outPath, SchemaCatalog? catalog = null)
     {
         var dir = Path.GetDirectoryName(outPath);
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
 
+        WriteGraphFile(index, outPath, catalog);
+
+        // Sibling properties file. Default name: properties.js next to graph.js.
+        var propsPath = Path.Combine(dir ?? ".", "properties.js");
+        WritePropertiesFile(index, propsPath);
+    }
+
+    private static void WriteGraphFile(ObjectIndex index, string outPath, SchemaCatalog? catalog)
+    {
         using var stream = File.Create(outPath);
-        // Prefix the JSON payload with a JS assignment so a <script src> tag
-        // populates window.GRAPH_DATA when the file is loaded.
         var prefix = System.Text.Encoding.UTF8.GetBytes("window.GRAPH_DATA = ");
         stream.Write(prefix, 0, prefix.Length);
 
@@ -52,10 +60,7 @@ public static class GraphExporter
             writer.WriteString("folder", obj.Folder);
             writer.WriteString("strName", obj.StrName);
             writer.WriteString("file", obj.FilePath);
-            // v4: scalar fields from the parsed JSON (string/number/bool only —
-            // arrays and nested objects are left out to keep payload size sane;
-            // those are already represented by edges).
-            WriteNodeFields(writer, obj.Fields);
+            // v5: per-node scalar fields moved to properties.js (window.NODE_PROPS).
             writer.WriteEndObject();
         }
         writer.WriteEndArray();
@@ -108,40 +113,53 @@ public static class GraphExporter
     }
 
     /// <summary>
-    /// Serializes a node's scalar fields under "fields" — string, number, bool
-    /// (and `["string","null"]`-typed strings that are null). Skips arrays and
-    /// nested objects (those are represented by edges or omitted by design).
-    /// strName / strNameFriendly / strNameShort etc. all surface naturally so
-    /// the detail page can show identity info without needing a separate channel.
+    /// Writes properties.js: window.NODE_PROPS = { "&lt;nodeId&gt;": { fieldName: value, ... }, ... }.
+    /// Holds the scalar (string/number/bool/null) JSON fields per node so the graph
+    /// file can stay graph-only. Arrays and nested objects are skipped (those are
+    /// either edges or omitted by design). strName is also skipped — already on
+    /// the node header in graph.js.
     /// </summary>
-    private static void WriteNodeFields(Utf8JsonWriter writer, JsonElement fields)
+    private static void WritePropertiesFile(ObjectIndex index, string outPath)
     {
-        if (fields.ValueKind != JsonValueKind.Object) return;
+        using var stream = File.Create(outPath);
+        var prefix = System.Text.Encoding.UTF8.GetBytes("window.NODE_PROPS = ");
+        stream.Write(prefix, 0, prefix.Length);
 
-        var any = false;
-        foreach (var prop in fields.EnumerateObject())
+        using var writer = new Utf8JsonWriter(stream, WriterOptions);
+
+        writer.WriteStartObject();
+        foreach (var obj in index.Objects)
         {
-            // strName already lives on the node header; skip to avoid duplication.
-            if (prop.Name == "strName") continue;
+            // Skip nodes with zero scalar fields to keep the file lean.
+            if (obj.Fields.ValueKind != JsonValueKind.Object) continue;
 
-            switch (prop.Value.ValueKind)
+            var any = false;
+            foreach (var prop in obj.Fields.EnumerateObject())
             {
-                case JsonValueKind.String:
-                case JsonValueKind.Number:
-                case JsonValueKind.True:
-                case JsonValueKind.False:
-                case JsonValueKind.Null:
-                    if (!any)
-                    {
-                        writer.WriteStartObject("fields");
-                        any = true;
-                    }
-                    prop.WriteTo(writer);
-                    break;
-                // arrays + objects skipped on purpose
+                if (prop.Name == "strName") continue;
+                switch (prop.Value.ValueKind)
+                {
+                    case JsonValueKind.String:
+                    case JsonValueKind.Number:
+                    case JsonValueKind.True:
+                    case JsonValueKind.False:
+                    case JsonValueKind.Null:
+                        if (!any)
+                        {
+                            writer.WriteStartObject($"{obj.Folder}:{obj.StrName}");
+                            any = true;
+                        }
+                        prop.WriteTo(writer);
+                        break;
+                }
             }
+            if (any) writer.WriteEndObject();
         }
-        if (any) writer.WriteEndObject();
+        writer.WriteEndObject();
+
+        writer.Flush();
+        var suffix = System.Text.Encoding.UTF8.GetBytes(";\n");
+        stream.Write(suffix, 0, suffix.Length);
     }
 
     private static void WriteScalar(Utf8JsonWriter writer, string key, object value)

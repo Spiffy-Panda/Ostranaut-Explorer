@@ -53,6 +53,26 @@ The base-game data files are not redistributed in this repo — there's no publi
 
 Because the data files aren't in the repo, **CI builds aren't wired up yet**. Builds happen on contributor machines for now. GitHub Actions is on the table once we have a sanctioned source for the data — or once the build can be split so the parser runs locally and only the resulting `graph.js` is published.
 
+5. **(Optional) Decompile the game's `Assembly-CSharp.dll`** so the parser can cross-check schemas against the C# source of truth and the site can show hardcoded code references on object detail pages. Per the [Ostranauts wiki](https://ostranauts.wiki.gg/wiki/Modding/BepInEx_Modding), the recommended decompiler is **[dnSpy](https://github.com/dnSpyEx/dnSpy)**.
+
+   1. Install dnSpy (the dnSpyEx fork; the original is unmaintained).
+   2. Open dnSpy → File → Open → navigate to the game's managed-code DLL:
+
+      ```
+      <Steam library>\steamapps\common\Ostranauts\Ostranauts_Data\Managed\Assembly-CSharp.dll
+      ```
+
+   3. In the assembly tree on the left, right-click the **Assembly-CSharp** node → **Export to Project…**.
+   4. **Use the default settings** — don't tick anything extra. Choose `decomp/Assembly-CSharp/` in this repo as the destination, then OK.
+   5. dnSpy emits a folder of `.cs` files next to a generated `.csproj`. The `decomp/` folder is gitignored.
+
+   With `decomp/Assembly-CSharp/` populated:
+
+   - `scrap_scripts/python/06_decomp_schema_crosscheck.py` and `07_decomp_schema_table.py` audit our schemas against the actual `Json*.cs` deserialization classes (`grep -E 'public string \w+ { get; set' decomp/Assembly-CSharp/Json*.cs` is the underlying signal).
+   - `scrap_scripts/python/10_emit_code_refs.py` scans for hardcoded `"<strName>"` string-literal lookups (e.g. `DataHandler.GetPledge("EmbarkCommand")` in `AIShipManager.cs`) and emits `build/data/code_refs.js` so the site shows a "Code references" block on each object detail page.
+
+   The whole project works without `decomp/` — those scripts and the code-references panel just stay empty. With it, you get a much more authoritative picture of the game's data surface.
+
 ## Building
 
 Once `data/` is populated:

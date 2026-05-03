@@ -25,8 +25,10 @@
       <p class="hint">Pick an object from the search bar or a folder on the left.</p>
     </section>
   </main>
-  <!-- graph.js sets window.GRAPH_DATA. Loaded via script tag so file:// works (no fetch). -->
-  <script src="data/graph.js"></script>
+  <!-- v5 split payloads. All set their respective window globals via JS-wrapped JSON. -->
+  <script src="data/graph.js"></script>           <!-- window.GRAPH_DATA: nodes, edges, rules -->
+  <script src="data/properties.js"></script>      <!-- window.NODE_PROPS: per-node scalar fields -->
+  <script src="data/code_refs.js"></script>       <!-- window.CODE_REFS: hardcoded string refs from decomp (optional) -->
   <script src="app.js"></script>
 </body>
 </html>

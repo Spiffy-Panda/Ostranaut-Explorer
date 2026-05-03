@@ -23,7 +23,9 @@ public static class GraphExporter
 
 Despite the method name, callers pass a `.js` path (e.g. `build/data/graph.js`). Creates parent directories if missing. Always overwrites. Streams via `Utf8JsonWriter` to avoid building the entire payload in memory (the real file is ~17 MB at present).
 
-## Output shape — schema version 4
+## Output shape — schema version 5
+
+Now writes a PAIR of files: `graph.js` (the path passed in) plus a sibling `properties.js` in the same directory. The graph file is graph-only (nodes + edges + rules); per-node scalar fields move to `properties.js` under `window.NODE_PROPS`. See `CodeDocs/io/outputs.md` for the full v5 spec.
 
 See `CodeDocs/io/outputs.md` for the canonical spec. Briefly: `$schema_version`, `generated_by`, `object_count`, `reference_count`, `nodes[]` (id/folder/strName/file), `edges[]` (source/target/kind/sourceField/optional metadata).
 
