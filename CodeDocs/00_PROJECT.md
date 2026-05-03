@@ -32,6 +32,9 @@ SchemaLoader  ──►  SchemaCatalog        (which fields are refs, and into w
 DataLoader    ──►  IEnumerable<DataObject>
                        │
                        ▼
+            ConditionsSimpleExpander (synth tuples → DataObjects)
+                       │
+                       ▼
               ReferenceExtractor  ──►  IEnumerable<Reference>
                        │
                        ▼
@@ -39,10 +42,16 @@ DataLoader    ──►  IEnumerable<DataObject>
                        │
                        ▼
                  GraphExporter  ──►  build/data/graph.js  (window.GRAPH_DATA = {...};)
+                                  └──  build/data/properties.js (window.NODE_PROPS = {...};)
+                       │
+                       ▼
+            RefCandidateDetector  ──►  build/data/ref_candidates.js (window.REF_CANDIDATES = {...};)
                                           │
                                           ▼
                               src/Ostranauts.Site/* (copied to build/)
-                              loads graph.js via <script src>, renders client-side
+                              loads payloads via <script src>, renders client-side
+                              (object detail · folder index · schema inspector
+                               · health/coverage · health/data · llm-candidates)
 ```
 
 The Builder CLI (`Program.cs`) is the orchestrator — it runs that whole pipeline.

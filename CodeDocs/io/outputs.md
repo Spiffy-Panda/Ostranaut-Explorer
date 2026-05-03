@@ -28,13 +28,15 @@ Per-node `fields` are now in a sibling file (`properties.js`) instead of inlined
 | `graph.js` | `window.GRAPH_DATA` | yes | nodes, edges, rules — exactly v3's shape |
 | `properties.js` | `window.NODE_PROPS` | optional (Builder always emits it; site degrades to empty Fields blocks if missing) | `{ "<folder>:<strName>": { fieldName: scalarValue, ... } }` for nodes that have any scalar fields |
 | `code_refs.js` | `window.CODE_REFS` | optional (only generated when `decomp/` is present + `10_emit_code_refs.py` is run) | `{ "<strName>": [ {file, line, text}, ... ] }` — hardcoded `"<strName>"` quoted-literal hits in `decomp/` C# source |
+| `ref_candidates.js` | `window.REF_CANDIDATES` | optional (Builder always emits it; site degrades — auto-detected links + coverage page hidden if missing) | Per `(sourceFolder, fieldPath)` candidate refs found by `RefCandidateDetector` — see `CandidateExporter.md` for full schema |
 
 graph.js's payload shape is unchanged from v4 except `nodes[*].fields` is removed. Per-rule `description` still lives on rules. Site checks `$schema_version === 5` and refuses to render on mismatch.
 
 Real-data sizes (Comment Mod overlay applied, decomp populated):
 - `graph.js`: ~23 MB (was ~32 MB in v4)
-- `properties.js`: ~8.9 MB
+- `properties.js`: ~9.3 MB
 - `code_refs.js`: ~658 KB (1,321 strNames have at least one code reference; 3,309 total occurrences)
+- `ref_candidates.js`: ~84 KB (240 candidates, 184 uncovered)
 
 ### Schema version 4 (historical)
 

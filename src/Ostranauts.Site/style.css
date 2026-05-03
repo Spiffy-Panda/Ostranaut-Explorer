@@ -122,6 +122,54 @@ header h1 {
   text-align: center;
 }
 
+/* ─── tabs ─────────────────────────────────────────────────── */
+
+#tabs {
+  display: flex;
+  gap: 0;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1rem;
+  flex: 0 0 auto;
+}
+#tabs a {
+  color: var(--muted);
+  padding: 0.5rem 0.9rem;
+  border-bottom: 2px solid transparent;
+  font-size: 0.8125rem;
+  cursor: help;  /* hover-tooltip on each tab — modder-pov blurb in title */
+  text-decoration: none;
+  white-space: nowrap;
+}
+#tabs a:hover {
+  color: var(--fg);
+  background: rgba(108, 180, 255, 0.05);
+  text-decoration: none;
+}
+#tabs a.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: var(--bg);
+  cursor: default;
+}
+
+/* page-intro blurb that appears at the top of each non-Explorer page */
+.page-blurb {
+  background: rgba(108, 180, 255, 0.07);
+  border-left: 2px solid var(--accent-dim);
+  padding: 0.6rem 0.85rem;
+  margin: 0 0 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--fg);
+  border-radius: 0 3px 3px 0;
+}
+.page-blurb strong { color: var(--accent); }
+.page-blurb code {
+  background: var(--bg-elev);
+  padding: 0.05em 0.3em;
+  border-radius: 2px;
+}
+
 /* ─── main layout ──────────────────────────────────────────── */
 
 main {
@@ -336,3 +384,185 @@ section#detail {
   border-bottom: 1px dotted var(--border);
   display: inline-block;
 }
+
+/* auto-detected refs (phase 2 detector) — schema doesn't yet cover these
+   fields, but the value matches a known node in the candidate target folder.
+   Visually distinct from schema-derived edges so users know the link is
+   provisional and could be wrong. */
+.fields-block a.auto-detected {
+  color: var(--accent-dim);
+  border-bottom: 1px dashed var(--accent-dim);
+}
+.fields-block a.auto-detected:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.fields-block .folder-prefix { color: var(--muted); margin-right: 0.05em; }
+.fields-block .auto-badge {
+  margin-left: 0.4em;
+  font-size: 0.7em;
+  opacity: 0.7;
+  cursor: help;
+}
+
+/* health/coverage page — folders & detector findings */
+.health-block { margin-top: 1.25rem; }
+.health-block h3 {
+  font-size: 0.875rem;
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+.health-block table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+}
+.health-block th, .health-block td {
+  text-align: left;
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.health-block th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.health-block td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.health-block td.bad { color: var(--bad); }
+.health-block td.warn { color: var(--warn); }
+.health-block tr.zero-edges td { background: rgba(217, 94, 94, 0.08); }
+.health-block .filter-row {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.health-block .filter-row label { margin-right: 1rem; cursor: pointer; }
+.health-block .targets-cell { font-size: 0.75rem; color: var(--muted); }
+.health-block .targets-cell strong { color: var(--fg); font-weight: 500; }
+.health-block .encoded-tag {
+  display: inline-block;
+  padding: 0 0.3em;
+  margin-left: 0.3em;
+  border-radius: 2px;
+  background: rgba(217, 167, 58, 0.18);
+  color: var(--warn);
+  font-size: 0.7em;
+}
+
+/* templating block on detail pages — folder-wide template + per-object note */
+.template-block { margin-top: 1.25rem; }
+.template-block h3 {
+  font-size: 0.875rem;
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.template-block .head-actions { margin-left: auto; font-size: 0.75rem; }
+.template-block .head-actions button {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 3px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  margin-left: 0.25rem;
+}
+.template-block .head-actions button:hover { color: var(--fg); border-color: var(--accent-dim); }
+.template-block .rendered {
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-elev);
+  border-left: 2px solid var(--accent-dim);
+  border-radius: 2px;
+  white-space: pre-wrap;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.template-block .rendered.empty {
+  color: var(--muted);
+  font-style: italic;
+  border-left-color: var(--border);
+}
+.template-block .editor {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 0.5rem;
+}
+.template-block textarea {
+  width: 100%;
+  min-height: 9em;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  resize: vertical;
+}
+.template-block textarea:focus { outline: none; border-color: var(--accent-dim); }
+.template-block .legend {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.5rem 0.6rem;
+  max-height: 16em;
+  overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+}
+.template-block .legend-title {
+  color: var(--muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.4rem;
+}
+.template-block .legend ul { list-style: none; padding: 0; margin: 0; }
+.template-block .legend li {
+  padding: 0.1rem 0;
+  cursor: pointer;
+  color: var(--accent-dim);
+}
+.template-block .legend li:hover { color: var(--accent); background: rgba(108,180,255,0.08); }
+.template-block .editor-actions { margin-top: 0.4rem; display: flex; gap: 0.4rem; }
+
+/* LLM-candidate page */
+.llm-block { margin-top: 1.25rem; }
+.llm-block ul { list-style: none; padding: 0; margin: 0; }
+.llm-block li {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+}
+.llm-block .ref-count {
+  color: var(--warn);
+  min-width: 4em;
+  text-align: right;
+  flex: 0 0 auto;
+}
+.llm-block .actions {
+  margin-left: auto;
+  display: flex;
+  gap: 0.3rem;
+}
+.llm-block button {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 3px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.llm-block button:hover { color: var(--fg); border-color: var(--accent-dim); }
+.llm-block button.copied { color: var(--accent); border-color: var(--accent); }

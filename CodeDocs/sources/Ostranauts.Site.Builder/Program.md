@@ -32,15 +32,26 @@ var schemaDirs = roots.Select(r => Path.Combine(r, "schemas")).ToList();
 var warnings = 0;
 var catalog = SchemaLoader.Load(schemaDirs, w => { Console.Error.WriteLine(w); warnings++; });
 var objects = DataLoader.Load(roots, w => { ... }).ToList();
-var references = objects.SelectMany(o => ReferenceExtractor.Extract(o, catalog)).ToList();
+
+// conditions_simple/ — array-of-tuples folder. Synthesize one DataObject per 7-tuple.
+objects.AddRange(ConditionsSimpleExpander.Expand(objects, w => { ... }));
+
+var existenceSet = new HashSet<(string, string)>(objects.Select(o => (o.Folder, o.StrName)));
+bool Exists(string f, string n) => existenceSet.Contains((f, n));
+
+var references = objects.SelectMany(o => ReferenceExtractor.Extract(o, catalog, Exists)).ToList();
 var index = new ObjectIndex(objects, references, w => { ... });
 
-GraphExporter.WriteJson(index, Path.Combine(outDir, "graph.js"), catalog);  // catalog also serialized for the schema inspector
+GraphExporter.WriteJson(index, Path.Combine(outDir, "graph.js"), catalog);
+
+// Auto-detect ref candidates for fields the schema doesn't yet describe.
+var candidates = RefCandidateDetector.Detect(objects, catalog);
+CandidateExporter.WriteJs(candidates, Path.Combine(outDir, "ref_candidates.js"));
 ```
 
-Stdout: lists each loaded root, then the written-path plus `objects`, `references`, `rules` counts; if any warnings fired, the count is reported pointing at stderr.
+Stdout: lists each loaded root, then the written-path plus `objects`, `references`, `rules`, and `candidates` counts; if any warnings fired, the count is reported pointing at stderr.
 
-Real-data run (vanilla `data/` + `comment_mod/data/` overlay): ~29k objects, ~52k references, 35 rules.
+Real-data run (vanilla `data/` + `comment_mod/data/` overlay): ~32.5k objects (incl. ~1.4k conditions_simple synthetics), ~77.9k references, 91 rules, ~240 detector candidates (~184 uncovered).
 
 ## Depends on
 

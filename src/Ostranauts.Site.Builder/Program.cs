@@ -58,6 +58,14 @@ internal static class Program
             .Load(roots, warning => { Console.Error.WriteLine(warning); warnings++; })
             .ToList();
 
+        // conditions_simple/ is structurally an array-of-tuples instead of array-of-objects.
+        // Expand each 7-tuple into a synthetic DataObject so refs from homeworlds (and elsewhere)
+        // can resolve via the normal index. Wrapper objects stay in place.
+        var simpleExpanded = ConditionsSimpleExpander
+            .Expand(objects, warning => { Console.Error.WriteLine(warning); warnings++; })
+            .ToList();
+        objects.AddRange(simpleExpanded);
+
         // Build the existence lookup once so ReferenceExtractor can resolve
         // fallback targets (FieldRule.FallbackTargets) per-value. Cheap: HashSet.
         var existenceSet = new HashSet<(string folder, string name)>(
@@ -73,10 +81,19 @@ internal static class Program
         var graphPath = Path.Combine(outDir, "graph.js");
         GraphExporter.WriteJson(index, graphPath, catalog);
 
+        // Auto-detected ref candidates — fields whose values look like cross-folder
+        // refs but no schema rule covers them. Drives the site's "auto-detected"
+        // links + the extractor-integrity health page.
+        var detectorOpts = new RefCandidateDetector.Options();
+        var candidates = RefCandidateDetector.Detect(objects, catalog, detectorOpts);
+        var candidatesPath = Path.Combine(outDir, "ref_candidates.js");
+        CandidateExporter.WriteJs(candidates, candidatesPath, detectorOpts);
+
         Console.WriteLine($"wrote {graphPath}");
         Console.WriteLine($"  objects:    {index.Objects.Count}");
         Console.WriteLine($"  references: {index.References.Count}");
         Console.WriteLine($"  rules:      {catalog.Rules.Count}");
+        Console.WriteLine($"  candidates: {candidates.Count} ({candidates.Count(c => !c.CoveredBySchema)} uncovered)");
         if (warnings > 0)
             Console.WriteLine($"  warnings:   {warnings} (see stderr)");
         return 0;

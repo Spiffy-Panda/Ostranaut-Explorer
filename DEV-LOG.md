@@ -4,7 +4,44 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
-## 2026-05-03 — Promoted 8 durable scripts from scrap_scripts/ to tracked utils/python/
+## 2026-05-03 — Auto-detection + health pages + template engine + conditions_simple expansion (phases 1-5)
+
+Plan-driven 6-phase batch. The runaway take-away: the auto-detector turns up **240 candidates (184 uncovered)** on real data — enough material for the next several Slice-E-style schema expansions to be data-driven instead of hand-curated.
+
+**Phase 1** — `notes/coverage-gaps.md`. Living scratchpad for "this folder/field is referenced but our extractor doesn't see it." Seeded with the installables case (every conventional ref-shaped field — `strActionCO`, `CTThem`, `aLootCOs[*]`, `aInputs[*]`, etc.).
+
+**Phase 2** — `Ostranauts.DataModel.RefCandidateDetector` + `CandidateExporter`. Scans every leaf string in every node's `Fields`, hits each value against a global `(folder, strName)` index. Two passes per leaf — raw (value-as-whole) and encoded (split on `,`/`=`/`|` and try the prefix token, catches CondString-style and LootItm-style fields without schema rules). Per `(sourceFolder, fieldPath)` aggregation: sample size, distinct values, hits per target folder, hit-rate. Self-folder hits and the `strName` field are excluded by default. Output: `build/data/ref_candidates.js` (~91 KB). Sort: uncovered first, then by `sampleSize × bestHitRate`. 7 unit tests.
+
+Real-data biggest finds: `ships.aItems[*].strName` → cooverlays (454k samples, 80% rate); `ships.aConstructionTemplates[*].aItems[*].strName` → cooverlays (123k); `condrules.aThresh[*].strLootNew` → loot (matched the manual Slice E phase 4 nested-array pattern); the entire installables coverage gap (`strActionCO`, `CTThem`, `strInteractionTemplate`, `aLootCOs[*]`, `aInputs[*]` via encoded-`=` split, etc.). 7-distinct-value coincidence cases (e.g. `items.aSocketReqs[*]`) sort low because of the `× distinctValues` factor in the leverage score.
+
+**Phase 3** — site decoration. Top-level scalar fields with an uncovered candidate render as `folder:value` links on the Fields block when the value resolves to a known node, with a 🔍 badge and hit-rate tooltip. Array/nested-path candidates surface on the coverage page only (not inline) — keeps the detail page from getting noisy. Uses CSS `.auto-detected` for visual distinction from schema-derived edges (dashed underline vs solid).
+
+**Phase 4** — `/health/coverage` (extractor-integrity). Per-folder table: objects, in-edges, out-edges, rules, candidates. Zero-out-edges rows highlighted as suspected blind spots. Below that: top-200 detector candidates by leverage with target folder, hit-rate, sample/distinct counts, encoded-shape tag. Will become the standing dashboard for "are we actually seeing this folder."
+
+**Phase 5** — four sub-features:
+- **`/health/data`** — dangling-by-target-folder, sample 50 dangling rows with click-through to source, orphans-by-folder (top 30), cross-folder duplicate strNames (top 100).
+- **`conditions_simple` expansion** — `Ostranauts.DataModel.ConditionsSimpleExpander`. The folder's single file holds a wrapper with a flat `aValues` array where every 7 elements is one logical record `[strName, strNameFriendly, strDesc, nDisplaySelf, nDisplayOther, strColor, bInvert]`. Synthesizes one DataObject per tuple. Object count: **31,152 → 32,542 (+1,390)**. Now resolves the previously-dangling `homeworlds.aConds*` edges — those rules already had `x-targets: ["conditions_simple", "conditions"]` from Slice E phase 3 but had no synthetic entries to land on. 5 unit tests. Real data finding surfaced: `IsBCER` and `IsBCRS` appear twice within the wrapper's array (data bug or override).
+- **Template engine** — site-only. Two surfaces per detail page: (a) folder-wide Mustache-lite template, click-to-edit, magic-word interpolation against a context built from `fields.<key>` / `outRefs.<sourceField>.{length, first}` / `inRefs.*` / `outCount` / `inCount` / `strName` / `folder` / `file`; (b) per-object free-form note. localStorage by default; "copy for comment_mod" buttons produce paste-ready text drops for `comment_mod/templates/<folder>.tmpl` and `comment_mod/notes/<folder>/<strName>.md`. Editor sidebar lists magic words available on the current object, click-to-insert.
+- **`/llm-candidates`** — global top-50 by incoming-ref count + per-folder top-10. Two clipboard buttons per row: copy folder-template prompt / copy object-blurb prompt. Prompts are self-contained — node fields, outgoing/incoming ref groups, magic-word inventory, exemplar siblings. User pastes into chat, gets a template/blurb back, pastes into the template editor. **Zero programmatic LLM API spend** — user controls every call.
+
+**Tabs + blurbs.** Moved Schemas / Coverage / Data Health / LLM Candidates from the sidebar to a top tab bar. Each tab has a hover-tooltip blurb and a visible page-blurb panel at the top of the page, both written from a modder's POV: when do you visit this page, what does it tell you, what should you do with it.
+
+**Real-data deltas vs the previous build:**
+```
+  objects:    31,152 → 32,542  (+1,390 conditions_simple synthetics)
+  references: 77,866           (unchanged — fallback resolution shifts dangling → conditions_simple, no new edges)
+  rules:      91               (unchanged — schema overlay promotion is deferred phase 6)
+  candidates: 0     → 240      (new detector channel; 184 of those uncovered by schema)
+  warnings:   13    → 15       (+2 conditions_simple internal duplicates)
+```
+
+**File counts:** 4 new C# files (RefCandidateDetector, CandidateExporter, ConditionsSimpleExpander, plus 2 test files) + significant additions to app.js (5 new render functions: coverage, data-health, llm-candidates, template-block, tabs+blurbs). 79/79 tests passing (was 67; added 12 across detector + expander tests).
+
+**CodeDocs synced.** 3 new source overviews + Program.md, outputs.md, 00_PROJECT.md updated to reflect the new pipeline + new payload file (`ref_candidates.js`).
+
+**Phase 6 deferred** — promoting auto-detected candidates into `comment_mod/data/schemas/` overlays. Not blocking anything; the report file persists and the site already renders the candidates inline + on the coverage page. Do this when ready to commit a large overlay diff.
+
+
 
 Per user: "check to see if there are any python scripts to extract and document into the utils tracked folder."
 
