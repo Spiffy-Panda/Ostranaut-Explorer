@@ -228,7 +228,8 @@ public static class SchemaLoader
             sourceFolder, fieldName, targetFolder, shape.Value,
             RoutingSibling: routingSibling,
             RoutingTargets: routingTargets,
-            IsGhost: isGhost);
+            IsGhost: isGhost,
+            Description: description);
     }
 
     private static string? ExtractTargetFolder(string description)

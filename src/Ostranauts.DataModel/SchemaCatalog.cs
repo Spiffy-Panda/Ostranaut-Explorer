@@ -50,7 +50,8 @@ public sealed class SchemaCatalog
         FieldShape Shape,
         string? RoutingSibling = null,
         IReadOnlyDictionary<string, string>? RoutingTargets = null,
-        bool IsGhost = false);
+        bool IsGhost = false,
+        string? Description = null);  // schema description text, for site tooltips
 
     private readonly List<FieldRule> _rules;
     private readonly Dictionary<(string folder, string field), FieldRule> _byKey;

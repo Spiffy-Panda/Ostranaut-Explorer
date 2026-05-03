@@ -204,10 +204,13 @@ section#detail {
 }
 .refs-block .group-head {
   color: var(--muted);
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 0.8125rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   margin-bottom: 0.25rem;
+  cursor: help;  /* signal that hovering shows the description tooltip */
+}
+.refs-block .group-head .desc {
+  /* hover-only field description; surfaced via a separate tooltip rule */
 }
 .refs-block ul { list-style: none; padding: 0; margin: 0; }
 .refs-block li {
@@ -256,4 +259,43 @@ section#detail {
   color: var(--warn);
   font-style: italic;
   font-size: 0.75rem;
+}
+
+/* fields block on object detail page — scalar non-reference data */
+.fields-block {
+  margin-top: 1.25rem;
+}
+.fields-block h3 {
+  font-size: 0.875rem;
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+.fields-block ul { list-style: none; padding: 0; margin: 0; }
+.fields-block li {
+  padding: 0.15rem 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+.fields-block .field-name {
+  color: var(--muted);
+  min-width: 12em;
+  flex: 0 0 auto;
+}
+.fields-block .field-name[title] {
+  cursor: help;
+  border-bottom: 1px dotted var(--border);
+}
+.fields-block .field-value {
+  color: var(--fg);
+  word-break: break-word;
+}
+.fields-block em.muted { color: var(--muted); font-style: italic; }
+
+/* dotted underline + help cursor on field-group headers when they have a tooltip */
+.refs-block .group-head[title] {
+  border-bottom: 1px dotted var(--border);
+  display: inline-block;
 }

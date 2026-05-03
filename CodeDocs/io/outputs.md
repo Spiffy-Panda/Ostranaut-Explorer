@@ -19,7 +19,16 @@ Browsers (Firefox, Chrome) block `fetch()` against `file://` URLs by default for
 
 The bytes between `window.GRAPH_DATA = ` and `;` are still valid JSON, so non-browser consumers (a future LSP, mod editor, or CI script) can extract the payload by skipping the prefix and trimming the trailing `;\n`.
 
-### Schema version 3 (current)
+### Schema version 4 (current)
+
+Two additive surfaces on top of v3:
+
+- **Per-node `fields` object**: each node carries the scalar fields (string / number / bool / null) from its parsed JSON. Arrays and nested objects are skipped (they're either represented by edges or omitted by design). `strName` is omitted to avoid duplication with the node header. Powers the "Fields" block on the object detail page so users can see e.g. `homeworlds:MHNG.strColonyName = "Hangzhou Orbital, Mars"` without grepping the source file.
+- **Per-rule `description` field** (optional, omitted when empty): the schema's free-text description for the field. Surfaced as a browser-native `title=` tooltip on field-group headers and field-name labels — hover for the schema's documentation.
+
+Size impact: real-data graph.js grew from ~19 MB (v3) to **~32 MB** with v4. Mostly the per-node scalars. Sharding decision moves up the priority list if this grows much further.
+
+### Schema version 3 (historical)
 
 Same shape as v2, with one additive field on rule entries:
 

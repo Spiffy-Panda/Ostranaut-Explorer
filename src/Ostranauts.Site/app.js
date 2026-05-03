@@ -7,7 +7,7 @@
 //   #/f/<folder>             — folder index
 //   (anything else)           — empty hint
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 const SEARCH_LIMIT = 50;
 const FOLDER_LIMIT = 500; // cap per-folder list to keep render snappy
 
@@ -26,6 +26,7 @@ let nodesByFolder = new Map(); // folder -> [nodes] (sorted by strName)
 let folderCounts = [];     // [{folder, count}] sorted
 let rulesBySource = new Map(); // sourceFolder -> [rules]
 let edgeCountByRule = new Map(); // "<sourceFolder>:<fieldName>" -> int
+let ruleDescriptions = new Map(); // "<sourceFolder>:<fieldName>" -> description
 
 function main() {
   graph = window.GRAPH_DATA;
@@ -73,6 +74,13 @@ function buildIndexes() {
     rulesBySource.get(rule.sourceFolder).push(rule);
   }
   for (const list of rulesBySource.values()) list.sort((a, b) => a.fieldName.localeCompare(b.fieldName));
+
+  // (folder, fieldName) -> description (from rules that carry one).
+  for (const rule of (graph.rules ?? [])) {
+    if (rule.description) {
+      ruleDescriptions.set(`${rule.sourceFolder}:${rule.fieldName}`, rule.description);
+    }
+  }
 
   folderCounts = [...nodesByFolder.entries()]
     .map(([folder, list]) => ({ folder, count: list.length }))
@@ -228,14 +236,16 @@ function renderObjectDetail(folder, strName) {
       <div class="file">${escapeHtml(node.file)}</div>
     </div>
 
+    ${renderFieldsBlock(folder, node.fields)}
+
     <div class="refs-block">
       <h3>References out (${out.length})</h3>
-      ${renderEdgeGroups(out, 'source-perspective')}
+      ${renderEdgeGroups(out, 'source-perspective', folder)}
     </div>
 
     <div class="refs-block">
       <h3>Referenced by (${inc.length})</h3>
-      ${renderEdgeGroups(inc, 'target-perspective')}
+      ${renderEdgeGroups(inc, 'target-perspective', folder)}
     </div>
   `;
   detailEl.innerHTML = html;
@@ -251,7 +261,7 @@ function renderObjectDetail(folder, strName) {
   });
 }
 
-function renderEdgeGroups(edges, perspective) {
+function renderEdgeGroups(edges, perspective, viewFolder) {
   if (edges.length === 0) return '<p class="empty">none</p>';
 
   // Group by sourceField (perspective-source) or by sourceField as well — same key, different meaning.
@@ -265,15 +275,46 @@ function renderEdgeGroups(edges, perspective) {
   const sortedGroupKeys = [...groups.keys()].sort();
   return sortedGroupKeys.map(field => {
     const items = groups.get(field);
+    // For source-perspective, the field is on the current folder.
+    // For target-perspective, the field is on the source object (could be any folder).
+    const descLookupFolder = perspective === 'source-perspective'
+      ? viewFolder
+      : (items[0]?.source.split(':', 1)[0] || viewFolder);
+    const desc = ruleDescriptions.get(`${descLookupFolder}:${field}`);
+    const titleAttr = desc ? ` title="${escapeAttr(desc)}"` : '';
     return `
       <div class="group">
-        <div class="group-head">${escapeHtml(field)} · ${items.length}</div>
+        <div class="group-head"${titleAttr}>${escapeHtml(field)} · ${items.length}</div>
         <ul>
           ${items.map(e => renderEdgeRow(e, perspective)).join('')}
         </ul>
       </div>
     `;
   }).join('');
+}
+
+function renderFieldsBlock(folder, fields) {
+  // node.fields is an object of scalar key/value pairs. Could be missing (small payload).
+  if (!fields || typeof fields !== 'object' || Object.keys(fields).length === 0) {
+    return '';
+  }
+  const keys = Object.keys(fields).sort();
+  const rows = keys.map(k => {
+    const v = fields[k];
+    const desc = ruleDescriptions.get(`${folder}:${k}`);
+    const titleAttr = desc ? ` title="${escapeAttr(desc)}"` : '';
+    const valueText = v === null ? '<em class="muted">null</em>' : escapeHtml(String(v));
+    return `<li>
+      <span class="field-name"${titleAttr}>${escapeHtml(k)}</span>
+      <span class="field-value">${valueText}</span>
+    </li>`;
+  }).join('');
+  return `
+    <div class="fields-block">
+      <h3>Fields (${keys.length})</h3>
+      <ul>${rows}</ul>
+    </div>
+  `;
 }
 
 function renderEdgeRow(edge, perspective) {
