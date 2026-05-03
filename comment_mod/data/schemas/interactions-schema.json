@@ -7,7 +7,62 @@
         "properties": {
             "strPledgeAdd": {
                 "type": "string",
-                "description": "Pledge added when this interaction executes. Refers to entry within pledges.json."
+                "description": "Pledge added to [us] when this interaction executes. Refers to entry within pledges.json."
+            },
+            "strPledgeAddThem": {
+                "type": "string",
+                "description": "Pledge added to [them] when this interaction executes. Refers to entry within pledges.json."
+            },
+
+            "CTTestRoom": {
+                "type": ["string", "null"],
+                "description": "Condition trigger applied to the room context. Refers to entry within condtrigs.json. (Per IVerifiable / JsonInteraction.GetVerifiables.)"
+            },
+
+            "LootVFXUs": {
+                "type": ["string", "null"],
+                "description": "Visual effect loot applied to [us]. Refers to entry within loot.json."
+            },
+            "LootVFXThem": {
+                "type": ["string", "null"],
+                "description": "Visual effect loot applied to [them]. Refers to entry within loot.json."
+            },
+            "LootAudioUs": {
+                "type": ["string", "null"],
+                "description": "Audio loot applied to [us]. Refers to entry within loot.json."
+            },
+            "LootAudioThem": {
+                "type": ["string", "null"],
+                "description": "Audio loot applied to [them]. Refers to entry within loot.json."
+            },
+            "LootAddFactionsUs": {
+                "type": ["string", "null"],
+                "description": "Faction-add loot applied to [us]. Refers to entry within loot.json."
+            },
+            "LootAddFactionsThem": {
+                "type": ["string", "null"],
+                "description": "Faction-add loot applied to [them]. Refers to entry within loot.json."
+            },
+            "LootAddCondRulesUs": {
+                "type": ["string", "null"],
+                "description": "CondRule-add loot applied to [us]. Refers to entry within loot.json."
+            },
+            "LootAddCondRulesThem": {
+                "type": ["string", "null"],
+                "description": "CondRule-add loot applied to [them]. Refers to entry within loot.json."
+            },
+
+            "ShipTestUs": {
+                "type": ["string", "null"],
+                "description": "Ship spec test applied to [us]'s ship. Refers to entry within shipspecs.json. (Per IVerifiable / JsonInteraction.GetVerifiables.)"
+            },
+            "ShipTestThem": {
+                "type": ["string", "null"],
+                "description": "Ship spec test applied to [them]'s ship. Refers to entry within shipspecs.json."
+            },
+            "ShipTest3rd": {
+                "type": ["string", "null"],
+                "description": "Ship spec test applied to [3rd]'s ship. Refers to entry within shipspecs.json."
             },
 
             "strPledgeRemove": {
@@ -23,85 +78,84 @@
 
             "strLootCTsGive": {
                 "type": ["string", "null"],
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot [us] gives [them] when this interaction happens, defined as CT/trigger type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "description": "[GHOST: not on JsonInteraction (JSON DTO). Lives on runtime Interaction.cs as a field populated by parsing aLootItms[i] when verb=='give'. As a JSON-level reference, prefer aLootItms entries. Refers to entry within loot.json.]",
                 "x-ghost": true
             },
             "strLootCTsLacks": {
                 "type": ["string", "null"],
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot [us] must lack when this interaction happens, defined as CT/trigger type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "description": "[GHOST: not on JsonInteraction. Lives on runtime Interaction.cs, populated from aLootItms verb=='lacks'. Refers to entry within loot.json.]",
                 "x-ghost": true
             },
             "strLootCTsRemoveUs": {
                 "type": ["string", "null"],
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot to remove from [us] when this interaction happens, defined as CT/trigger type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "description": "[GHOST: not on JsonInteraction. Lives on runtime Interaction.cs, populated from aLootItms verb=='removeus'. Refers to entry within loot.json.]",
                 "x-ghost": true
             },
             "strLootCTsTake": {
                 "type": ["string", "null"],
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot [them] gives [us] when this interaction happens, defined as CT/trigger type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "description": "[GHOST: not on JsonInteraction. Lives on runtime Interaction.cs, populated from aLootItms verb=='take'. Refers to entry within loot.json.]",
                 "x-ghost": true
             },
             "strLootCTsUse": {
                 "type": ["string", "null"],
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot [us] uses when this interaction happens, defined as CT/trigger type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "description": "[GHOST: not on JsonInteraction. Lives on runtime Interaction.cs, populated from aLootItms verb=='use'. Refers to entry within loot.json.]",
                 "x-ghost": true
             },
-
             "strLootItmAddUs": {
                 "type": ["string", "null"],
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot items to add to [us] when this interaction happens, defined as item type entry loot names found in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "description": "[GHOST: not on JsonInteraction. Lives on runtime Interaction.cs, populated from aLootItms verb=='addus'. Refers to entry within loot.json.]",
                 "x-ghost": true
             },
             "strLootItmAddThem": {
                 "type": ["string", "null"],
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot items to add to [them] when this interaction happens, defined as item type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "description": "[GHOST: not on JsonInteraction. Lives on runtime Interaction.cs, populated from aLootItms verb=='addthem'. Refers to entry within loot.json.]",
                 "x-ghost": true
             },
             "strLootItmInputs": {
                 "type": ["string", "null"],
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot [them] requires in their Lot before this interaction happens, defined as item type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "description": "[GHOST: not on JsonInteraction. Lives on runtime Interaction.cs, populated from aLootItms verb=='input'. Refers to entry within loot.json.]",
                 "x-ghost": true
             },
             "strLootItmRemoveThem": {
                 "type": ["string", "null"],
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot items to add (sic — wiki text says 'add', but field name suggests remove) to [them] when this interaction happens, defined as item type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "description": "[GHOST: not on JsonInteraction. Lives on runtime Interaction.cs, populated from aLootItms verb=='removethem'. Refers to entry within loot.json.]",
                 "x-ghost": true
             },
 
             "strLootRELChangeUs": {
                 "type": ["string", "null"],
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: relationship changes to apply to [us] when this interaction executes. Refers to entry within loot.json.",
+                "description": "[GHOST: not in current decomp at all. Wiki: relationship changes to apply to [us] when this interaction executes. Refers to entry within loot.json.]",
                 "x-ghost": true
             },
             "strLootRELChangeThem": {
                 "type": ["string", "null"],
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: relationship changes to apply to [them] when this interaction executes. Refers to entry within loot.json.",
+                "description": "[GHOST: not in current decomp at all. Wiki: relationship changes to apply to [them] when this interaction executes. Refers to entry within loot.json.]",
                 "x-ghost": true
             },
 
             "bDestroyItem": {
                 "type": "boolean",
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: If true, [us] will destroy items after they are removed. false drops on ground.",
+                "description": "[GHOST: not on JsonInteraction. On runtime Interaction.cs, populated from aLootItms boolean parameter at index [3] for some verbs.]",
                 "x-ghost": true
             },
             "bGetItemBefore": {
                 "type": "boolean",
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: If true, this will end social combat and sub UIs. (Note: wiki description appears copy-pasted from bCloser; field semantics unclear.)",
+                "description": "[GHOST: not on JsonInteraction. On runtime Interaction.cs, populated from aLootItms boolean parameter for some verbs.]",
                 "x-ghost": true
             },
             "bGiveWholeStack": {
                 "type": "boolean",
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: If true, Give commands will operate on whole stack when removing COs.",
+                "description": "[GHOST: not on JsonInteraction. On runtime Interaction.cs, populated from aLootItms boolean parameter when verb=='give'.]",
                 "x-ghost": true
             },
             "bRemoveWholeStack": {
                 "type": "boolean",
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: If true, Remove commands will operate on whole stack when removing COs.",
+                "description": "[GHOST: not on JsonInteraction. On runtime Interaction.cs, populated from aLootItms boolean parameter when verb=='removeus'.]",
                 "x-ghost": true
             },
             "bVerboseTrigger": {
                 "type": "boolean",
-                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: If true, will add log messages about why this didn't trigger.",
+                "description": "[GHOST: not on JsonInteraction. Wiki: If true, will add log messages about why this didn't trigger.]",
                 "x-ghost": true
             }
         }

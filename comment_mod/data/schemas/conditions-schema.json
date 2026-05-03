@@ -14,6 +14,10 @@
                 "type": "array",
                 "description": "Array of Loot to apply for every stack of this condition. Refers to entry within loot.json.",
                 "x-source": "https://ostranauts.wiki.gg/wiki/Conditions#aPer"
+            },
+            "strAnti": {
+                "type": "string",
+                "description": "Antithetical condition — when this is added, an existing strAnti is removed first. Refers to entry within conditions.json (self-folder reference). (Per IVerifiable / JsonCond.GetVerifiables.)"
             }
         }
     }

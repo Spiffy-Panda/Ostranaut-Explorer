@@ -65,10 +65,12 @@ Detail in `PROJECT-PITCH.md`.
 
 ## Status by file (current truth)
 
-All `Ostranauts.DataModel` types are now real implementations. Real-data smoke test (with the Comment Mod overlay applied): **~31k objects, ~64k references, 62 rules**. Recent jumps:
+All `Ostranauts.DataModel` types are now real implementations. Real-data smoke test (with the Comment Mod overlay applied): **~31k objects, ~67k references, 91 rules**. Recent jumps:
 
 - **Slice A (subdir traversal + 7 schema additions)**: +1.8k objects from nested subdirs; net edges -5k as the bogus `loot.strType→loot` rule's dangling spam went away while +1.1k real edges came in across condrules, pledges, personspecs, homeworlds, crime, jobs.
 - **Slice B (type-routed `loot.aCOs` + LootEntryArray + edge metadata)**: +7.7k edges. The single `aCOs` field now produces 22.7k edges spread across 9 target folders (conditions, condowners, condtrigs, loot, interactions, ships, personspecs, lifeevents, condrules) per the parent loot's `strType`. Loot edges carry `chance`/`min`/`max`/`positive` metadata so detail pages can show negative payouts and probability ranges.
+- **Ghost preservation slice**: 13 ghost rules marked via `x-ghost` extension; rendered as 👻 in schema inspector. Many supposed ghosts later confirmed real-on-runtime (populated from `aLootItms` parsing); kept marked because they remain ghosts at the JSON-DTO level.
+- **Slice E phase 1 (IVerifiable map driven, direct-string fields)**: +3.3k edges, +17 rules. Added `condowners.{aInteractions, aTickers, strContainerCT}`, 12 new `interactions.{Loot*, ShipTest*, CTTestRoom}` direct-string fields, `interactions.strPledgeAddThem`, `conditions.strAnti`. Source: `CodeDocs/iverifiable-ref-map.md` extracted from `IVerifiable.GetVerifiables()` in decomp — supersedes the earlier wiki-derived inferences.
 
 Vanilla `data/` only: ~7,900 references — almost all richness comes from the `comment_mod/` overlay.
 

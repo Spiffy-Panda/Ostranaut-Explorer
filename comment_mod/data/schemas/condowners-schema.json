@@ -23,11 +23,16 @@
                 "enum": ["Item", "Crew", "Ship"]
             },
             "strLoot" : {
+                "type": "string",
                 "description": "Loot the condowner spawns with, reffers to entry within loot.json"
             },
             "strItemDef" : {
                 "type": "string",
                 "description": "The item definition, reffers to entry within items.json"
+            },
+            "strContainerCT" : {
+                "type": "string",
+                "description": "Condition trigger applied to anything contained in this CO. Refers to entry within condtrigs.json. (Per IVerifiable map / JsonCondOwner.GetVerifiables.)"
             },
             "strDesc" : {
                 "type": "string",
@@ -37,11 +42,18 @@
                 "type": "boolean",
                 "description": "Controls whether the condowner is locked into the slot it inhabits"
             },
+            "aInteractions" : {
+                "type": "array",
+                "description": "Interactions this condowner offers. Each refers to entry within interactions.json. (Per IVerifiable map / JsonCondOwner.GetVerifiables.)"
+            },
             "aStartingConds" : {
                 "type": "array",
                 "description": "Conditions applied at spawn. Array of condition strings (Name=value*duration) — each name refers to entry within conditions.json"
+            },
+            "aTickers" : {
+                "type": "array",
+                "description": "Tickers attached to this condowner (scheduled events / timers). Each refers to entry within tickers.json. (Per IVerifiable map / JsonCondOwner.GetVerifiables.)"
             }
-
         }
     }
 }
