@@ -4,6 +4,21 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-03 — Multi-strName-source surfacing (alt-folder suffix on every ref link)
+
+User flagged the case where the same strName lives in multiple folders simultaneously — the `Itm*` pattern where a name is a loot entry, a condowner, AND an item DTO at once. The schema's primary target picks one folder; modders editing the data need to see the others to avoid editing the wrong file.
+
+The detector itself was already handling multi-target — `RefCandidateDetector` emits all qualifying targets per `(sourceFolder, fieldPath)`, sorted by hit-rate. Real-data confirmation: `interactions.objLootModeSwitchThem` produces a Candidate with three targets — loot 100%, condowners 93%, items 73% — even though it's covered by schema. The miss was on the surfacing side.
+
+Changes (site-only):
+
+- `nameToFolders` map built at load (strName → Set<folder>). Cheap — same data the cross-folder duplicate check on `/health/data` was already computing per render.
+- `renderAltFolderSuffix(primaryFolder, strName)` helper: when a name lives in 2+ folders, appends `(also: <folder>, ...)` after the link, each clickable. Used on outgoing/incoming edge rows and on the auto-detected scalar links in the Fields block.
+- `/health/data` dangling-edges sample table: when the dangling target's strName actually exists in another folder, the row shows "actually exists in: X" — turns a dead-end into a navigable hint. Frequently surfaces "schema says items/ but the value lives in condowners/" type misroutings.
+- `/health/coverage`: new "Covered fields with multi-folder targets" section listing every covered candidate where ≥2 target folders matched. Surfaces patterns the previous page filtered out (it only showed uncovered candidates). Uses the same row template as the uncovered list (refactored to a shared `candidateRow()` function).
+
+No detector / library changes. No new tests. Site behavior change only.
+
 ## 2026-05-03 — Auto-detection + health pages + template engine + conditions_simple expansion (phases 1-5)
 
 Plan-driven 6-phase batch. The runaway take-away: the auto-detector turns up **240 candidates (184 uncovered)** on real data — enough material for the next several Slice-E-style schema expansions to be data-driven instead of hand-curated.

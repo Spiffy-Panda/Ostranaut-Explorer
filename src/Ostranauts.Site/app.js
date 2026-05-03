@@ -33,6 +33,10 @@ let ruleDescriptions = new Map(); // "<sourceFolder>:<fieldName>" -> description
 let autoScalarByKey = new Map(); // "<folder>:<fieldName>" -> candidate (uncovered scalar only)
 // Full candidate list (incl. nested + array paths) for the coverage health page.
 let allCandidates = []; // candidate[]
+// strName -> Set<folder>. Same name can live in multiple folders (loot/items/
+// condowners often share Itm* names). Drives the "(also: folder, ...)" suffix
+// on rendered ref values so a modder can navigate to the parallel entries.
+let nameToFolders = new Map();
 
 function main() {
   graph = window.GRAPH_DATA;
@@ -73,6 +77,8 @@ function buildIndexes() {
     nodesById.set(node.id, node);
     if (!nodesByFolder.has(node.folder)) nodesByFolder.set(node.folder, []);
     nodesByFolder.get(node.folder).push(node);
+    if (!nameToFolders.has(node.strName)) nameToFolders.set(node.strName, new Set());
+    nameToFolders.get(node.strName).add(node.folder);
   }
   for (const arr of nodesByFolder.values()) arr.sort((a, b) => a.strName.localeCompare(b.strName));
 
@@ -643,11 +649,12 @@ function renderFieldsBlock(folder, fields) {
           `${resolved.candidate.distinctValues} distinct / ${resolved.candidate.sampleSize} samples`,
           'no schema rule yet',
         ];
+        const altSuffix = renderAltFolderSuffix(resolved.targetFolder, String(v));
         valueText =
           `<a class="auto-detected" href="#/o/${encodeURIComponent(resolved.targetFolder)}/${encodeURIComponent(String(v))}" title="${escapeAttr(tipParts.join(' — '))}">` +
           `<span class="folder-prefix">${escapeHtml(resolved.targetFolder)}:</span>${escapeHtml(String(v))}` +
           `<span class="auto-badge" aria-label="auto-detected, no schema rule">🔍</span>` +
-          `</a>`;
+          `</a>${altSuffix}`;
       } else {
         valueText = escapeHtml(String(v));
       }
@@ -689,10 +696,27 @@ function renderEdgeRow(edge, perspective) {
     : `<span class="dangling" title="not in index">${escapeHtml(linkName)}</span>`;
 
   const folderTag = `<span class="field">${escapeHtml(linkFolder)}</span>`;
+  const altSuffix = known ? renderAltFolderSuffix(linkFolder, linkName) : '';
   const meta = edge.metadata ? renderMetadata(edge.metadata) : '';
   const arrow = perspective === 'source-perspective' ? '→' : '←';
 
-  return `<li><span class="arrow">${arrow}</span>${folderTag}:${linkHtml}${meta}</li>`;
+  return `<li><span class="arrow">${arrow}</span>${folderTag}:${linkHtml}${altSuffix}${meta}</li>`;
+}
+
+// When a strName lives in multiple folders (Itm* names commonly hit loot/,
+// condowners/, and items/ at once), append a "(also: <folder>, ...)" suffix
+// of clickable links to the parallel entries. Helps modders find the right
+// place to edit when the schema's primary target may not be the only relevant
+// one — explicitly addresses the multi-strName-source pattern.
+function renderAltFolderSuffix(primaryFolder, strName) {
+  const folders = nameToFolders.get(strName);
+  if (!folders || folders.size <= 1) return '';
+  const alts = [...folders].filter(f => f !== primaryFolder).sort();
+  if (alts.length === 0) return '';
+  const links = alts.map(f =>
+    `<a href="#/o/${encodeURIComponent(f)}/${encodeURIComponent(strName)}" class="alt-folder">${escapeHtml(f)}</a>`
+  ).join(', ');
+  return ` <span class="alt-folders" title="strName also exists in these folders — schema's primary target is &quot;${escapeAttr(primaryFolder)}&quot;">(also: ${links})</span>`;
 }
 
 function renderMetadata(metadata) {
@@ -865,32 +889,23 @@ function renderHealthCoverage() {
     </tr>`;
   }).join('');
 
-  // Top candidates by leverage. Cap render so the page stays snappy on huge result sets.
+  // Top uncovered candidates by leverage. Cap render so the page stays snappy on huge result sets.
   const sortedCands = [...allCandidates]
     .filter(c => !c.coveredBySchema)
     .sort((a, b) => leverageScore(b) - leverageScore(a));
   const candCap = 200;
   const renderedCands = sortedCands.slice(0, candCap);
-  const candTbl = renderedCands.map(c => {
-    const top = c.targets?.[0];
-    const enc = c.encoded;
-    const targetCell = top
-      ? `<strong>${escapeHtml(top.targetFolder)}</strong> ${(top.hitRate * 100).toFixed(0)}% (${top.hits}/${c.sampleSize})`
-      : (enc
-          ? `<strong>${escapeHtml(enc.targets?.[0]?.targetFolder ?? '?')}</strong> ${enc.targets?.[0] ? (enc.targets[0].hitRate * 100).toFixed(0) + '%' : ''}<span class="encoded-tag">split "${escapeHtml(enc.separator)}"</span>`
-          : '—');
-    const otherTargets = (c.targets ?? []).slice(1).concat(enc?.targets?.slice(1) ?? []);
-    const others = otherTargets.length > 0
-      ? `<br><span class="targets-cell">also: ${otherTargets.map(t => `${escapeHtml(t.targetFolder)} ${(t.hitRate * 100).toFixed(0)}%`).join(', ')}</span>`
-      : '';
-    return `<tr>
-      <td><a href="#/f/${encodeURIComponent(c.sourceFolder)}">${escapeHtml(c.sourceFolder)}</a></td>
-      <td><code>${escapeHtml(c.fieldPath)}</code></td>
-      <td class="num">${c.sampleSize.toLocaleString()}</td>
-      <td class="num">${c.distinctValues.toLocaleString()}</td>
-      <td>${targetCell}${others}</td>
-    </tr>`;
-  }).join('');
+  const candTbl = renderedCands.map(candidateRow).join('');
+
+  // Covered candidates with MULTIPLE target folders — surfaces the multi-strName-
+  // source pattern (same name lives in loot/condowners/items at once). The schema
+  // picks one primary; the others are still reachable from the detail-page
+  // "(also: …)" suffix, but modders editing the data should know all three exist.
+  const multiTargetCovered = allCandidates
+    .filter(c => c.coveredBySchema && (c.targets?.length ?? 0) >= 2)
+    .sort((a, b) => leverageScore(b) - leverageScore(a));
+  const multiCoveredCap = 100;
+  const multiTbl = multiTargetCovered.slice(0, multiCoveredCap).map(candidateRow).join('');
 
   const blindSpotCount = stats.filter(s => s.outEdges === 0 && s.count > 0).length;
 
@@ -942,7 +957,49 @@ function renderHealthCoverage() {
         <tbody>${candTbl}</tbody>
       </table>
     </div>
+
+    <div class="health-block">
+      <h3>Covered fields with multi-folder targets (${multiTargetCovered.length})</h3>
+      <p class="filter-row">
+        These fields already have a schema rule (the parser routes edges to the primary target),
+        but the same strName values exist in multiple folders simultaneously — the
+        <code>Itm*</code> pattern where the same name is a loot entry, a condowner, and an item DTO.
+        The detail-page <em>(also: …)</em> suffix on every reference link uses this same data.
+        Showing top ${Math.min(multiCoveredCap, multiTargetCovered.length).toLocaleString()} by leverage.
+      </p>
+      <table>
+        <thead><tr>
+          <th>source folder</th>
+          <th>field path</th>
+          <th>samples</th>
+          <th>distinct</th>
+          <th>targets / hit-rate</th>
+        </tr></thead>
+        <tbody>${multiTbl || '<tr><td colspan="5" class="targets-cell">none</td></tr>'}</tbody>
+      </table>
+    </div>
   `;
+}
+
+function candidateRow(c) {
+  const top = c.targets?.[0];
+  const enc = c.encoded;
+  const targetCell = top
+    ? `<strong>${escapeHtml(top.targetFolder)}</strong> ${(top.hitRate * 100).toFixed(0)}% (${top.hits}/${c.sampleSize})`
+    : (enc
+        ? `<strong>${escapeHtml(enc.targets?.[0]?.targetFolder ?? '?')}</strong> ${enc.targets?.[0] ? (enc.targets[0].hitRate * 100).toFixed(0) + '%' : ''}<span class="encoded-tag">split "${escapeHtml(enc.separator)}"</span>`
+        : '—');
+  const otherTargets = (c.targets ?? []).slice(1).concat(enc?.targets?.slice(1) ?? []);
+  const others = otherTargets.length > 0
+    ? `<br><span class="targets-cell">also: ${otherTargets.map(t => `${escapeHtml(t.targetFolder)} ${(t.hitRate * 100).toFixed(0)}%`).join(', ')}</span>`
+    : '';
+  return `<tr>
+    <td><a href="#/f/${encodeURIComponent(c.sourceFolder)}">${escapeHtml(c.sourceFolder)}</a></td>
+    <td><code>${escapeHtml(c.fieldPath)}</code></td>
+    <td class="num">${c.sampleSize.toLocaleString()}</td>
+    <td class="num">${c.distinctValues.toLocaleString()}</td>
+    <td>${targetCell}${others}</td>
+  </tr>`;
 }
 
 function leverageScore(c) {
@@ -1027,10 +1084,21 @@ function renderHealthData() {
           ${danglingSample.map(e => {
             const [sf, sn] = splitId(e.source);
             const [tf, tn] = splitId(e.target);
+            // Dangling target doesn't exist in the schema-routed folder — but the
+            // same strName might live in a sibling folder. Surface that as a
+            // navigable hint so the modder isn't sent to a dead end.
+            const altFolders = [...(nameToFolders.get(tn) ?? new Set())]
+              .filter(f => f !== tf)
+              .sort();
+            const altHint = altFolders.length > 0
+              ? `<br><span class="targets-cell">actually exists in: ${altFolders.map(f =>
+                  `<a href="#/o/${encodeURIComponent(f)}/${encodeURIComponent(tn)}">${escapeHtml(f)}</a>`
+                ).join(', ')}</span>`
+              : '';
             return `<tr>
               <td><a href="#/o/${encodeURIComponent(sf)}/${encodeURIComponent(sn)}">${escapeHtml(sf)}:${escapeHtml(sn)}</a></td>
               <td><code>${escapeHtml(e.sourceField)}</code></td>
-              <td class="bad">${escapeHtml(tf)}:${escapeHtml(tn)}</td>
+              <td class="bad">${escapeHtml(tf)}:${escapeHtml(tn)}${altHint}</td>
               <td class="targets-cell">${escapeHtml(e.kind)}</td>
             </tr>`;
           }).join('')}

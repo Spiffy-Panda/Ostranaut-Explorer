@@ -385,6 +385,25 @@ section#detail {
   display: inline-block;
 }
 
+/* alt-folder suffix on ref values — when a strName lives in multiple folders
+   the suffix lists the alternates as clickable links. Sits next to the primary
+   ref. Muted styling so it's a hint not the main signal. */
+.alt-folders {
+  color: var(--muted);
+  font-size: 0.7rem;
+  margin-left: 0.4em;
+  cursor: help;
+}
+.alt-folders a.alt-folder {
+  color: var(--muted);
+  border-bottom: 1px dotted var(--border);
+}
+.alt-folders a.alt-folder:hover {
+  color: var(--accent-dim);
+  border-bottom-color: var(--accent-dim);
+  text-decoration: none;
+}
+
 /* auto-detected refs (phase 2 detector) — schema doesn't yet cover these
    fields, but the value matches a known node in the candidate target folder.
    Visually distinct from schema-derived edges so users know the link is
