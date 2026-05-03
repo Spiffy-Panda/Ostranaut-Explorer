@@ -9,12 +9,19 @@
 <body>
   <header>
     <h1>Ostranaut Data Explorer</h1>
+    <div class="search-wrap">
+      <input id="search" type="search" autocomplete="off" placeholder="search by strName or folder…">
+      <ul id="search-results" hidden></ul>
+    </div>
     <p class="status" id="status">loading…</p>
   </header>
   <main>
-    <section id="placeholder">
-      <p>Pre-v1 scaffold. The graph payload will land here once the parser is implemented.</p>
-      <pre id="graph-summary"></pre>
+    <aside id="folders">
+      <h2>Folders</h2>
+      <ul id="folder-list"></ul>
+    </aside>
+    <section id="detail">
+      <p class="hint">Pick an object from the search bar or a folder on the left.</p>
     </section>
   </main>
   <script src="app.js"></script>
