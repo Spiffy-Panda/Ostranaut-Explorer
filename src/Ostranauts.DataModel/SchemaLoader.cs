@@ -218,6 +218,16 @@ public static class SchemaLoader
             }
         }
 
+        // x-nested-field — name of a sub-field within each array element to walk
+        // (for NestedDirectArray shape). E.g. condrules.aThresholds is an array of
+        // objects each containing strLootNew → loot/.
+        string? nestedField = null;
+        if (fieldDef.TryGetProperty("x-nested-field", out var nestedFieldProp)
+            && nestedFieldProp.ValueKind == JsonValueKind.String)
+        {
+            nestedField = nestedFieldProp.GetString();
+        }
+
         // x-targets — existence-aware fallback list. When set, the first folder
         // becomes the primary target (overriding regex-derived); the rest are
         // fallbacks the extractor tries when the value isn't in the primary.
@@ -248,7 +258,8 @@ public static class SchemaLoader
             RoutingTargets: routingTargets,
             IsGhost: isGhost,
             Description: description,
-            FallbackTargets: fallbackTargets);
+            FallbackTargets: fallbackTargets,
+            NestedField: nestedField);
     }
 
     private static string? ExtractTargetFolder(string description)

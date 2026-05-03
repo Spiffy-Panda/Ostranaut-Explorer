@@ -26,6 +26,13 @@ public sealed class SchemaCatalog
         LootItmsArray,        // array of "verb,lootName[,...]" entries; split on `,`, verb at [0],
                               // loot ref at [1]. E.g. JsonInteraction.aLootItms.
                               // Verbs: addus, addthem, removethem, take, use, lacks, input, give, removeus.
+
+        // Slice E phase 4 — nested object refs:
+
+        NestedDirectArray,    // array of objects; for each element, read a single sub-field whose
+                              // value is a plain string ref. Use `x-nested-field: "<subFieldName>"`
+                              // on the schema property to declare which sub-field to walk.
+                              // E.g. condrules.aThresholds[*].strLootNew → loot/.
     }
 
     /// <summary>
@@ -52,7 +59,10 @@ public sealed class SchemaCatalog
         IReadOnlyDictionary<string, string>? RoutingTargets = null,
         bool IsGhost = false,
         string? Description = null,    // schema description text, for site tooltips
-        IReadOnlyList<string>? FallbackTargets = null); // existence-aware alternatives;
+        IReadOnlyList<string>? FallbackTargets = null, // existence-aware alternatives;
+        string? NestedField = null);   // for NestedDirectArray: the sub-field name within each
+                                        // array element whose string value is the ref (e.g.
+                                        // "strLootNew" for condrules.aThresholds[*].strLootNew).
         // when set, ReferenceExtractor checks each in [TargetFolder, ...FallbackTargets]
         // until it finds the value, then routes the edge to that folder. Falls back
         // to TargetFolder (primary) if none has it (= dangling). Used for fields

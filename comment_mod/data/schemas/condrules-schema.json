@@ -13,6 +13,13 @@
                 "type": "string",
                 "description": "Target stat condition this rule observes — refers to entry within conditions.json. CondRules emit a 'target' refKind for this field; the per-threshold Dc* effects under aThresholds use a distinct 'threshold-effect' refKind (see CLAUDE.md).",
                 "x-source": "https://ostranauts.wiki.gg/wiki/Condition_Rules"
+            },
+            "aThresholds": {
+                "type": "array",
+                "description": "Threshold rows. Each is an object with strLootNew (a loot table that fires when the threshold is crossed), fMin/fMax (the threshold band), and fMinAdd/fMaxAdd (deltas applied on entry). The strLootNew refers to entry within loot.json. Per IVerifiable / CondRule.aThresholds → CondRuleThresh.strLootNew.",
+                "x-shape": "NestedDirectArray",
+                "x-nested-field": "strLootNew",
+                "x-targets": ["loot"]
             }
         }
     }

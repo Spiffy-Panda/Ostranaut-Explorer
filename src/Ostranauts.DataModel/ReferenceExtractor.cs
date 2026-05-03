@@ -62,7 +62,34 @@ public static class ReferenceExtractor
                 case SchemaCatalog.FieldShape.LootItmsArray:
                     foreach (var r in ExtractLootItmsArray(obj, field, rule)) yield return r;
                     break;
+
+                case SchemaCatalog.FieldShape.NestedDirectArray:
+                    foreach (var r in ExtractNestedDirectArray(obj, field, rule, exists)) yield return r;
+                    break;
             }
+        }
+    }
+
+    private static IEnumerable<Reference> ExtractNestedDirectArray(
+        DataObject obj, JsonProperty field, SchemaCatalog.FieldRule rule, Func<string, string, bool>? exists)
+    {
+        if (field.Value.ValueKind != JsonValueKind.Array) yield break;
+        if (string.IsNullOrEmpty(rule.NestedField)) yield break;
+
+        foreach (var element in field.Value.EnumerateArray())
+        {
+            if (element.ValueKind != JsonValueKind.Object) continue;
+            if (!element.TryGetProperty(rule.NestedField, out var nestedProp)) continue;
+            if (nestedProp.ValueKind != JsonValueKind.String) continue;
+            var target = nestedProp.GetString();
+            if (string.IsNullOrEmpty(target)) continue;
+            if (PlaceholderToken.IsMatch(target!)) continue;
+
+            var folder = ResolveExistingTarget(rule.TargetFolder, rule.FallbackTargets, target!, exists);
+            yield return new Reference(
+                obj.Folder, obj.StrName, $"{field.Name}[*].{rule.NestedField}",
+                folder, target!,
+                RefKind.DirectInArray);
         }
     }
 
