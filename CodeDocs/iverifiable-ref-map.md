@@ -2,7 +2,7 @@
 
 **Purpose:** Feed this document to a future prompt when writing schema extraction rules, updating `comment_mod` schemas, or implementing the ref-extraction pass in `Ostranauts.DataModel`. The data here is derived directly from `GetVerifiables()` in the decompiled source — it is the game's own cross-reference declaration and is more authoritative than anything inferred from JSON field names or wiki docs.
 
-**Source:** `decomp/Assembly-CSharp/` — extracted by `scrap_scripts/python/08_extract_verifiables.py`.
+**Source:** `decomp/Assembly-CSharp/` — extracted by `utils/python/decomp_extract_verifiables.py`.
 
 ---
 

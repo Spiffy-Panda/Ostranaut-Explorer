@@ -44,7 +44,7 @@ Inlined per-node `fields` on every node + per-rule `description`. Replaced by th
 
 Same shape as v2, with one additive field on rule entries:
 
-- `isGhost` (boolean, optional, omitted when false): marks rules whose field is documented in the schema but **not deserialized by the game's `Json*.cs` class** per `scrap_scripts/python/07_decomp_schema_table.py`. Ghost rules still emit edges if real data contains the field (rare); the flag is a visual marker for the site's schema inspector and a hint to modders that the field may be vestigial.
+- `isGhost` (boolean, optional, omitted when false): marks rules whose field is documented in the schema but **not deserialized by the game's `Json*.cs` class** per `utils/python/decomp_schema_table.py`. Ghost rules still emit edges if real data contains the field (rare); the flag is a visual marker for the site's schema inspector and a hint to modders that the field may be vestigial.
 
 ### Schema version 2 (historical)
 

@@ -16,17 +16,21 @@ Operating notes for Claude Code working in this repo. Keep this file tight.
 
 `make` is the entry point. On Windows, run from Git Bash. A `build.bat` wraps `make` so double-click / `cmd` invocation works without rewriting the build pipeline.
 
-## Scrap scripts
+## Scripts: utils/ vs scrap_scripts/
 
-Any throwaway script — exploratory parsing, one-off data dumps, schema spelunking — must:
+Two folders, two purposes:
 
-1. Live in `./scrap_scripts/<lang>/` where `<lang>` is one of `python`, `bash`, `cmd`, `ps`.
-2. Be named `<NN>_<slug>.<ext>` where `NN` is a zero-padded incrementing key per language folder (e.g. `01_count_condowners.py`, `02_dump_dangling_refs.py`).
-3. **Not** be invoked inline. The `python` command line should only ever be `python ./scrap_scripts/python/NN_slug.py`. For Bash, PowerShell, and CMD: practice restraint with inlining — short one-liners are fine, but anything that grows beyond a couple of pipes or starts needing variables / loops / conditionals goes into a file in the appropriate folder.
+- **`utils/<lang>/`** — tracked, durable tooling. See `utils/README.md` for the catalog. Promotion criteria: produces build artifacts the site needs, regenerates tracked content (`comment_mod/`, `CodeDocs/`), or is used often enough to justify a stable, named version. Drop the `<NN>_` prefix on promotion; use a descriptive name. Add an entry to `utils/README.md`.
+- **`scrap_scripts/<lang>/`** — throwaway exploration. Gitignored. Named `<NN>_<slug>.<ext>` where `NN` is a zero-padded incrementing key per language folder (e.g. `01_count_condowners.py`, `02_dump_dangling_refs.py`).
+
+Rules for both kinds:
+
+1. **Not** invoked inline. The `python` command line should only ever be `python utils/python/<name>.py` or `python scrap_scripts/python/NN_<slug>.py`. For Bash, PowerShell, and CMD: practice restraint with inlining — short one-liners are fine, but anything that grows beyond a couple of pipes or starts needing variables / loops / conditionals goes into a file in the appropriate folder.
+2. Use `Path(__file__).resolve().parents[2]` (or equivalent) to anchor to the repo root, so the script works regardless of where it's invoked from.
 
 This rule applies to subagents too. When delegating to an Agent, include this directive in the prompt so the subagent obeys it.
 
-Rationale: keeps the working directory clean, makes prior exploration discoverable, and means the same script can be re-run later without retyping or guessing what the previous attempt looked like.
+Rationale: keeps the working directory clean, makes prior exploration discoverable, separates regeneration tooling from one-shot exploration, and means the same script can be re-run later without retyping or guessing what the previous attempt looked like.
 
 ## Dev log — write before every commit
 
@@ -57,7 +61,7 @@ Workflow:
 
 1. Convert the wiki URL to a slug — `https://ostranauts.wiki.gg/wiki/Modding/CondOwners` → `Modding__CondOwners`. Slashes in the page title become `__`.
 2. Look for `wiki_cache/markdown/<slug>.md`. If present, `Read` it directly.
-3. If absent, run `python ./scrap_scripts/python/01_wiki_cache.py <url-or-page-title> [...]` to populate. The script accepts multiple URLs/titles in one call — batch them. Pass `--refresh` to force a re-fetch.
+3. If absent, run `python utils/python/wiki_cache.py <url-or-page-title> [...]` to populate. The script accepts multiple URLs/titles in one call — batch them. Pass `--refresh` to force a re-fetch.
 
 The cached `.md` files are wikitext with a small YAML frontmatter (source URL, section count). Internal `[[Page]]` links reveal which other pages exist — follow them by re-running the cache script.
 

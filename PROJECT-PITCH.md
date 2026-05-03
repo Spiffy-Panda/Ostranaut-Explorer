@@ -144,7 +144,7 @@ The Ostranauts wiki at `ostranauts.wiki.gg` is ~824 articles spread across these
 
 ### Pages flagged for LLM-assist extraction
 
-The deterministic extractor (`scrap_scripts/python/03_wiki_extract_schemas.py`) leaves a per-page review queue in [comment_mod/wiki_review_queue.md](comment_mod/wiki_review_queue.md) for fields it couldn't confidently resolve. The pages below are the ones with the most unresolved candidates — the highest-leverage targets for a future LLM-assist extraction pass. Fill in the **Model** column (`haiku` / `sonnet` / `opus`) to direct that pass at each page.
+The deterministic extractor (`utils/python/wiki_extract_schemas.py`) leaves a per-page review queue in [comment_mod/wiki_review_queue.md](comment_mod/wiki_review_queue.md) for fields it couldn't confidently resolve. The pages below are the ones with the most unresolved candidates — the highest-leverage targets for a future LLM-assist extraction pass. Fill in the **Model** column (`haiku` / `sonnet` / `opus`) to direct that pass at each page.
 
 | Page                  | Cached size | Review-queue items | Model  |
 |-----------------------|-------------|--------------------|--------|

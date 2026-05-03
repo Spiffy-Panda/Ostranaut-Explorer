@@ -56,11 +56,11 @@ Gitignored cache of pages fetched from `ostranauts.wiki.gg` via the MediaWiki `p
 - `wiki_cache/raw/<slug>.json` — full API response (debugging, future re-extracts).
 - `wiki_cache/markdown/<slug>.md` — extracted wikitext with a small YAML frontmatter (source URL, section count). Slashes in page titles become `__` so files stay flat.
 
-Read-only inputs to two scripts (also gitignored):
-- `scrap_scripts/python/01_wiki_cache.py` — single-page on-demand fetch.
-- `scrap_scripts/python/02_wiki_crawl.py` — recursive crawl from a seed page, follows `[[Internal Link]]` references that match a path prefix (default `Modding`).
+Read-only inputs to two scripts (under tracked `utils/python/` — see `utils/README.md`):
+- `utils/python/wiki_cache.py` — single-page on-demand fetch.
+- `utils/python/wiki_crawl.py` — recursive crawl from a seed page, follows `[[Internal Link]]` references that match a path prefix (default `Modding`).
 
-Consumed by `scrap_scripts/python/03_wiki_extract_schemas.py`, which scans the cached markdown for field documentation patterns (wikitables + bold-prose mentions) and emits `comment_mod/data/schemas/<folder>-schema.json` overlays plus `comment_mod/wiki_review_queue.md` for entries it couldn't confidently resolve.
+Consumed by `utils/python/wiki_extract_schemas.py`, which scans the cached markdown for field documentation patterns (wikitables + bold-prose mentions) and emits `comment_mod/data/schemas/<folder>-schema.json` overlays plus `comment_mod/wiki_review_queue.md` for entries it couldn't confidently resolve.
 
 ## Future inputs (not yet consumed)
 

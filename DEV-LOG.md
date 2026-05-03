@@ -4,7 +4,40 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
-## 2026-05-03 — graph.js split into 3 payloads + dnSpy README + 10_emit_code_refs
+## 2026-05-03 — Promoted 8 durable scripts from scrap_scripts/ to tracked utils/python/
+
+Per user: "check to see if there are any python scripts to extract and document into the utils tracked folder."
+
+Audited the 10 python scripts in `scrap_scripts/python/`:
+
+- **Promoted (8)** — durable tools, regenerate tracked content, or required for builds:
+  | Old | New |
+  |---|---|
+  | `01_wiki_cache.py` | `utils/python/wiki_cache.py` |
+  | `02_wiki_crawl.py` | `utils/python/wiki_crawl.py` |
+  | `03_wiki_extract_schemas.py` | `utils/python/wiki_extract_schemas.py` |
+  | `06_decomp_schema_crosscheck.py` | `utils/python/decomp_schema_crosscheck.py` |
+  | `07_decomp_schema_table.py` | `utils/python/decomp_schema_table.py` |
+  | `08_extract_verifiables.py` | `utils/python/decomp_extract_verifiables.py` |
+  | `09_decomp_string_search.py` | `utils/python/decomp_string_search.py` |
+  | `10_emit_code_refs.py` | `utils/python/emit_code_refs.py` |
+- **Kept in scrap (2)** — explicit "one-off" / "exploration" per docstring:
+  - `04_verify_folder_counts.py`
+  - `05_condowners_keys.py`
+
+Old copies deleted from `scrap_scripts/python/` for disk hygiene (gitignored, no commit effect — just removes confusion). Names dropped the `<NN>_` prefix on promotion; descriptive names now (`wiki_cache.py`, `decomp_string_search.py`, etc.). Renumbering is no longer meaningful for tracked tools.
+
+Internal change: `wiki_crawl.py`'s import of `01_wiki_cache` (which used `importlib.import_module` because the module name started with a digit) replaced with a normal `from wiki_cache import ...`.
+
+`utils/README.md` added with a per-script table + common usage examples + a "how to add a new tool" section.
+
+`CLAUDE.md` "Scrap scripts" section rewritten as "Scripts: utils/ vs scrap_scripts/" — codifies the promotion criteria, the tracked-vs-throwaway distinction, and the rules that apply to both kinds.
+
+Tracked-file cross-references rewritten via a one-shot Python rewrite (`scrap_scripts/python/<NN>_*.py` → `utils/python/<descriptive>.py`) across `DEV-LOG.md`, `PROJECT-PITCH.md`, `README.md`, `CodeDocs/io/{inputs,outputs}.md`, `CodeDocs/sources/Ostranauts.DataModel/SchemaLoader.md`, `CodeDocs/iverifiable-ref-map.md`.
+
+Smoke-tested both `decomp_string_search.py EmbarkCommand` and `emit_code_refs.py` from the new path; same outputs as before (1 hit / ~658 KB code_refs.js).
+
+## 2026-05-03 — graph.js split into 3 payloads + dnSpy README + emit_code_refs
 
 Per user: split the monolithic graph.js into typed payloads and add a code-references file.
 
@@ -25,7 +58,7 @@ Tests: 67/67 (split is pure serialization rearrangement; no behavior changes).
 
 ## 2026-05-03 — Slice E phase 6: decomp string-literal search script
 
-New `scrap_scripts/python/09_decomp_string_search.py` (gitignored). Regex-greps the decompiled C# source tree for `"<key>"` quoted-literal occurrences. Catches references to data names that don't appear via the JSON-schema layer — typically hardcoded calls in game code like:
+New `utils/python/decomp_string_search.py` (gitignored). Regex-greps the decompiled C# source tree for `"<key>"` quoted-literal occurrences. Catches references to data names that don't appear via the JSON-schema layer — typically hardcoded calls in game code like:
 
 ```
 JsonPledge pledge = DataHandler.GetPledge("EmbarkCommand");
@@ -35,8 +68,8 @@ JsonPledge pledge = DataHandler.GetPledge("EmbarkCommand");
 
 Usage:
 ```
-python ./scrap_scripts/python/09_decomp_string_search.py EmbarkCommand
-python ./scrap_scripts/python/09_decomp_string_search.py -C 3 EmbarkCommand DcFood
+python ./utils/python/decomp_string_search.py EmbarkCommand
+python ./utils/python/decomp_string_search.py -C 3 EmbarkCommand DcFood
 ```
 
 Reports `path:lineno: line` for each hit. `-C N` adds N lines of surrounding context with a `>>` marker on the matched line. Soft-warns when a key doesn't look identifier-shaped (pass `--no-strict` to silence).
@@ -196,7 +229,7 @@ graph.js schema bumped 2 → 3. Tests 60 → 61 (one new round-trip test).
 
 ## 2026-05-02 — Decomp cross-check script + dev infrastructure
 
-Added `scrap_scripts/python/06_decomp_schema_crosscheck.py`, a Python audit tool that diffs the decompiled C# `Json*.cs` classes in `decomp/Assembly-CSharp/` against our JSON schemas in `data/schemas/` and `comment_mod/data/schemas/`. It reports three things per matched pair: fields present in C# but absent from the schema (coverage gaps), fields in the schema but absent from C# (possible errors or legacy docs), and unmatched classes/schemas that have no mapping yet.
+Added `utils/python/decomp_schema_crosscheck.py`, a Python audit tool that diffs the decompiled C# `Json*.cs` classes in `decomp/Assembly-CSharp/` against our JSON schemas in `data/schemas/` and `comment_mod/data/schemas/`. It reports three things per matched pair: fields present in C# but absent from the schema (coverage gaps), fields in the schema but absent from C# (possible errors or legacy docs), and unmatched classes/schemas that have no mapping yet.
 
 The decomp folder (`decomp/Assembly-CSharp/`) contains 126 `Json*.cs` files that are the authoritative source of truth for which fields the game actually deserializes — they are the ground truth the schemas should reflect. 12 of those classes map directly to folders we already have schemas for.
 

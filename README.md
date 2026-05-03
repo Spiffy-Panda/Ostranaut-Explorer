@@ -68,10 +68,12 @@ Because the data files aren't in the repo, **CI builds aren't wired up yet**. Bu
 
    With `decomp/Assembly-CSharp/` populated:
 
-   - `scrap_scripts/python/06_decomp_schema_crosscheck.py` and `07_decomp_schema_table.py` audit our schemas against the actual `Json*.cs` deserialization classes (`grep -E 'public string \w+ { get; set' decomp/Assembly-CSharp/Json*.cs` is the underlying signal).
-   - `scrap_scripts/python/10_emit_code_refs.py` scans for hardcoded `"<strName>"` string-literal lookups (e.g. `DataHandler.GetPledge("EmbarkCommand")` in `AIShipManager.cs`) and emits `build/data/code_refs.js` so the site shows a "Code references" block on each object detail page.
+   - `utils/python/decomp_schema_crosscheck.py` and `decomp_schema_table.py` audit our schemas against the actual `Json*.cs` deserialization classes (`grep -E 'public string \w+ { get; set' decomp/Assembly-CSharp/Json*.cs` is the underlying signal).
+   - `utils/python/emit_code_refs.py` scans for hardcoded `"<strName>"` string-literal lookups (e.g. `DataHandler.GetPledge("EmbarkCommand")` in `AIShipManager.cs`) and emits `build/data/code_refs.js` so the site shows a "Code references" block on each object detail page.
 
    The whole project works without `decomp/` — those scripts and the code-references panel just stay empty. With it, you get a much more authoritative picture of the game's data surface.
+
+   See `utils/README.md` for the full catalog of decomp / wiki tooling.
 
 ## Building
 
