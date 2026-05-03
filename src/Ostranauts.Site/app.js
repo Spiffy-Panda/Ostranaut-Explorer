@@ -319,7 +319,12 @@ function renderFolderIndex(folder) {
     <div class="folder-index">
       ${truncated ? `<p class="meta">showing first ${FOLDER_LIMIT.toLocaleString()} of ${list.length.toLocaleString()}</p>` : ''}
       <ul>
-        ${visible.map(n => `<li><a href="#/o/${encodeURIComponent(folder)}/${encodeURIComponent(n.strName)}">${escapeHtml(n.strName)}</a></li>`).join('')}
+        ${visible.map(n => {
+          const inCount = incoming.get(n.id)?.length ?? 0;
+          const outCount = outgoing.get(n.id)?.length ?? 0;
+          const marker = (inCount === 0 && outCount === 0) ? '❌' : '⭕';
+          return `<li><span class="ref-marker">${marker}</span><a href="#/o/${encodeURIComponent(folder)}/${encodeURIComponent(n.strName)}">${escapeHtml(n.strName)}</a><span class="ref-counts">(${inCount}/${outCount})</span></li>`;
+        }).join('')}
       </ul>
     </div>
   `;

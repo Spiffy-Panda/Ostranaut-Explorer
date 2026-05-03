@@ -235,4 +235,18 @@ section#detail {
   padding: 0.15rem 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.8125rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+.folder-index .ref-marker {
+  width: 1.1rem;
+  flex: 0 0 auto;
+  text-align: center;
+  font-size: 0.75rem;
+}
+.folder-index .ref-counts {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-left: auto;
 }
