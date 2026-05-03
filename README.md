@@ -87,7 +87,7 @@ Reference rules are derived from `data/schemas/*-schema.json` — specifically f
 
 - **v0** — repository scaffolding, baseline snapshot. *(current)*
 - **v1** — the explorer: search, forward + backward references, interactive graph, static site.
-- **v2** — mod-overlay loader, mod editor, save inspector/editor (starting with `aCrew01`), map explorer, save-map explorer.
+- **v2** — mod-overlay loader, VS Code language server (full IDE assistance for editing data files), save inspector/editor (starting with `aCrew01`), map explorer, save-map explorer.
 
 Full detail in [PROJECT-PITCH.md](PROJECT-PITCH.md).
 

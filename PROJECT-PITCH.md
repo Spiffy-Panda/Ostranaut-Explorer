@@ -97,15 +97,23 @@ OstranautDataExplorer/
 ### v1 — explorer
 Everything described in this pitch above. Goal: search any object, see forward + backward references, browse a small interactive graph, ship it as a static GitHub Pages site.
 
-### v2 — mod-aware editor and save tools
-- **Mod partial loader (overlay).** Loader reads a mod root with `mod_info.json` + `loading_order.json`, merges objects by `strName` with later mods winning. Refactors `DataLoader` to accept multiple roots in priority order.
-- **Comment Mod migration.** Diff `data/schemas/` against `data.original/schemas/`, package the differences as `mods/CommentMod/data/schemas/...`, restore `data/schemas/` to vanilla. After this, the working copy is "core data + Comment Mod overlay" rather than mutated core.
-- **Mod editor.** UI for authoring mod content — pick a base object, override fields, write back to a mod folder. Reuses the schema-driven reference rules so suggestions and validation work.
-- **Save inspector — `aCrew01` first.** Saves are JSON; `aCrew01` is the crew array. Start with read-only inspection, applying the same schema-driven approach (saves reference data-tree objects by `strName`, so the explorer's reverse-lookup machinery transfers).
-- **Save editor — `aCrew01`.** Add field editing on top of the inspector.
-- **General save inspector / editor (non-map).** Extend coverage beyond crew to ship state, inventory, conditions, etc.
-- **Map explorer.** Visualize ship/station tilemaps from `ships/` and `rooms/` data-tree objects.
-- **Save map explorer.** Same view, but driven by save-file map state.
+### v2 — mod-aware tooling, IDE integration, save tools
+Ordered by dependency, not effort.
+
+1. **Mod partial loader (overlay).** Loader reads a mod root with `mod_info.json` + `loading_order.json`, merges objects by `strName` with later mods winning. Refactors `DataLoader` to accept multiple roots in priority order. *Prerequisite for everything else in v2 — the LSP wants to lint mod files in context, the Comment Mod migration uses it, etc.*
+2. **VS Code language server (LSP).** A C# language server (`Ostranauts.Lsp`, `net8.0`) using `OmniSharp.Extensions.LanguageServer`, plus a thin TypeScript extension shell (`vscode-extension/`). Reuses `Ostranauts.DataModel` for all reference resolution. Provides diagnostics (dangling refs, duplicate `strName`s, schema violations), hover (forward + backward references inline), go-to-definition across files, and `strName` completion. Modders edit JSON in VS Code with full IDE assistance.
+
+   *Sized as the bulk of v2 work* — comparable to v1's web-explorer effort. New surface is LSP plumbing per feature; the data layer is reused. Slotted early because:
+   - It needs only the overlay loader as a prerequisite.
+   - It's the highest-leverage modder-facing feature in v2 — the moment it ships, anyone editing data in VS Code benefits.
+   - It largely **subsumes the "mod editor"** item below; an IDE with hover/completion/jump-to-def is usually a better authoring experience than a custom UI for this kind of structured-text editing.
+3. **Comment Mod migration.** Diff `data/schemas/` against `data.original/schemas/`, package the differences as `mods/CommentMod/data/schemas/...`, restore `data/schemas/` to vanilla. After this, the working copy is "core data + Comment Mod overlay" rather than mutated core. The LSP shows comments via hover.
+4. **~~Mod editor~~ — likely cancelled.** Reconsider after LSP ships. Custom mod-authoring UI may be unnecessary if the LSP covers the editing experience well. Keep on the list for now in case there are workflows (bulk renames, visual ship editing, etc.) the LSP can't reach.
+5. **Save inspector — `aCrew01` first.** Saves are JSON; `aCrew01` is the crew array. Start with read-only inspection, applying the same schema-driven approach (saves reference data-tree objects by `strName`, so the explorer's reverse-lookup machinery transfers).
+6. **Save editor — `aCrew01`.** Add field editing on top of the inspector.
+7. **General save inspector / editor (non-map).** Extend coverage beyond crew to ship state, inventory, conditions, etc.
+8. **Map explorer.** Visualize ship/station tilemaps from `ships/` and `rooms/` data-tree objects.
+9. **Save map explorer.** Same view, but driven by save-file map state.
 
 ## Decisions (resolved)
 

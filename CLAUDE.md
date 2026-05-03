@@ -27,6 +27,20 @@ This rule applies to subagents too. When delegating to an Agent, include this di
 
 Rationale: keeps the working directory clean, makes prior exploration discoverable, and means the same script can be re-run later without retyping or guessing what the previous attempt looked like.
 
+## Wiki cache — fetch once, re-read locally
+
+`wiki_cache/` is a gitignored local cache of Ostranauts wiki pages. **Always check the cache before reaching for `WebFetch`.** Wiki content rarely changes mid-session, and the cache keeps the full wikitext (much richer than `WebFetch`'s prompt-summarized output).
+
+Workflow:
+
+1. Convert the wiki URL to a slug — `https://ostranauts.wiki.gg/wiki/Modding/CondOwners` → `Modding__CondOwners`. Slashes in the page title become `__`.
+2. Look for `wiki_cache/markdown/<slug>.md`. If present, `Read` it directly.
+3. If absent, run `python ./scrap_scripts/python/01_wiki_cache.py <url-or-page-title> [...]` to populate. The script accepts multiple URLs/titles in one call — batch them. Pass `--refresh` to force a re-fetch.
+
+The cached `.md` files are wikitext with a small YAML frontmatter (source URL, section count). Internal `[[Page]]` links reveal which other pages exist — follow them by re-running the cache script.
+
+**Pass this workflow into subagent prompts** so they cache-first too instead of burning fresh `WebFetch` calls on pages we already have.
+
 ## Reference-extraction notes
 
 - Cross-references are plain `strName` strings keyed across folders. There are no formal foreign keys.
