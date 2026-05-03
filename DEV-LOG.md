@@ -4,6 +4,28 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-03 — Slice E phase 6: decomp string-literal search script
+
+New `scrap_scripts/python/09_decomp_string_search.py` (gitignored). Regex-greps the decompiled C# source tree for `"<key>"` quoted-literal occurrences. Catches references to data names that don't appear via the JSON-schema layer — typically hardcoded calls in game code like:
+
+```
+JsonPledge pledge = DataHandler.GetPledge("EmbarkCommand");
+```
+
+(in `AIShipManager.cs:1007`). The schema-driven extractor can't see this because `EmbarkCommand` isn't anywhere in the data tree's JSON; it's a runtime lookup by a string literal in code.
+
+Usage:
+```
+python ./scrap_scripts/python/09_decomp_string_search.py EmbarkCommand
+python ./scrap_scripts/python/09_decomp_string_search.py -C 3 EmbarkCommand DcFood
+```
+
+Reports `path:lineno: line` for each hit. `-C N` adds N lines of surrounding context with a `>>` marker on the matched line. Soft-warns when a key doesn't look identifier-shaped (pass `--no-strict` to silence).
+
+Smoke-tested: `EmbarkCommand` → 1 hit (AIShipManager.cs); `DcFood` and `Coughing` → 0 hits (purely data-driven, never named explicitly in code). The latter is the expected pattern for most data names — the win is finding the *exceptions* (string-literal lookups in code that schema work can't reach).
+
+Future: a higher-level "audit all data names against decomp string-lookups" pass could iterate every node in graph.js, run this against decomp, and report which data entries are referenced from game code as string literals. Out of scope for this slice.
+
 ## 2026-05-03 — Slice E phase 5: outgoing-ref schemas for tickers / shipspecs / lifeevents / chargeprofiles
 
 Folders that DataLoader was already loading but had no schema → no outgoing rules. Added minimal overlays based on `decomp/Assembly-CSharp/Json{Ticker,ShipSpec,LifeEvent,ChargeProfile}.cs` property lists + `data/<folder>/*.json` value samples.
