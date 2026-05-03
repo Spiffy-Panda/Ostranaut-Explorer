@@ -1,0 +1,5 @@
+[
+  { "strName": "ExtraOwner" },
+  { "noStrName": "should_be_skipped_with_warning" },
+  "not_an_object_should_be_skipped_silently"
+]

@@ -41,9 +41,17 @@ internal static class Program
 
         var schemaDir = Path.Combine(dataRoot, "schemas");
         var catalog = SchemaLoader.Load(schemaDir);
-        var objects = DataLoader.Load(dataRoot).ToList();
+
+        var warnings = 0;
+        var objects = DataLoader
+            .Load(dataRoot, warning => { Console.Error.WriteLine(warning); warnings++; })
+            .ToList();
+
         var references = objects.SelectMany(o => ReferenceExtractor.Extract(o, catalog)).ToList();
-        var index = new ObjectIndex(objects, references);
+        var index = new ObjectIndex(
+            objects,
+            references,
+            warning => { Console.Error.WriteLine(warning); warnings++; });
 
         var graphPath = Path.Combine(outDir, "graph.json");
         GraphExporter.WriteJson(index, graphPath);
@@ -52,6 +60,8 @@ internal static class Program
         Console.WriteLine($"  objects:    {index.Objects.Count}");
         Console.WriteLine($"  references: {index.References.Count}");
         Console.WriteLine($"  rules:      {catalog.Rules.Count}");
+        if (warnings > 0)
+            Console.WriteLine($"  warnings:   {warnings} (see stderr)");
         return 0;
     }
 

@@ -4,43 +4,29 @@ The Builder produces a small set of artifacts under `build/`. The static site fi
 
 ## `build/data/graph.json`
 
-The single payload the site frontend fetches. Schema is versioned via the `$schema_version` field.
+The single payload the site frontend fetches. Schema is versioned via the `$schema_version` field. Written by `GraphExporter.WriteJson` via `Utf8JsonWriter` (streamed). Always overwrites; parent dirs are created if missing.
 
-### Schema version 0 (current — scaffold)
+### Schema version 1 (current)
 
-```jsonc
-{
-  "$schema_version": 0,                                  // bump on incompatible changes
-  "generated_by": "Ostranauts.Site.Builder (scaffold)",  // free-text trace string
-  "object_count": 0,                                     // index.Objects.Count
-  "reference_count": 0,                                  // index.References.Count
-  "nodes": [],                                           // empty in scaffold
-  "edges": []                                            // empty in scaffold
-}
-```
-
-Written by `GraphExporter.WriteJson` via manual `StringBuilder`. Always overwrites; parent dirs are created if missing.
-
-### Schema version 1 (planned — full payload)
-
-When `DataLoader` + `ReferenceExtractor` go live, `nodes` and `edges` populate:
+`nodes` are populated; `edges` remain `[]` until `ReferenceExtractor` lands.
 
 ```jsonc
 {
   "$schema_version": 1,
   "generated_by": "Ostranauts.Site.Builder",
-  "object_count": <int>,
-  "reference_count": <int>,
+  "object_count": <int>,                                 // index.Objects.Count (~29k vs base data)
+  "reference_count": <int>,                              // index.References.Count (0 today)
   "nodes": [
     {
-      "id": "<folder>:<strName>",   // composite key; matches edge endpoints
-      "folder": "<folder>",          // e.g. "condowners"
-      "strName": "<strName>",        // e.g. "ItmGalleyCoffeemaker01"
-      "file": "<file path>"          // e.g. "data/condowners/condowners.json"
+      "id": "<folder>:<strName>",                        // composite key; matches edge endpoints
+      "folder": "<folder>",                              // e.g. "condowners"
+      "strName": "<strName>",                            // e.g. "ItmGalleyCoffeemaker01"
+      "file": "<file path>"                              // e.g. "data\\condowners\\condowners.json"
     },
     ...
   ],
   "edges": [
+    // populates once ReferenceExtractor is implemented:
     {
       "source": "<folder>:<strName>",
       "target": "<folder>:<strName>",
@@ -54,6 +40,12 @@ When `DataLoader` + `ReferenceExtractor` go live, `nodes` and `edges` populate:
 ```
 
 Bump `$schema_version` whenever the structure changes incompatibly. The site's `app.js` reads `$schema_version` and can refuse / warn on mismatch.
+
+Real-data size today: **~5.4 MB** for ~29k nodes (no edges yet). Comfortable for a static fetch; sharding decision deferred until well past 10 MB.
+
+### Schema version 0 (historical — pre-v1 scaffold)
+
+Empty-payload version: only `$schema_version` (0), `generated_by`, `object_count` (0), `reference_count` (0), and empty `nodes`/`edges`. Replaced when `DataLoader` went live.
 
 ### Sharding (future)
 

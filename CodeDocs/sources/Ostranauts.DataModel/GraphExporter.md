@@ -1,11 +1,11 @@
 # GraphExporter.cs
 
 **Path:** `src/Ostranauts.DataModel/GraphExporter.cs`
-**Status:** **scaffold real** — emits a valid but skeletal `graph.json` that omits node/edge contents. Will grow when the loaders go live.
+**Status:** real (schema v1 — full node + edge serialization)
 
 ## Purpose
 
-Serializes an `ObjectIndex` to the JSON shape the static site reads (`graph.json`). The output schema is tracked as `$schema_version` in the file itself; bump it when the structure changes incompatibly.
+Serializes an `ObjectIndex` to the JSON shape the static site reads (`graph.json`). Schema version is recorded as `$schema_version` in the file; bump on incompatible changes and update `CodeDocs/io/outputs.md` in lockstep.
 
 ## Public API
 
@@ -16,24 +16,18 @@ public static class GraphExporter
 }
 ```
 
-Creates parent directories if missing. Always overwrites.
+Creates parent directories if missing. Always overwrites. Streams via `Utf8JsonWriter` to avoid building the entire string in memory (the real graph.json is several MB).
 
-## Current output shape (schema_version 0)
+## Output shape — schema version 1
 
-See `CodeDocs/io/outputs.md` for the canonical spec. Briefly: a JSON object with `$schema_version`, `generated_by`, `object_count`, `reference_count`, `nodes` (currently empty), `edges` (currently empty).
+See `CodeDocs/io/outputs.md` for the canonical spec. Briefly: `$schema_version`, `generated_by`, `object_count`, `reference_count`, `nodes[]` (id/folder/strName/file), `edges[]` (source/target/kind/sourceField/optional metadata).
 
-## Implementation plan (v1)
-
-When `DataLoader` + `ReferenceExtractor` go live, populate `nodes` and `edges`:
-- `nodes`: `{ id: "<folder>:<strName>", folder, strName, file }`.
-- `edges`: `{ source: "<folder>:<strName>", target: "<folder>:<strName>", kind, sourceField, metadata? }`.
-
-At that point bump `$schema_version` to 1 and update `outputs.md` in lockstep.
+Edge `metadata` is serialized as a JSON object with keys preserved as-is. Scalar values are dispatched per type (string, bool, numeric); unknown types fall back to `ToString()`.
 
 ## Depends on
 
 - `ObjectIndex`, `Reference`, `DataObject`.
-- `System.Text` (`StringBuilder`). Will likely move to `System.Text.Json` for proper serialization once nodes/edges have content.
+- `System.Text.Json` (`Utf8JsonWriter`).
 
 ## Used by
 

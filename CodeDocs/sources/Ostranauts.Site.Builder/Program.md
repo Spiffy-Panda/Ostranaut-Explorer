@@ -16,21 +16,31 @@ Ostranauts.Site.Builder [--data <dir>] [--out <dir>] [-h | --help]
 Defaults: `--data data`, `--out build/data`.
 
 Exit codes:
-- `0` — success
+- `0` — success (warnings reported on stderr but do not fail the run)
 - `1` — data root missing
 - `2` — unknown / malformed argument
 
 ## Pipeline
 
 ```csharp
-var catalog    = SchemaLoader.Load(Path.Combine(dataRoot, "schemas"));
-var objects    = DataLoader.Load(dataRoot).ToList();
+var catalog = SchemaLoader.Load(Path.Combine(dataRoot, "schemas"));
+
+var warnings = 0;
+var objects = DataLoader
+    .Load(dataRoot, w => { Console.Error.WriteLine(w); warnings++; })
+    .ToList();
+
 var references = objects.SelectMany(o => ReferenceExtractor.Extract(o, catalog)).ToList();
-var index      = new ObjectIndex(objects, references);
+var index = new ObjectIndex(
+    objects, references,
+    w => { Console.Error.WriteLine(w); warnings++; });
+
 GraphExporter.WriteJson(index, Path.Combine(outDir, "graph.json"));
 ```
 
-Console output: path of the written file plus `objects`, `references`, `rules` counts.
+Stdout summary: written-path plus `objects`, `references`, `rules` counts; if any warnings fired, the count is reported pointing at stderr.
+
+Current real-data run (base game `data/`): ~29k objects, 0 references (until ReferenceExtractor lands), ~10 duplicate-strName warnings.
 
 ## Depends on
 

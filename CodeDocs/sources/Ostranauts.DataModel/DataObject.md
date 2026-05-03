@@ -5,9 +5,9 @@
 
 ## Purpose
 
-Represents one parsed entry from a `data/<folder>/*.json` array. Identified globally by the (`Folder`, `StrName`) tuple — both required to look an object up in `ObjectIndex` because the same `strName` can appear in different folders (rare but valid).
+Represents one parsed entry from a `data/<folder>/*.json` array. Identified by the (`Folder`, `StrName`) tuple, but note that this tuple is **not** globally unique in real game data — see `ObjectIndex` for last-wins handling of duplicates.
 
-`RawJson` carries the original entry as a string for now. When `DataLoader` is implemented for real, this likely becomes a parsed `JsonElement` or similar — the field name will change at that point and this overview must be re-synced.
+`Fields` holds the parsed `JsonElement` (cloned from its source `JsonDocument` so it survives independently). Lets `ReferenceExtractor` walk fields without re-parsing.
 
 ## Public API
 
@@ -16,15 +16,16 @@ public sealed record DataObject(
     string Folder,
     string FilePath,
     string StrName,
-    string RawJson);
+    JsonElement Fields);
 ```
 
 ## Depends on
 
-- Nothing beyond the BCL.
+- `System.Text.Json` (for `JsonElement`).
 
 ## Used by
 
 - `DataLoader` (produces these).
-- `ReferenceExtractor` (consumes these).
+- `ReferenceExtractor` (consumes these — will walk `Fields`).
 - `ObjectIndex` (stores and indexes these).
+- `GraphExporter` (reads `Folder`, `StrName`, `FilePath` for node serialization).

@@ -1,0 +1,11 @@
+[
+  {
+    "strName": "TestOwnerOne",
+    "strItemDef": "TestItemA",
+    "aStartingConds": ["IsSystem=1.0x1"]
+  },
+  {
+    "strName": "TestOwnerTwo",
+    "strItemDef": "TestItemB"
+  }
+]
