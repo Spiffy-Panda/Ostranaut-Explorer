@@ -1,0 +1,34 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "strName": {
+                "type": "string",
+                "description": "The code name of the plot manager settings entry. Maps to JsonPlotManagerSettings in the decomp."
+            },
+            "fTensionPeriod": {
+                "type": "number",
+                "description": "Time in seconds between different tension events being spawned (bad). Originally documented under plot-schema.json (where it appears as a ghost) — its real home is here on JsonPlotManagerSettings → plot_manager/."
+            },
+            "fReleasePeriod": {
+                "type": "number",
+                "description": "Time in seconds between different release events being spawned (good)."
+            },
+            "fAutosavePeriod": {
+                "type": "number",
+                "description": "Time in seconds between autosaves."
+            },
+            "fSocialPeriod": {
+                "type": "number",
+                "description": "Time in seconds after socialising before characters will socialise with the player again."
+            },
+            "dictEventChances": {
+                "type": "object",
+                "description": "Chances for specific plot events to occur. All chances must add up to 1.0. (Originally documented under plot-schema.json as a ghost.)"
+            }
+        }
+    }
+}

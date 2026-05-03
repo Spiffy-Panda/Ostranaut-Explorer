@@ -17,9 +17,10 @@ public static class SchemaLoader
     // Single dir.
     public static SchemaCatalog Load(string schemaDir, Action<string>? onWarning = null);
 
-    // Multi-dir overlay — concatenates rules from each dir in order. The returned
-    // SchemaCatalog resolves (sourceFolder, fieldName) collisions with last-wins,
-    // so later dirs (e.g. comment_mod/data/schemas) override earlier ones.
+    // Multi-dir overlay — applies rules from each dir in order with last-wins
+    // semantics on (sourceFolder, fieldName). Also honors x-no-ref true:
+    // any key flagged in a later dir is REMOVED from the catalog (suppresses
+    // misclassified base-schema rules).
     public static SchemaCatalog Load(IEnumerable<string> schemaDirs, Action<string>? onWarning = null);
 }
 ```
@@ -40,6 +41,8 @@ For each file `<folder>-schema.json`, source folder = `<folder>` (e.g. `items-sc
 - `\bcondition\s+string\b` → **`CondStringArray`** (entries follow `Name=value xduration`). LootEntry takes precedence when both markers appear.
 
 **Ghost flag** comes from a JSON Schema `x-ghost: true` extension. The decomp cross-check script (`scrap_scripts/python/07_decomp_schema_table.py`) identifies fields documented in schemas but not deserialized by the corresponding `Json*.cs` class; modders may still want to know about them (older docs, mods that use them, future game updates), so they're preserved as ghost rules. Ghost rules still emit edges if real data happens to contain the field — the flag is purely a visual marker carried through to the site's schema inspector.
+
+**Suppressing a base rule** uses `"x-no-ref": true` in an overlay. The multi-dir Loader collects suppression keys per dir; later dirs' suppressions remove earlier dirs' rules from the catalog. Used to veto base-game schema rules whose descriptions accidentally trip the reference regex (e.g. `interactions.strUseCase`'s wiki description says *"strName from chargeprofiles.json"* but the field actually carries enum-like tokens, not chargeprofile strNames). Single-dir Load discards the suppression list — there's nothing to suppress.
 
 **Sibling-field routing** is read from two JSON Schema `x-` extensions on the field definition:
 

@@ -50,26 +50,49 @@ public static class SchemaLoader
     /// <summary>
     /// Multi-root variant — loads schemas from each directory in order, then
     /// returns a single catalog. (sourceFolder, fieldName) collisions are
-    /// resolved by <see cref="SchemaCatalog"/> with last-wins semantics, so
-    /// later roots (e.g. a Comment Mod) override earlier ones.
+    /// resolved by last-wins semantics, so later roots (e.g. a Comment Mod)
+    /// override earlier ones.
+    ///
+    /// Also honors `x-no-ref: true` on overlay fields: any (folder, field) key
+    /// flagged in a later dir is REMOVED from the catalog entirely, even if an
+    /// earlier dir had a rule for it. Used to veto bad base-schema rules whose
+    /// descriptions accidentally trip the regex (e.g. interactions.strUseCase).
     /// </summary>
     public static SchemaCatalog Load(IEnumerable<string> schemaDirs, Action<string>? onWarning = null)
     {
-        var allRules = new List<SchemaCatalog.FieldRule>();
+        var byKey = new Dictionary<(string folder, string field), SchemaCatalog.FieldRule>();
         foreach (var dir in schemaDirs)
-            allRules.AddRange(Load(dir, onWarning).Rules);
-        return new SchemaCatalog(allRules);
+        {
+            var (rules, suppressed) = LoadInternal(dir, onWarning);
+            foreach (var rule in rules)
+                byKey[(rule.SourceFolder, rule.FieldName)] = rule;
+            foreach (var key in suppressed)
+                byKey.Remove(key);
+        }
+        return new SchemaCatalog(byKey.Values);
     }
 
     public static SchemaCatalog Load(string schemaDir, Action<string>? onWarning = null)
     {
+        var (rules, _) = LoadInternal(schemaDir, onWarning);
+        return new SchemaCatalog(rules);
+    }
+
+    /// <summary>
+    /// Single-dir loader returning both derived rules and any (folder, field)
+    /// keys flagged with <c>x-no-ref: true</c> for cross-dir suppression.
+    /// </summary>
+    private static (List<SchemaCatalog.FieldRule> rules, List<(string folder, string field)> suppressed) LoadInternal(
+        string schemaDir, Action<string>? onWarning)
+    {
+        var rules = new List<SchemaCatalog.FieldRule>();
+        var suppressed = new List<(string folder, string field)>();
+
         if (!Directory.Exists(schemaDir))
         {
             onWarning?.Invoke($"schemas dir not found: {schemaDir}");
-            return SchemaCatalog.Empty;
+            return (rules, suppressed);
         }
-
-        var rules = new List<SchemaCatalog.FieldRule>();
 
         foreach (var schemaPath in Directory.EnumerateFiles(schemaDir, "*-schema.json"))
         {
@@ -96,13 +119,21 @@ public static class SchemaLoader
 
                 foreach (var fieldProp in properties.EnumerateObject())
                 {
+                    // x-no-ref handled here so we can collect the suppression key.
+                    if (fieldProp.Value.TryGetProperty("x-no-ref", out var noRefProp)
+                        && noRefProp.ValueKind == JsonValueKind.True)
+                    {
+                        suppressed.Add((sourceFolder, fieldProp.Name));
+                        continue;
+                    }
+
                     var rule = TryDeriveRule(sourceFolder, fieldProp.Name, fieldProp.Value);
                     if (rule is not null) rules.Add(rule);
                 }
             }
         }
 
-        return new SchemaCatalog(rules);
+        return (rules, suppressed);
     }
 
     private static bool TryGetItemProperties(JsonElement root, out JsonElement properties)
@@ -132,6 +163,10 @@ public static class SchemaLoader
 
     private static SchemaCatalog.FieldRule? TryDeriveRule(string sourceFolder, string fieldName, JsonElement fieldDef)
     {
+        // Note: x-no-ref is handled by LoadInternal before reaching here so it can
+        // generate cross-dir suppression entries. By the time we get here the field
+        // is eligible for rule derivation if it qualifies.
+
         if (!fieldDef.TryGetProperty("description", out var descProp)) return null;
         if (descProp.ValueKind != JsonValueKind.String) return null;
 

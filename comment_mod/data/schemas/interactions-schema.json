@@ -5,6 +5,12 @@
         "type": "object",
         "additionalProperties": true,
         "properties": {
+            "strUseCase": {
+                "type": "string",
+                "description": "Use-case token applied when this interaction's aLootItms contains a 'use' verb. Values are SUFFIX tokens like 'Check' or 'Normal' that combine with chargeprofile name patterns at runtime — NOT a strName reference to chargeprofiles.json. Base wiki description's '(strName from chargeprofiles.json)' phrasing is misleading; suppressing the auto-derived rule here.",
+                "x-no-ref": true
+            },
+
             "strPledgeAdd": {
                 "type": "string",
                 "description": "Pledge added to [us] when this interaction executes. Refers to entry within pledges.json."

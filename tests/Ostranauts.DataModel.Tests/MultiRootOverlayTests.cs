@@ -68,6 +68,61 @@ public class MultiRootOverlayTests
     }
 
     [Fact]
+    public void SchemaLoader_x_no_ref_in_overlay_suppresses_base_rule()
+    {
+        // Set up ad-hoc fixture dirs: base declares a rule, overlay vetoes it.
+        var tmp = Path.Combine(Path.GetTempPath(), "ostranauts-noref-test-" + Guid.NewGuid().ToString("N"));
+        var baseDir = Path.Combine(tmp, "base", "schemas");
+        var overlayDir = Path.Combine(tmp, "overlay", "schemas");
+        Directory.CreateDirectory(baseDir);
+        Directory.CreateDirectory(overlayDir);
+        try
+        {
+            File.WriteAllText(Path.Combine(baseDir, "interactions-schema.json"), """
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "strUseCase": {
+                    "type": "string",
+                    "description": "From chargeprofiles.json (description trips the regex)."
+                  }
+                }
+              }
+            }
+            """);
+            File.WriteAllText(Path.Combine(overlayDir, "interactions-schema.json"), """
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "strUseCase": {
+                    "type": "string",
+                    "description": "Actually a use-case token, not a chargeprofile name.",
+                    "x-no-ref": true
+                  }
+                }
+              }
+            }
+            """);
+
+            // Base alone: rule exists.
+            var baseOnly = SchemaLoader.Load(baseDir);
+            Assert.NotNull(baseOnly.RuleFor("interactions", "strUseCase"));
+
+            // Base + overlay: rule suppressed.
+            var withOverlay = SchemaLoader.Load(new[] { baseDir, overlayDir });
+            Assert.Null(withOverlay.RuleFor("interactions", "strUseCase"));
+        }
+        finally
+        {
+            Directory.Delete(tmp, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SchemaCatalog_constructor_tolerates_duplicate_keys_with_last_wins()
     {
         var first = new SchemaCatalog.FieldRule("condowners", "strFoo", "items", SchemaCatalog.FieldShape.Direct);
