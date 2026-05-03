@@ -48,14 +48,20 @@ path in the same session.
 > keywords."*
 
 The modder's first search is a game-vocabulary term: `hunger` or `sleep need`
-or `needs`. The search bar finds no strName match on `hunger` alone, but the
-concept/glossary search (UX 1.1) returns a card: *"Hunger / Caloric Need —
-tracked by `conditions:StatHunger`."*
+or `needs`. The search bar finds no strName match on `hunger` alone — and
+notably, **there is no `StatHunger` in the actual data**, despite that being
+the name the wiki's Condition Rules tutorial uses as an illustrative example.
+The concept/glossary search (UX 1.1) returns a card that resolves the
+confusion: *"Hunger is split into two stats — `StatSatiety` (the moment‑to‑
+moment feeling of fullness) and `StatFood` (cumulative malnutrition). Most
+mods that 'suppress hunger' want both."*
 
-From `conditions:StatHunger`, the **"Modifies thresholds of this"** sidebar
-(UX 1.4) lists `ThreshStatHunger`. The incoming refs on `ThreshStatHunger`
-show existing entries that grant it — including wearables and drugs from the
-base game. This is the prior art.
+From `conditions:StatSatiety`, the **"Modifies thresholds of this"** sidebar
+(UX 1.4) lists `ThreshStatSatiety`. The incoming refs on `ThreshStatSatiety`
+show existing entries that grant it — including drugs and conditions from the
+base game (e.g. `CONDARSCatastrophic2Per`, `CONDDiarrheaPer`). This is the
+prior art. (`StatFood` notably has *no* `Thresh*` handle — that's a separate
+pitfall the modder will hit at step 4.)
 
 **Explorer outcome:** The modder sees that the mechanism already exists in
 vanilla. Wearables and drugs already use `Thresh<StatName>` to push discomfort
@@ -65,50 +71,61 @@ confirmed before a single line is written.
 ### Step 2 — Understand how Thresh\* suppresses a need
 
 The **"About threshold-shift conditions"** banner (UX 1.2) on
-`conditions:ThreshStatHunger` explains: *"An entity holding this condition has
-the trigger thresholds for `StatHunger` shifted by the cond-string `value`.
-Higher `value` → more tolerance before consequences fire."*
+`conditions:ThreshStatSatiety` explains: *"An entity holding this condition
+has the trigger thresholds for `StatSatiety` shifted by the cond-string
+`value`. Higher `value` → more tolerance before consequences fire."*
 
-The modder checks the incoming refs to see what `value` existing wearables use
-and how high she needs to go to fully flatline the need for normal play.
+The modder checks the incoming refs to see what `value` existing entries use
+(e.g. `IsApathetic`'s per-loot uses `ThreshStatAchievement=1.0x0.2`) and how
+high she needs to go to fully flatline the need for normal play.
 
-**Explorer outcome:** She knows she needs to grant `ThreshStatHunger=X` where
+**Explorer outcome:** She knows she needs to grant `ThreshStatSatiety=X` where
 X is large enough that the stat never reaches the discomfort trigger. She can
 read baseline values off existing entries and choose a multiplier.
 
 ### Step 3 — Map all the needs that need suppressing
 
-From `conditions:StatHunger` the modder follows the "see also" chain to other
-`Stat*` conditions. The glossary card and the `Stat*` explainer banner name the
-full set visible in the needs panel: `StatHunger`, `StatThirst`, `StatSleep`,
-`StatHygiene`, and the psychological stats driven by work ticks
-(`StatAchievement`, `StatEsteem`, `StatMeaning`).
+From `conditions:StatSatiety` the modder follows the "see also" chain to other
+`Stat*` conditions. The glossary card and the `Stat*` explainer banner name
+the full set visible in the needs panel: `StatSatiety` + `StatFood` (hunger),
+`StatHydration` (thirst), `StatSleep`, `StatSleepComfort`, `StatFatigue`,
+`StatHygiene`, `StatDefecate`, and the psychological stats driven by work
+ticks (`StatAchievement`, `StatAltruism`, `StatAutonomy`, `StatContact`,
+`StatEsteem`, `StatFamily`, `StatIntimacy`, `StatMeaning`, `StatPrivacy`,
+`StatSecurity`, `StatSelfRespect`).
 
 She notes which ones have `Thresh<X>` conditions already (and therefore have a
-known-working suppression path) vs. which might need a different approach.
+known-working suppression path) vs. which need a different approach. The
+"Modifies thresholds of this" sidebar surfaces the gap immediately:
+**`StatFood` and `StatHygiene` have no `Thresh*` handle in the base game.**
+For those two she'll have to slow the consumption rate instead, via the
+`-StatFoodRate` / `-StatHygieneRate` pattern visible on `IsMetabSlow`.
 
 **Explorer outcome:** The modder has a checklist of stats to suppress and
 knows which suppression mechanism applies to each before writing any JSON.
 
 ### Step 4 — Find how to attach a Thresh\* grant to a trait
 
-The modder looks at an existing wearable that grants `ThreshStatHunger` — say
-`loot:CONDWearingFoodPackPer` or a similar entry. Its detail page shows:
+The modder looks at an existing trait that already does this kind of thing —
+`conditions:IsApathetic` (which makes the player less fussy about
+achievement). Its detail page shows the chain:
 
-- `strType: condition` in the loot entry
-- `aCOs: ["ThreshStatHunger=3.0x1.0"]` — the condition grant
-- The loot entry is linked from a condowner's `aStartingConds` or from a
-  character-creation loot table via an `aEvents*` ref
+- `IsApathetic` is a Condition with `aPer: ["CONDApatheticPer"]`
+- `loot:CONDApatheticPer` is a Loot entry with `strType: condition` and
+  `aCOs: ["ThreshStatAchievement=1.0x0.2"]`
+- `traitscores/traitscores.json` includes the line `IsApathetic,2,1`,
+  registering the condition as a selectable trait at character creation
+  (score 2, age cost 1)
 
-She follows the incoming-refs chain to understand how the grant gets onto the
-player character. Then she looks at `traitscores/traitscores.json` (surfaced by
-the free-traits user story and discoverable from any trait detail page) to
-understand how traits register at character creation.
+She follows the incoming-refs chain to understand how the trait gets onto the
+player character. The `aPer → CONDxxxPer → aCOs` shape is the standard pattern
+for every trait in the game.
 
-**Explorer outcome:** She has a working pattern: create a condowner that holds
-`aStartingConds` granting `Thresh*` values for each stat, then register that
-condowner as a selectable trait in `traitscores/` and wire it into a career or
-life-event loot table so character creation hands it to the player.
+**Explorer outcome:** She has a working pattern: create a Condition that has
+`aPer` pointing at a loot entry of `strType: condition`, list her `Thresh*`
+and `-StatXRate` strings inside that loot entry's `aCOs`, then register the
+condition as a selectable trait in `traitscores/`. No condowner needed —
+traits are conditions, not condowners.
 
 ### Step 5 — Confirm the non-clean-save safety of this approach
 
@@ -132,27 +149,32 @@ entries notes this caveat explicitly.
 
 | File | What it does |
 |---|---|
-| `data/conditions_simple/<mod_folder>` | Registers the new trait condition (e.g. `IsNeedsReduced`) as a marker. Optional if the trait is implemented purely via condowner `aStartingConds` without needing a named condition. |
-| `data/condowners/<mod_folder>` | Defines the trait object (e.g. `ItmTraitNeedsReduced`) as a condowner that grants high `Thresh*` values for each target stat in `aStartingConds`. |
-| `data/loot/<mod_folder>` | Loot entry with `strType: condition` that delivers the `ItmTraitNeedsReduced` grant to the player character. Referenced from the career or life-event loot table. |
-| `data/traitscores/<mod_folder>` | Adds the trait to the character-creation selection pool with a cost of `0,0` or `0,1` depending on whether age cost is desired. |
-| `mod_info.json` | Loader identification. |
+| `data/conditions/<mod_folder>` | Defines the trait condition (e.g. `IsNeedsReduced`) with `aPer` pointing at the per-loot below. Modeled on `IsApathetic`. |
+| `data/loot/<mod_folder>` | Loot entry of `strType: condition` (e.g. `CONDNeedsReducedPer`) whose `aCOs` lists the `Thresh*` and `-StatXRate` effects. Modeled on `CONDApatheticPer`. |
+| `data/traitscores/<mod_folder>` | Adds the trait to the character-creation selection pool (`IsNeedsReduced,0,0` for free, or `3,1` to match base-game cost shape). |
+| `mod_info.json` | Loader identification (`strName`, `strAuthor`, `strGameVersion`, `strModVersion`, `strNotes`). |
+| `Ostranauts_Data/loading_order.json` | Sits one level *above* the mod folder. Lists `"core"` then the mod's folder name in `aLoadOrder`. The game auto-creates this when you click the **Mods** button in Options→Files. |
 
 ---
 
 ## What the explorer needs to show for this story to succeed
 
 - **Glossary card for "hunger / needs"** bridges the plain-English search to
-  `StatHunger` before the modder gives up. Without it, searching `hunger`
-  dead-ends.
-- **"Modifies thresholds of this" sidebar** on `StatHunger` (and all
+  `StatSatiety` + `StatFood` before the modder gives up. Without it, searching
+  `hunger` dead-ends — there is no `StatHunger` in the data, even though the
+  wiki's Condition Rules tutorial uses that name. The card must explicitly
+  call out the Satiety vs. Food split.
+- **"Modifies thresholds of this" sidebar** on `StatSatiety` (and all
   `Stat*` need conditions) surfaces prior art in the same click. This is the
   "I see it's been done before" moment that converts a hesitant asker into a
-  modder who commits.
-- **Existing wearable / drug incoming refs on `ThreshStatHunger`** are
-  legible without filter pills — there should be few enough that the pattern
-  is readable. If the list is long, a *"Only Loot · strType:condition"* pill
-  narrows to the relevant entries.
+  modder who commits. Equally important: when the sidebar is *empty* (as on
+  `StatFood` and `StatHygiene`) the modder needs to see that emptiness
+  immediately, so they pivot to the rate-suppression mechanism rather than
+  hunting for a `Thresh*` that doesn't exist.
+- **Existing incoming refs on `ThreshStatSatiety`** are legible without
+  filter pills — there should be few enough that the pattern is readable. If
+  the list is long, a *"Only Loot · strType:condition"* pill narrows to the
+  relevant entries.
 - **The "Edit this" callout on condrule entries** must include a save-safety
   caveat when the edit would modify a threshold in an existing entry — so the
   modder doesn't accidentally take the risky path.
@@ -165,8 +187,9 @@ entries notes this caveat explicitly.
 ## Acceptance criterion
 
 A modder who opens the explorer with the question *"can I make a trait that
-suppresses hunger and sleep so they don't bother me?"* and has never modded
-Ostranauts should reach, in a single session:
+suppresses hunger and sleep so they don't bother me?"* — using the
+player-facing word "hunger" — and has never modded Ostranauts should reach,
+in a single session:
 
 1. Confirmation that the mechanism exists (existing wearables/drugs using
    `Thresh*`).

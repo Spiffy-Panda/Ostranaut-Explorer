@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ostranauts mod — a player trait that suppresses needs</title>
+<style>
+  :root {
+    --bg: #14171c;
+    --panel: #1c2026;
+    --panel-2: #232830;
+    --ink: #e6e9ef;
+    --ink-dim: #aab0bc;
+    --rule: #2c323b;
+    --accent: #7fb4ff;
+    --warn-bg: #3a2a14;
+    --warn-bd: #6b4a1c;
+    --warn-ink: #ffd89a;
+    --good-bg: #16301f;
+    --good-bd: #2c5b3c;
+    --good-ink: #b9e9c5;
+    --pit-bg: #2a1620;
+    --pit-bd: #5b2c40;
+    --pit-ink: #f3b9d0;
+    --code-bg: #0f1217;
+    --code-ink: #d8dde5;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 4px;
+    line-height: 1.25;
+  }
+  h1 + .subtitle {
+    color: var(--ink-dim);
+    margin: 0 0 32px;
+    font-size: 15px;
+  }
+  h2 {
+    font-size: 20px;
+    margin: 40px 0 12px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+  }
+  h3 {
+    font-size: 16px;
+    margin: 24px 0 8px;
+    color: var(--ink);
+  }
+  h4 {
+    font-size: 14px;
+    margin: 18px 0 6px;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  p { margin: 0 0 12px; }
+  a { color: var(--accent); }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 4px; }
+  code {
+    font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    background: var(--panel-2);
+    color: var(--code-ink);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 14px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    margin: 0 0 16px;
+  }
+  pre code { background: none; padding: 0; }
+  .callout {
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 16px 0 24px;
+    border: 1px solid var(--rule);
+  }
+  .callout.warn {
+    background: var(--warn-bg);
+    border-color: var(--warn-bd);
+    color: var(--warn-ink);
+  }
+  .callout.good {
+    background: var(--good-bg);
+    border-color: var(--good-bd);
+    color: var(--good-ink);
+  }
+  .callout.pit {
+    background: var(--pit-bg);
+    border-color: var(--pit-bd);
+    color: var(--pit-ink);
+  }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout strong { color: inherit; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8px 0 20px;
+    font-size: 14px;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  th {
+    color: var(--ink-dim);
+    font-weight: 600;
+    background: var(--panel);
+  }
+  td code { font-size: 13px; }
+  .filebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--panel-2);
+    color: var(--ink-dim);
+    padding: 6px 12px;
+    border: 1px solid var(--rule);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .filebar + pre {
+    border-radius: 0 0 6px 6px;
+    margin-top: 0;
+  }
+  .pill {
+    display: inline-block;
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    color: var(--ink-dim);
+    border-radius: 999px;
+    padding: 1px 9px;
+    font-size: 12px;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .small {
+    color: var(--ink-dim);
+    font-size: 13px;
+  }
+  .toc {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 0 0 32px;
+  }
+  .toc ol { margin: 6px 0 0; padding-left: 22px; }
+  .toc li { margin-bottom: 2px; }
+  .toc a { text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  hr.soft { border: 0; border-top: 1px dashed var(--rule); margin: 24px 0; }
+  .footer {
+    margin-top: 48px;
+    color: var(--ink-dim);
+    font-size: 13px;
+  }
+  .src {
+    font-size: 12px;
+    color: var(--ink-dim);
+    font-style: italic;
+  }
+  .src a { color: var(--accent); text-decoration: none; }
+  .src a:hover { text-decoration: underline; }
+  .pitfall {
+    border-left: 3px solid var(--pit-bd);
+    padding: 6px 0 6px 14px;
+    margin: 12px 0;
+  }
+  .pitfall strong { color: var(--pit-ink); }
+</style>
+</head>
+<body>
+<main>
+
+<h1>A player trait that flatlines needs</h1>
+<p class="subtitle">A starting point for an Ostranauts mod. Adds a single character-creation trait that holds your physical and psychological needs below their discomfort thresholds.</p>
+
+<div class="callout warn">
+<strong>This is untested.</strong> I have not built or run this mod against the game. It is assembled from patterns the base game already uses (the <code>aPer → CONDxxxPer → aCOs</code> chain that wires every existing trait), but the specific combination here has not been verified in‑game. Treat it as a scaffold to copy, drop into <code>Mods/</code>, and then iterate on once you can see what the game actually does with it. The values, especially, are first guesses.
+</div>
+
+<div class="toc">
+<strong>What's in here</strong>
+<ol>
+  <li><a href="#what">What the mod does</a></li>
+  <li><a href="#model">The model in 60 seconds</a></li>
+  <li><a href="#stats">The actual stat names you'll need</a></li>
+  <li><a href="#mechanisms">The two suppression mechanisms (and which stat takes which)</a></li>
+  <li><a href="#files">The mod files, copy‑pasteable</a></li>
+  <li><a href="#values">Tuning the values</a></li>
+  <li><a href="#existing">Applying it to a save you've already started</a></li>
+  <li><a href="#pitfalls">Pitfalls and confusable names</a></li>
+  <li><a href="#debug">If it doesn't work — quick debugging</a></li>
+  <li><a href="#sources">Sources</a></li>
+</ol>
+</div>
+
+<h2 id="what">1 · What the mod does</h2>
+<p>It registers a new selectable trait at character creation called <strong>Needs Reduced</strong>. Picking it gives the player one condition (<code>IsNeedsReduced</code>), which holds a periodic effect that shifts the trigger thresholds for hunger (Satiety), thirst (Hydration), sleep, fatigue, and the psychological stats far enough that the discomfort conditions never actually fire during normal play. It also slows the consumption rates for malnutrition (<code>StatFood</code>) and dirtiness (<code>StatHygiene</code>), because those two needs don't have a <code>Thresh*</code> handle to grab.</p>
+<p>It is purely additive: new files, no edits to any base‑game data. Safe to install on an existing save (with one extra step to grant the trait to a character that's already alive — see §7).</p>
+
+<h2 id="model">2 · The model in 60 seconds</h2>
+<p>Every "trait" in Ostranauts is a <strong>Condition</strong> living in <code>data/conditions/</code>. The trait condition itself doesn't <em>do</em> anything mechanical — it carries a name, description, and a list called <code>aPer</code>. Each entry in <code>aPer</code> names a periodic Loot entry that gets re‑applied on a tick. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Conditions">Conditions</a> — the <code>aPer</code> field is documented as "Array of Loot to apply for every stack of this condition.")</span></p>
+<p>Those periodic effects live in <code>data/loot/</code> as Loot entries with <code>strType: condition</code>. Their <code>aCOs</code> field is a list of strings shaped like <code>StatName=chanceXmin-max</code>, and that's where the actual numbers happen. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Modding/Loot">Modding/Loot</a> — "Each entry follows the pattern <code>Name = chance x min-max</code>.")</span></p>
+<p>The chain looks like:</p>
+
+<pre><code>traitscores.json   →   the trait shows up in character creation
+       ↓ (just a name + a score + an age cost)
+conditions.json    →   IsNeedsReduced
+       ↓ aPer
+loot.json          →   CONDNeedsReducedPer  (strType: condition)
+       ↓ aCOs
+                   →   ThreshStatSatiety = 1.0 x 0.95
+                       ThreshStatHydration = 1.0 x 0.95
+                       -StatFoodRate = 1.0 x 0.95
+                       ... etc
+</code></pre>
+
+<p>Two important pattern notes you'll see in the existing data:</p>
+<ul>
+  <li><strong>The <code>=valueXduration</code> shape.</strong> The "X" is a literal lowercase x. <code>1.0x0.95</code> means "chance 1.0, magnitude 0.95." For <code>Thresh*</code> entries, higher magnitude = bigger threshold shift = more tolerance before consequences fire.</li>
+  <li><strong>The leading minus.</strong> A leading <code>-</code> on a string (e.g. <code>"-StatFoodRate=1.0x0.95"</code>) means "apply the effect negatively" — i.e. subtract from the rate instead of adding to it. That's how you slow a need's consumption. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Modding/Loot">Modding/Loot</a> — "Prefixing with <code>-</code> produces negative payouts.")</span></li>
+</ul>
+
+<p>You can verify the chain in vanilla by searching for <code>"IsApathetic"</code>: it's a condition whose <code>aPer</code> points at <code>CONDApatheticPer</code>, whose <code>aCOs</code> is <code>["ThreshStatAchievement=1.0x0.2"]</code>. That's a real, shipping trait built exactly the way this mod will be.</p>
+
+<p>If you want a friendlier conceptual overview of how thresholds and discomfort conditions interact (Mild → Moderate → Severe stages, AI priority calculation, etc.), the wiki's <a href="https://ostranauts.wiki.gg/wiki/Condition_Rules">Condition Rules</a> page walks the entire loop. Just be aware it uses <code>StatHunger</code> as an illustrative example name throughout — that exact stat does not exist in the actual data (see §8).</p>
+
+<h2 id="stats">3 · The actual stat names you'll need</h2>
+<p>The names players see in the needs panel are friendlier than the ones the data uses. Mapping:</p>
+
+<table>
+<thead><tr><th>What players call it</th><th>Underlying stat</th><th>Discomfort condrule</th></tr></thead>
+<tbody>
+<tr><td>Hunger (the feeling)</td><td><code>StatSatiety</code></td><td><code>DcSatiety</code></td></tr>
+<tr><td>Malnutrition (the actual harm)</td><td><code>StatFood</code></td><td><code>DcFood</code></td></tr>
+<tr><td>Thirst</td><td><code>StatHydration</code></td><td><code>DcHydration</code></td></tr>
+<tr><td>Sleep deprivation</td><td><code>StatSleep</code></td><td><code>DcSleep</code></td></tr>
+<tr><td>Sleep comfort</td><td><code>StatSleepComfort</code></td><td><code>DcSleepComfort</code></td></tr>
+<tr><td>Fatigue</td><td><code>StatFatigue</code></td><td><code>DcFatigue</code></td></tr>
+<tr><td>Hygiene / dirtiness</td><td><code>StatHygiene</code></td><td><code>DcHygiene</code></td></tr>
+<tr><td>Bathroom need</td><td><code>StatDefecate</code></td><td><code>DcDefecate</code></td></tr>
+<tr><td>Achievement / Esteem / Meaning / Autonomy / etc.</td><td><code>StatAchievement</code>, <code>StatEsteem</code>, <code>StatMeaning</code>, <code>StatAutonomy</code>, <code>StatAltruism</code>, <code>StatContact</code>, <code>StatFamily</code>, <code>StatIntimacy</code>, <code>StatPrivacy</code>, <code>StatSecurity</code>, <code>StatSelfRespect</code></td><td>Matching <code>Dc&lt;StatName&gt;</code> for each</td></tr>
+</tbody>
+</table>
+
+<p class="small">"Hunger" in‑game is actually two stats: <code>StatFood</code> tracks malnutrition (a slow, harmful curve), and <code>StatSatiety</code> tracks the moment‑to‑moment "I want to eat" feeling. You probably want to suppress both. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Health_and_Safety#Satiety">Health and Safety § Satiety</a> and <a href="https://ostranauts.wiki.gg/wiki/Health_and_Safety#Malnutrition">§ Malnutrition</a> — the wiki explicitly says "Not to be confused with satiety, or the feeling of fullness.")</span></p>
+
+<h2 id="mechanisms">4 · The two suppression mechanisms</h2>
+<p>The base game offers two ways to muffle a need. You can't always pick — some stats only support one.</p>
+
+<h3>Mechanism A — <code>Thresh&lt;StatName&gt;</code> (raise the trigger threshold)</h3>
+<p>This is the cleanest mechanism. Holding a <code>Thresh&lt;StatName&gt;</code> effect raises the value at which <code>StatName</code> trips its discomfort condition. If you raise it high enough, the discomfort never fires, even though the underlying stat keeps moving. The effect sits on top of the base condrule thresholds — you do not edit the base condrule. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Condition_Rules#Modifying_Preferences:_Threshold_Conditions">Condition Rules § Modifying Preferences: Threshold Conditions</a>.)</span></p>
+<p><strong>Stats that have a working <code>Thresh*</code> handle in the base game</strong> (verified by grep over <code>data/loot/loot.json</code>):</p>
+<p class="small">
+<span class="pill">ThreshStatSatiety</span>
+<span class="pill">ThreshStatHydration</span>
+<span class="pill">ThreshStatSleep</span>
+<span class="pill">ThreshStatSleepComfort</span>
+<span class="pill">ThreshStatFatigue</span>
+<span class="pill">ThreshStatDefecate</span>
+<span class="pill">ThreshStatAchievement</span>
+<span class="pill">ThreshStatAltruism</span>
+<span class="pill">ThreshStatAutonomy</span>
+<span class="pill">ThreshStatContact</span>
+<span class="pill">ThreshStatEsteem</span>
+<span class="pill">ThreshStatFamily</span>
+<span class="pill">ThreshStatIntimacy</span>
+<span class="pill">ThreshStatMeaning</span>
+<span class="pill">ThreshStatPrivacy</span>
+<span class="pill">ThreshStatSecurity</span>
+<span class="pill">ThreshStatSelfRespect</span>
+</p>
+<p>Notable absences: <strong>no <code>ThreshStatFood</code></strong> and <strong>no <code>ThreshStatHygiene</code></strong>. For those two, fall back to mechanism B.</p>
+
+<h3>Mechanism B — <code>-Stat&lt;Name&gt;Rate</code> (slow the consumption rate)</h3>
+<p>For each "consumed" need, the game also tracks a rate stat: <code>StatFoodRate</code>, <code>StatHydrationRate</code>, <code>StatHygieneRate</code>, <code>StatAtrophyRate</code>. Subtracting from the rate slows how fast the underlying need decays. The base game's <code>IsMetabSlow</code> trait does exactly this — its periodic effect contains <code>"-StatFoodRate=1.0x0.25"</code> and <code>"-StatHydrationRate=1.0x0.25"</code>, slowing both by 25 %.</p>
+<p>To flatline a need this way you push the rate close to zero. <em>How</em> close is part of the tuning you'll have to do empirically (see §6).</p>
+
+<h2 id="files">5 · The mod files, copy‑pasteable</h2>
+<p>Drop these into a new folder under your Ostranauts <code>Mods/</code> directory. The folder layout mirrors the base game's <code>data/</code> tree. Everything below is a brand‑new file — nothing you write here overwrites or mutates an existing base‑game entry. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Modding/Data_Modding#Creating_Your_First_Mod">Modding/Data Modding § Creating Your First Mod</a>.)</span></p>
+
+<h4>Where it goes on disk</h4>
+<pre><code>&lt;Steam&gt;/steamapps/common/Ostranauts/Ostranauts_Data/
+├── loading_order.json              ← see below
+└── Mods/
+    └── NeedsReducedTrait/          ← this whole folder is the mod
+        ├── mod_info.json
+        └── data/
+            ├── conditions/
+            │   └── conditions_needsreduced.json
+            ├── loot/
+            │   └── loot_needsreduced.json
+            └── traitscores/
+                └── traitscores_needsreduced.json
+</code></pre>
+
+<h3><code>mod_info.json</code></h3>
+<div class="filebar"><span>Mods/NeedsReducedTrait/mod_info.json</span></div>
+<pre><code>[
+  {
+    "strName": "Needs Reduced Trait",
+    "strAuthor": "&lt;your name&gt;",
+    "strModURL": "",
+    "strGameVersion": "0.14.0.0",
+    "strModVersion": "0.1",
+    "strNotes": "Adds a player-selectable trait that suppresses physical and psychological needs."
+  }
+]
+</code></pre>
+<p class="small">Bump <code>strGameVersion</code> if you're on a newer Ostranauts build. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Modding/Data_Modding#mod_info.json">Modding/Data Modding § mod_info.json</a>.)</span></p>
+
+<h3><code>loading_order.json</code></h3>
+<div class="filebar"><span>Ostranauts_Data/loading_order.json</span></div>
+<pre><code>[
+  {
+    "strName": "Mod Loading Order",
+    "strNotes": "Controls the order mods are loaded. 'core' refers to base game data and should usually be first.",
+    "aLoadOrder": [
+      "core",
+      "NeedsReducedTrait"
+    ],
+    "aIgnorePatterns": []
+  }
+]
+</code></pre>
+<p class="small">This file lives <em>one level above</em> the <code>Mods/</code> folder, not inside the mod folder. The folder name in <code>aLoadOrder</code> must match the mod folder name <strong>exactly, case‑sensitive</strong>. You can also let the game generate this for you by clicking the <strong>Mods</strong> button in <em>Options → Files</em>. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Modding/Data_Modding#loading_order.json">Modding/Data Modding § loading_order.json</a>.)</span></p>
+
+<h3>The trait condition</h3>
+<div class="filebar"><span>Mods/NeedsReducedTrait/data/conditions/conditions_needsreduced.json</span></div>
+<pre><code>[
+  {
+    "strName"         : "IsNeedsReduced",
+    "strNameFriendly" : "Needs Reduced",
+    "strColor"        : "Good",
+    "strDesc"         : "[us] [is] unusually self-sufficient — physical and psychological needs barely register.",
+    "nDisplaySelf"    : 2,
+    "nDisplayOther"   : 1,
+    "fDuration"       : 0.0,
+    "aPer"            : [ "CONDNeedsReducedPer" ],
+    "fClampMax"       : 1.0
+  }
+]
+</code></pre>
+<p class="small">This mirrors the shape of <code>IsApathetic</code> in <code>data/conditions/conditions.json</code>: a permanent (<code>fDuration: 0.0</code>) condition with a single periodic effect. The Conditions wiki page documents every field. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Conditions">Conditions</a>.)</span></p>
+
+<h3>The periodic effect (the loot entry)</h3>
+<div class="filebar"><span>Mods/NeedsReducedTrait/data/loot/loot_needsreduced.json</span></div>
+<pre><code>[
+  {
+    "strName" : "CONDNeedsReducedPer",
+    "strType" : "condition",
+    "aLoots"  : [],
+    "aCOs"    : [
+      "ThreshStatSatiety=1.0x0.95",
+      "ThreshStatHydration=1.0x0.95",
+      "ThreshStatSleep=1.0x0.95",
+      "ThreshStatSleepComfort=1.0x0.95",
+      "ThreshStatFatigue=1.0x0.95",
+      "ThreshStatDefecate=1.0x0.95",
+
+      "ThreshStatAchievement=1.0x0.95",
+      "ThreshStatAltruism=1.0x0.95",
+      "ThreshStatAutonomy=1.0x0.95",
+      "ThreshStatContact=1.0x0.95",
+      "ThreshStatEsteem=1.0x0.95",
+      "ThreshStatFamily=1.0x0.95",
+      "ThreshStatIntimacy=1.0x0.95",
+      "ThreshStatMeaning=1.0x0.95",
+      "ThreshStatPrivacy=1.0x0.95",
+      "ThreshStatSecurity=1.0x0.95",
+      "ThreshStatSelfRespect=1.0x0.95",
+
+      "-StatFoodRate=1.0x0.95",
+      "-StatHydrationRate=1.0x0.95",
+      "-StatHygieneRate=1.0x0.95",
+      "-StatAtrophyRate=1.0x0.95"
+    ]
+  }
+]
+</code></pre>
+<p class="small">First block: every stat that has a real <code>Thresh*</code> handle. Second block: the rate‑slowing fallback for the four "consumption rate" stats. Hygiene and food (malnutrition) are handled <em>only</em> by the second block, since they don't have a <code>Thresh*</code>.</p>
+
+<h3>Register the trait at character creation</h3>
+<div class="filebar"><span>Mods/NeedsReducedTrait/data/traitscores/traitscores_needsreduced.json</span></div>
+<pre><code>[
+  {
+    "strName" : "Trait Scores,1",
+    "aValues" : [
+      "IsNeedsReduced,0,0"
+    ]
+  }
+]
+</code></pre>
+<p class="small">The format is <code>TraitName,score,ageCost</code>. <code>0,0</code> means "free pick, no in‑game age cost." Use <code>3,1</code> or similar if you'd rather it cost trait‑budget points and a year of starting age, the way the base game's <code>IsCharismatic,3,1</code> does.</p>
+
+<div class="callout good">
+<strong>That's the whole mod.</strong> Five files (four under your mod folder, plus <code>loading_order.json</code> at the <code>Ostranauts_Data/</code> level), no edits to base‑game data. The trait should appear in the character‑creation trait list under "Needs Reduced" and apply <code>IsNeedsReduced</code> to the player on game start.
+</div>
+
+<h2 id="values">6 · Tuning the values</h2>
+<p>The numbers above are first guesses. Some calibration notes:</p>
+
+<h3>The "X" magnitude term</h3>
+<p>In a string like <code>ThreshStatSatiety=1.0x0.95</code>, the parser reads it as <code>chance=1.0, magnitude=0.95</code>. Looking at vanilla examples for context:</p>
+<ul>
+  <li><code>CONDApatheticPer</code> uses <code>ThreshStatAchievement=1.0x0.2</code> — small, persistent positive shift.</li>
+  <li><code>CONDAntiGravStimPer</code> uses <code>ThreshStatGrav=1.0x0.5</code> — moderate effect.</li>
+  <li><code>CONDCaffeine2Per</code> uses <code>ThreshStatSleep=1.0x0.5</code> — moderate sleep suppression.</li>
+  <li>Larger magnitude values tend to mean a stronger effect per tick. Some entries use values up to ~3 for very strong effects.</li>
+</ul>
+<p>If your needs aren't suppressed enough at <code>1.0x0.95</code>, try raising the magnitude further (e.g. <code>1.0x2.0</code> or <code>1.0x3.0</code>).</p>
+
+<h3>The rate suppressors</h3>
+<p>For the rate stats (<code>-StatFoodRate</code>, <code>-StatHydrationRate</code>, <code>-StatHygieneRate</code>), the magnitude behaves like a multiplier on the subtraction. <code>-StatFoodRate=1.0x0.25</code> in <code>IsMetabSlow</code> slows food consumption by ~25 %; <code>1.0x0.95</code> should leave you with very nearly zero rate. If hunger or hygiene are still moving noticeably, push closer to <code>1.0x1.0</code>.</p>
+
+<h3>Don't go too high</h3>
+<p>If you over‑shift a stat (especially a psychological one), you may push it past the <em>upper</em> end of the condrule — at which point the highest‑tier discomfort can fire instead of the lowest. Land softly: start at <code>1.0x0.5</code>, raise gradually until comfort holds.</p>
+
+<h2 id="existing">7 · Applying it to a save you've already started</h2>
+<p>The mod itself is safe to enable mid‑save — you're only adding new entries. But your existing character won't <em>have</em> the new trait yet, because traits are handed out at character creation.</p>
+<p>To grant it on the spot, open the in‑game console and run:</p>
+<pre><code>addcond IsNeedsReduced</code></pre>
+<p>That attaches the condition to the targeted character (usually the player). Because <code>IsNeedsReduced</code>'s <code>fDuration</code> is <code>0.0</code> it will persist forever, and the periodic effect will start firing on the next tick.</p>
+<p>If you ever want to remove it: <code>removecond IsNeedsReduced</code>. <span class="src">(See <a href="https://ostranauts.wiki.gg/wiki/Debug">Debug</a> on the wiki for the console basics.)</span></p>
+
+<div class="callout warn">
+<strong>What you should NOT do.</strong> Do not edit <code>data/condrules/condrules.json</code> to raise the discomfort thresholds directly. That mutates an entry the base game (and existing saves) already reference, and risks corrupting in‑progress condition state. The whole reason this mod uses the <code>Thresh*</code> mechanism is to avoid that — you're stacking a shift on top of the existing rule, not editing it.
+</div>
+
+<h2 id="pitfalls">8 · Pitfalls and confusable names</h2>
+<p>This is the corner most new modders trip on. Skim before you start, re‑read after the first thing breaks.</p>
+
+<div class="pitfall">
+<strong><code>StatHunger</code> doesn't exist.</strong> The wiki's <a href="https://ostranauts.wiki.gg/wiki/Condition_Rules">Condition Rules</a> page uses <code>StatHunger</code> / <code>ThreshStatHunger</code> / <code>DcHungry01</code> as illustrative names throughout its tutorial. They are pedagogical placeholders. The actual stats are <code>StatSatiety</code> (the feeling) and <code>StatFood</code> (the malnutrition curve), with discomfort condrules <code>DcSatiety</code> and <code>DcFood</code>. If you copy <code>ThreshStatHunger</code> straight out of the wiki, the parser will accept it as a string but nothing in the game will react to it — you'll see no effect.
+</div>
+
+<div class="pitfall">
+<strong>Satiety vs. Food.</strong> Players say "hunger" but the data has two separate stats. <code>StatSatiety</code> is the moment‑to‑moment "I want to eat" feeling that ticks up about once per hour and resets when you eat. <code>StatFood</code> is cumulative malnutrition that climbs slowly and only kills you over days of starvation. Suppressing only Satiety leaves your character thin and weak; suppressing only Food leaves them constantly grumpy about being hungry. The mod above does both.
+</div>
+
+<div class="pitfall">
+<strong><code>StatSleep</code> vs. <code>StatSleepComfort</code>.</strong> <code>StatSleep</code> is the need to sleep (rises with wakefulness). <code>StatSleepComfort</code> is how easy it is to fall asleep right now — high values mean uncomfortable, can't drop off. They have separate condrules and separate <code>Thresh*</code> handles. The mod suppresses both because they're orthogonal.
+</div>
+
+<div class="pitfall">
+<strong><code>StatFatigue</code> is not the same as <code>StatSleep</code>.</strong> Fatigue is short‑term physical exertion (climbs while working, recovers while resting). Sleep is long‑term wakefulness. A character can be fully rested and still fatigued, or vice versa. Both have <code>Thresh*</code> handles.
+</div>
+
+<div class="pitfall">
+<strong>The rate stats are separate stats.</strong> <code>StatFood</code> is the level (current malnutrition); <code>StatFoodRate</code> is the rate at which Food rises. Subtracting from the level (<code>-StatFood=...</code>) one‑shot heals malnutrition. Subtracting from the rate (<code>-StatFoodRate=...</code>) makes future malnutrition climb more slowly. Same pattern for <code>StatHydration</code>/<code>StatHydrationRate</code>, <code>StatHygiene</code>/<code>StatHygieneRate</code>, <code>StatAtrophy</code>/<code>StatAtrophyRate</code>. For an ongoing trait you almost always want the rate version.
+</div>
+
+<div class="pitfall">
+<strong>Traits are conditions, not condowners.</strong> Every selectable trait (<code>IsApathetic</code>, <code>IsGlutton</code>, <code>IsInsomniac</code>, …) is a Condition in <code>data/conditions/</code>, not a CondOwner in <code>data/condowners/</code>. CondOwners are objects‑that‑can‑hold‑conditions (humans, items, ships). A trait is a single condition that gets attached to the player CondOwner. Earlier guidance in older write‑ups suggested making a condowner with <code>aStartingConds</code>; that path technically works for items but is the wrong model for a player trait.
+</div>
+
+<div class="pitfall">
+<strong>The bucket key <code>"Trait Scores,1"</code> includes the comma.</strong> In the traitscores file, the outer <code>strName</code> is literally <code>"Trait Scores,1"</code> — comma and digit included. That's not an entry index in your file, it's the bucket name the game uses to merge your additions into the base trait pool. If you change it to <code>"Trait Scores"</code> or <code>"NeedsReducedTrait"</code>, your entry will end up in a different (or new, ignored) bucket and the trait won't appear in character creation.
+</div>
+
+<div class="pitfall">
+<strong>Loot of <code>strType: condition</code> is not a Condition.</strong> The <code>CONDxxxPer</code> entries live in <code>data/loot/</code>, not in <code>data/conditions/</code>, even though their names start with <code>COND</code> and they exist to apply conditions. The naming is a convention, not a folder hint. When wiring <code>aPer</code>, the string you put there resolves against loot table names, not condition names.
+</div>
+
+<div class="pitfall">
+<strong><code>nDisplaySelf</code> / <code>nDisplayOther</code> control whether the trait shows up in the character UI.</strong> Set both to <code>0</code> on the trait condition and the player will never see "Needs Reduced" on their status panel — making it impossible to tell whether the mod loaded successfully. Use <code>2</code> (always show) on at least <code>nDisplaySelf</code> while you're testing. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Conditions">Conditions</a> field reference.)</span>
+</div>
+
+<div class="pitfall">
+<strong>JSON files are arrays of objects.</strong> Even when there's only one object, the outer brackets <code>[ ]</code> are required. A trailing comma after the last item in <code>aCOs</code> will silently fail to load — LitJson (the parser the game uses) is unforgiving about it. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Modding/Data_Modding#JSON_Basics">Modding/Data Modding § JSON Basics</a>.)</span>
+</div>
+
+<div class="pitfall">
+<strong>"Mods" capitalization matters.</strong> The mods directory is <code>Ostranauts_Data/Mods/</code> with a capital M. The folder name you put in <code>loading_order.json</code>'s <code>aLoadOrder</code> must match your mod folder name <em>exactly</em> — case‑sensitive on every platform.
+</div>
+
+<h2 id="debug">9 · If it doesn't work — quick debugging</h2>
+<ol>
+  <li><strong>Trait doesn't appear in character creation.</strong> Check that <code>traitscores_needsreduced.json</code>'s outer <code>strName</code> is exactly <code>"Trait Scores,1"</code> — the comma‑1 is part of the name. Then check <code>loading_order.json</code> includes your folder name and the spelling matches.</li>
+  <li><strong>Trait appears but the player doesn't get the condition.</strong> Open the console and run <code>addcond IsNeedsReduced</code> on the player to confirm the condition itself is well‑formed. If <em>that</em> works but starting a new game with the trait selected doesn't, the wiring between traitscores and condition application is the suspect.</li>
+  <li><strong>Player has the condition but needs still trigger.</strong> Open the player's status panel and look for the trait listed (which is why <code>nDisplaySelf: 2</code> matters during testing). If the underlying need still drops into discomfort, raise the magnitude on the relevant <code>Thresh*</code> entry.</li>
+  <li><strong>Hunger or hygiene still trip.</strong> Those two are <em>only</em> handled by the rate‑slowing block. If they still trip, increase the magnitude of the relevant <code>-Stat*Rate</code> entry toward <code>1.0</code>.</li>
+  <li><strong>Crash on game load.</strong> Almost always a JSON syntax error in one of the four files — missing comma, unterminated string, trailing comma in <code>aCOs</code>. Run the file through any JSON linter; LitJson is unforgiving.</li>
+  <li><strong>Mod doesn't load at all.</strong> Verify <code>mod_info.json</code> exists at the mod folder root and is valid JSON. Verify <code>loading_order.json</code> sits in <code>Ostranauts_Data/</code> (one level above <code>Mods/</code>) and includes your folder name in <code>aLoadOrder</code>. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Modding/Data_Modding">Modding/Data Modding</a> troubleshooting section.)</span></li>
+</ol>
+
+<h2 id="sources">10 · Sources</h2>
+<p>Pages from the official wiki that informed this guide. Worth bookmarking for the surrounding context — they cover much more than what's distilled above.</p>
+<ul>
+  <li><a href="https://ostranauts.wiki.gg/wiki/Modding/Data_Modding">Modding/Data Modding</a> — mod folder structure, <code>mod_info.json</code>, <code>loading_order.json</code>, JSON conventions.</li>
+  <li><a href="https://ostranauts.wiki.gg/wiki/Modding/Loot">Modding/Loot</a> — loot string format (<code>Name = chance x min-max</code>), <code>strType</code> values, the <code>-</code> prefix semantics.</li>
+  <li><a href="https://ostranauts.wiki.gg/wiki/Conditions">Conditions</a> — field reference for condition entries, including <code>aPer</code> ("Array of Loot to apply for every stack of this condition").</li>
+  <li><a href="https://ostranauts.wiki.gg/wiki/Condition_Rules">Condition Rules</a> — the threshold / discomfort / AI‑priority loop. Uses placeholder names (<code>StatHunger</code>) that don't exist in the data; use the wiki for the concept, the data for the actual stat list.</li>
+  <li><a href="https://ostranauts.wiki.gg/wiki/Health_and_Safety">Health and Safety</a> — player‑facing names for every physical need, with the Satiety‑vs‑Malnutrition split and the threshold values for each discomfort tier.</li>
+  <li><a href="https://ostranauts.wiki.gg/wiki/Traits">Traits</a> — player‑facing list of vanilla traits, useful as a sanity check that "Needs Reduced" doesn't collide with an existing trait name.</li>
+  <li><a href="https://ostranauts.wiki.gg/wiki/Debug">Debug</a> — in‑game console for <code>addcond</code> / <code>removecond</code>.</li>
+</ul>
+
+<hr class="soft">
+
+<p class="footer">Reminder: this guide is a starting scaffold built from base‑game patterns, not a verified working mod. The first time you load it, expect to spend a few cycles tweaking <code>aCOs</code> values until the needs sit where you want them. The pieces — the trait condition, the per‑loot, the traitscores entry, the optional <code>addcond</code> for existing saves — are all real, shipping mechanisms in the base game, just recombined for this purpose.</p>
+
+</main>
+</body>
+</html>

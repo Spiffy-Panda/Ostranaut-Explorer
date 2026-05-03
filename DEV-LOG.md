@@ -4,6 +4,16 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-03 — Needs-suppression mod handoff page + Makefile copy step
+
+Wrote a self-contained HTML guide for the modder from the `mod-suppress-needs.md` user story: how to build a player-trait that flatlines hunger / thirst / sleep / hygiene / psych needs. It's untested (the explorer doesn't ship yet) and presented as a starting scaffold, not a verified mod. Lives at `notes/handoff/needs-suppression-mod-guide.html`.
+
+Content shape: the trait → condition → per-loot → `aCOs` chain explained against the real vanilla `IsApathetic → CONDApatheticPer → ThreshStatAchievement=1.0x0.2` chain, the two suppression mechanisms (`Thresh<Stat>` for stats that have one, `-Stat<Name>Rate` for `StatFood` and `StatHygiene` which don't), four copy-pasteable mod files plus `loading_order.json`, a tuning section, the `addcond` console fallback for existing saves, and a ten-item "Pitfalls and confusable names" section. Each section that's informed by the wiki cites it inline (Conditions, Condition Rules, Modding/Loot, Modding/Data Modding, Health and Safety, Traits, Debug); a Sources section at the bottom collects the links.
+
+Key data correction surfaced while writing: `StatHunger` does not exist. The wiki's Condition Rules tutorial uses it as a pedagogical placeholder, but the real stats are `StatSatiety` (the feeling) and `StatFood` (malnutrition), and `StatFood` notably has no `Thresh*` handle. The `mod-suppress-needs.md` user story was rewritten to use the correct names, the actual `IsApathetic` example chain instead of a hypothetical wearable, and the full real stat checklist; a new acceptance bullet calls out that the explorer must surface the *absence* of `Thresh*` for `StatFood` / `StatHygiene` so modders pivot to the rate mechanism instead of hunting for a handle that doesn't exist.
+
+Makefile: added `HANDOFF_SRC := notes/handoff` and a post-`cp` step that mirrors `notes/handoff/` into `$(BUILD_DIR)/handoff/` after the site files land. Guarded by `[ -d "$(HANDOFF_SRC)" ]` so it's a no-op if the folder ever gets removed. Once GitHub Pages is live, the guide is reachable at `<pages-url>/handoff/needs-suppression-mod-guide.html` — not linked from the site UI, just directly URL-shareable.
+
 ## 2026-05-03 — Untrack `.claude/settings.local.json`
 
 The Claude Code convention is `.claude/settings.json` = shared (tracked), `.claude/settings.local.json` = per-user (gitignored). This repo had it inverted: only the `.local.json` existed and it was tracked. Added the file to `.gitignore` and `git rm --cached`'d it. Local copy preserved.
