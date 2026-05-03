@@ -2,6 +2,27 @@
 
 Operating notes for Claude Code working in this repo. Keep this file tight.
 
+## Where to look first
+
+- **What's next** — [PLAN.md](PLAN.md). Active work tracker. If you don't know what to pick up, start here. Items live until shipped, then move to DEV-LOG.
+- **What shipped** — [DEV-LOG.md](DEV-LOG.md). Reverse-chronological. Read the most recent few entries before any non-trivial change so you know the current state of the codebase.
+- **Why anything exists** — [PROJECT-PITCH.md](PROJECT-PITCH.md). Long-arc design + decisions table. Less load-bearing than PLAN/DEV-LOG day-to-day.
+- **What modders need from the site** — [notes/user-stories/](notes/user-stories/) (end-to-end scenarios) and [notes/ux/](notes/ux/) (component-level UX plans). The user stories are the acceptance tests for "is the site good enough"; the UX plans are designer-facing specs. Read these when working on site UX, search, or schema enrichment, since they tell you *who* the work is for.
+- **Parser blind spots** — [notes/coverage-gaps.md](notes/coverage-gaps.md). Living scratchpad for "this folder/field is referenced but our extractor doesn't see it" hypotheses.
+- **Wiki harvest material** — [notes/wiki-onboarding.md](notes/wiki-onboarding.md) (modder-relevant pieces of player-facing wiki pages) and [comment_mod/wiki_review_queue.md](comment_mod/wiki_review_queue.md) (per-page review queue for fields the deterministic extractor punted on).
+- **LLM-assist provenance** — [prose-extraction/README.md](prose-extraction/README.md). Per-page extraction outputs from haiku/sonnet/opus runs, before they become schema diffs.
+
+## Audience — who this site is for
+
+The user-facing audience is **modders editing Ostranauts JSON**, not players who play Ostranauts. This distinction matters for a recurring failure mode:
+
+- *"Newcomer"* in this repo means **new to Ostranauts modding** — they may be experienced modders of other games, or first-time modders, but they are *modders*. Their goal is to find and edit the data entries that drive a behavior.
+- It does **not** mean *new to the game*. A confused player asking "why does my crew exercise?" is not the audience. A modder asking "where does the exercise/atrophy loop live in the data so I can change it?" *is* the audience — even when they observe the same in-game behavior.
+
+When writing user stories, UX prose, or onboarding material, frame the asker as a modder writing a design doc, not a player asking the explorer to explain NPC behavior. Reframe rather than reject if you find the wrong framing — the data path is usually the same, only the framing is off.
+
+When delegating to subagents that touch user-facing prose, pass this directive in the prompt.
+
 ## Project shape
 
 - `data/` — read-only mirror of the Ostranauts game data tree (~70 folders of JSON arrays). Source of truth for the parser. Do not modify.
@@ -65,7 +86,11 @@ Workflow:
 
 The cached `.md` files are wikitext with a small YAML frontmatter (source URL, section count). Internal `[[Page]]` links reveal which other pages exist — follow them by re-running the cache script.
 
-**Pass this workflow into subagent prompts** so they cache-first too instead of burning fresh `WebFetch` calls on pages we already have.
+### Crawl scope discipline
+
+The canonical wiki crawl scope is **`Modding/*` only** (PROJECT-PITCH decision: those pages carry the field-to-folder reference info; the other ~750 articles are gameplay context). When the user explicitly asks for material from outside `Modding/*` (e.g. *"check the Health and Safety page for stat bar mappings"*), proceed and document the harvest in [notes/wiki-onboarding.md](notes/wiki-onboarding.md). Otherwise, do not crawl player-facing pages — they're off-scope and burn cache.
+
+**Pass this workflow + scope discipline into subagent prompts** so they cache-first AND stay in scope, instead of burning fresh `WebFetch` calls on pages we don't need.
 
 ## Reference-extraction notes
 

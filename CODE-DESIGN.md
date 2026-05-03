@@ -16,27 +16,22 @@ Open the actual source only when:
 ```
 CodeDocs/
 ├── 00_PROJECT.md                  high-level architecture; read first
-├── sources/                       one .md per source file, mirrors src/ tree
-│   ├── Ostranauts.DataModel/
-│   │   ├── CondString.md
-│   │   ├── DataLoader.md
-│   │   ├── DataObject.md
-│   │   ├── GraphExporter.md
-│   │   ├── ObjectIndex.md
-│   │   ├── Reference.md
-│   │   ├── ReferenceExtractor.md
-│   │   ├── SchemaCatalog.md
-│   │   └── SchemaLoader.md
-│   └── Ostranauts.Site.Builder/
-│       └── Program.md
+├── iverifiable-ref-map.md         decompiled IVerifiable.GetVerifiables() map — ground truth for ref fields
+├── sources/                       one .md per .cs source file, mirrors src/ tree
+│   ├── Ostranauts.DataModel/      C# library — parsing, indexing, graph
+│   └── Ostranauts.Site.Builder/   CLI driver
 └── io/                            file format specs the schemas don't cover
     ├── inputs.md                  files this project READS
     └── outputs.md                 files this project WRITES
 ```
 
+The directory listing is the source of truth for what's there — the rule is "one `.md` per `.cs` source file." `Ostranauts.Site/` is intentionally not covered (HTML/CSS/JS is self-explanatory; the file IS the spec).
+
 ### What's in each file kind
 
-**`00_PROJECT.md`** — small. The architectural recap an agent needs before drilling into anything specific: what the projects are, how they connect, the v0/v1/v2 split at a sentence each. This is the file you read top-to-bottom on session start. For longer-form rationale see `PROJECT-PITCH.md`; for the user-facing pitch see `README.md`.
+**`00_PROJECT.md`** — small. The architectural recap an agent needs before drilling into anything specific: what the projects are, how they connect, the v0/v1/v2 split at a sentence each. This is the file you read top-to-bottom on session start. For longer-form rationale see `PROJECT-PITCH.md`; for active work see `PLAN.md`; for the user-facing pitch see `README.md`.
+
+**`iverifiable-ref-map.md`** — extracted from the game's own `IVerifiable.GetVerifiables()` calls in `decomp/`. Authoritative map of which fields on which `Json*` classes resolve to which target folders. The schema-driven extractor's reference rules are validated against this; new schema overlays get sanity-checked here before they ship.
 
 **`sources/<Project>/<File>.md`** — per-source-file overview. Each one carries:
 - File path
@@ -47,9 +42,9 @@ CodeDocs/
 
 The signatures should be complete enough that you can call into the API correctly without opening the `.cs`. Internal/private members are omitted.
 
-**`io/inputs.md` and `io/outputs.md`** — file-format specs for things the system reads or produces, when those formats aren't already documented by a JSON schema. The Ostranauts data tree's `data/schemas/*-schema.json` files ARE authoritative for the shape of input data — `inputs.md` only adds context the schemas don't cover (which folders are in scope, how files are discovered, what the loader does with them). `outputs.md` describes our generated artifacts (`graph.js`, future per-object files, `build/` layout).
+**`io/inputs.md` and `io/outputs.md`** — file-format specs for things the system reads or produces, when those formats aren't already documented by a JSON schema. `inputs.md` covers the five input surfaces — `data/`, `data/schemas/`, `comment_mod/data/schemas/`, `wiki_cache/`, `decomp/` — and the structural context the schemas don't (folder discovery, multi-root overlay, what each consumer does with each surface). `outputs.md` describes our generated artifacts (`graph.js`, `properties.js`, `code_refs.js`, `ref_candidates.js`, the static-site files copied verbatim).
 
-Self-explanatory formats — HTML, CSS, JS — don't need entries. The HTML is the spec.
+Self-explanatory formats — HTML, CSS, JS source — don't need entries. The HTML is the spec.
 
 ## Sync protocol
 

@@ -4,6 +4,29 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-03 — Standup: discoverability + PLAN.md + audience framing + Makefile fix
+
+Standup-driven batch of housekeeping after a multi-session burst of UX/notes work. Three logical clusters of change.
+
+**Notes / UX work** (the original session's product, finalized here):
+- `notes/user-stories/anti-g-loc-newcomer.md` — newcomer-modder sibling to the existing `anti-g-loc-leggings` story. Same ItmLeggings01 / loot.json destination, but the modder walks in with no prior knowledge of `StatGrav`, `Thresh<X>` naming, the cond-string DSL, or `strType`-routed Loot dispatch.
+- `notes/ux/newcomer-onboarding.md` — 12-component UX plan derived from that story (concept search, per-prefix explainers, inline schema descriptions, derived *"modifies thresholds of"* sidebars, folder + strType badges, filter pills, DSL primer popover, strType dispatch tooltip, *"why is this in X/"* inline note, *"edit this"* callout, live-build diff highlight, plain-language wiki links) plus display-constraint guidance for a designer. Stretch sections cover cluster pages (3.1, three-tier detection: curated / auto-prefix / auto-signature; comparison table is the centerpiece) and template-hub pages (3.2, fan-in heuristic for cases like `items/ItmBodyPart01` used as `strItemDef` by 20 `condowners/Wound*` entries).
+- `notes/user-stories/crew-exercise-invisible-need.md` — drafted by a lighter agent earlier in the day with player framing; reframed for modder audience here (the data findings — `StatAtrophy.nDisplaySelf=0`, `CONDTick1HourPhysio` rates, `CONDTick1HourWorkMoods` drains, `CONDOssifexStimPer` — are accurate; only the framing needed flipping from *"frustrated player"* to *"modder writing a design doc to mod the work/needs loop"*).
+- `notes/wiki-onboarding.md` — drafted by a lighter agent that went out of scope (cached ~24 player-facing wiki pages instead of `Modding/*`-only). The notes turned out modder-relevant; added a scope-context preamble and trimmed an over-length quote.
+
+**Site change** — small `copy ref` button in the upper-right of every object detail's `.detail-head`. Copies `<folder>\<strName>` (e.g. `items\ItmBodyPart01`) to the clipboard so the user can paste an unambiguous handle into chat / issues without typing or hand-formatting. Mirrors the `.llm-block button` style + flash-on-success interaction. CSS adds `position: relative` to `.detail-head` to anchor the absolute-positioned button.
+
+**Standup outputs**:
+- **PLAN.md** at the repo root. Active work tracker — items live until shipped, then deleted (DEV-LOG.md is the historical record). Sections: parser/library, site/UX, content/wiki extraction, stretch/v2. Replaces the in-progress fragments that had been accumulating in PROJECT-PITCH.
+- **PROJECT-PITCH.md slimmed** — removed *"Suggested first slice"* (all done), trimmed v0/v1 roadmap blocks (mostly shipped), moved the LLM-assist extraction page-priority table to PLAN.
+- **README.md** + **CLAUDE.md** updated for .md discoverability — every reader-facing surface now reachable from one of the two roots. README gets a "Where things live" table; CLAUDE gets a "Where to look first" pointer set covering PLAN, DEV-LOG, notes/user-stories, notes/ux, notes/coverage-gaps, notes/wiki-onboarding, prose-extraction, comment_mod/wiki_review_queue.
+- **CLAUDE.md** also gets explicit **Audience clarity** + **Wiki crawl scope** sections — addresses the recurring failure mode where lighter agents heard *"newcomer"* as *"new to the game"* instead of *"new to Ostranauts modding."* Pass-down language for subagent prompts included.
+- **CODE-DESIGN.md** layout listing collapsed to declarative-rule (one .md per .cs source file, directory is source of truth) instead of a stale exhaustive listing. `iverifiable-ref-map.md` now mentioned in the layout.
+- **CodeDocs/io/inputs.md** rewritten — explicit five-input enumeration (`data/`, `data/schemas/`, `comment_mod/data/schemas/`, `wiki_cache/`, `decomp/`), refreshed folder list, documented the multi-root overlay mechanism, mentioned all the scripts that consume each surface.
+- **CodeDocs/00_PROJECT.md** Status section refreshed — single current-truth snapshot (32,542 objects, 77,866 references, 91 rules, 240 candidates) plus a pointer to DEV-LOG for slice-by-slice history; deleted the now-stale slice-recap that ended at Slice E phase 1.
+
+**Bug fix** — Makefile passed `--data` to the Builder, but the CLI takes `--root`. Would have failed any `make site` invocation. Replaced with optional `--root $(DATA_ROOT)` (only emitted when `DATA_ROOT` is overridden); default invocation now relies on the Builder's auto-detection of `data` + `comment_mod/data` (which has been the right behavior since the multi-root overlay shipped).
+
 ## 2026-05-03 — Multi-strName-source surfacing (alt-folder suffix on every ref link)
 
 User flagged the case where the same strName lives in multiple folders simultaneously — the `Itm*` pattern where a name is a loot entry, a condowner, AND an item DTO at once. The schema's primary target picks one folder; modders editing the data need to see the others to avoid editing the wrong file.

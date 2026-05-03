@@ -58,31 +58,33 @@ The Builder CLI (`Program.cs`) is the orchestrator — it runs that whole pipeli
 
 ## Roadmap snapshot
 
-- **v0** ✓ — repo scaffolding, baseline data snapshot, build chain, scaffold-mode pipeline.
-- **v1** — fill in the stubs: `SchemaLoader` parses field descriptions to derive reference rules, `DataLoader` walks the data tree, `ReferenceExtractor` walks fields against the rules. Then the site grows from "render placeholder summary" to "search + detail pages + Cytoscape graph view."
+- **v0** ✓ — shipped. Repo scaffolding, baseline data snapshot, build chain.
+- **v1** — *largely shipped.* Schema-driven extraction, full site (search, detail, schema inspector, health/coverage, health/data, LLM candidates, template engine), code-references panel, multi-strName-source surfacing. Newcomer-onboarding UX components are the active in-progress slice. See [PLAN.md](../PLAN.md).
 - **v2** — mod-overlay loader, VS Code language server (LSP), save inspector/editor, map explorer.
 
-Detail in `PROJECT-PITCH.md`.
+Detail in `PROJECT-PITCH.md`. Active work in `PLAN.md`.
 
 ## Key conventions
 
-- Reference rules are **schema-derived**, not hand-curated. A hand-curated overrides file may add comments only; comments should be upstreamed into the schema files.
-- Condition strings (`"IsSystem=1.0x1"`) carry `Name=value xduration` semantics. The value + duration are kept on the edge as `Reference.Metadata` so condition detail pages can aggregate.
-- Pronoun/placeholder tokens (regex `\[\w+\]`) are not references and should be skipped during extraction.
-- Mod overlay support is **out of scope for v1**.
+- Reference rules are **schema-derived**, not hand-curated. The Comment Mod overlay (`comment_mod/data/schemas/`) is how schema improvements ship — it's not "hand-curated rules," it's a tracked schema overlay loaded by `SchemaLoader.Load(IEnumerable<string>)` alongside `data/schemas/`.
+- Condition strings (`"IsSystem=1.0x1"`) carry `Name=value xduration` semantics. Value + duration are kept on the edge as `Reference.Metadata` so condition detail pages can aggregate.
+- Loot strings carry `chance`/`min`/`max`/`positive` metadata, also on the edge.
+- `Loot.aCOs` target folder is **type-routed by the parent's `strType`** — see `LootString.cs` and the dispatch table in CLAUDE.md.
+- Pronoun/placeholder tokens (regex `\[\w+\]`) are not references; allowlisted during extraction.
+- Mod overlay support is **out of scope for v1** — but the multi-root SchemaLoader is the prototype for it.
 - Modern C# language features (records, init-only) work on netstandard2.1 via the `IsExternalInit` polyfill in `src/Ostranauts.DataModel/Polyfills.cs`.
 
-## Status by file (current truth)
+## Status (current truth)
 
-All `Ostranauts.DataModel` types are now real implementations. Real-data smoke test (with the Comment Mod overlay applied): **~31k objects, ~76k references, 94 rules**. Recent jumps:
+All `Ostranauts.DataModel` types are real implementations. Latest real-data smoke test (with the Comment Mod overlay applied + `conditions_simple` synthesized + decomp-derived schemas across 17 folders):
 
-- **Slice A (subdir traversal + 7 schema additions)**: +1.8k objects from nested subdirs; net edges -5k as the bogus `loot.strType→loot` rule's dangling spam went away while +1.1k real edges came in across condrules, pledges, personspecs, homeworlds, crime, jobs.
-- **Slice B (type-routed `loot.aCOs` + LootEntryArray + edge metadata)**: +7.7k edges. The single `aCOs` field now produces 22.7k edges spread across 9 target folders (conditions, condowners, condtrigs, loot, interactions, ships, personspecs, lifeevents, condrules) per the parent loot's `strType`. Loot edges carry `chance`/`min`/`max`/`positive` metadata so detail pages can show negative payouts and probability ranges.
-- **Ghost preservation slice**: 13 ghost rules marked via `x-ghost` extension; rendered as 👻 in schema inspector. Many supposed ghosts later confirmed real-on-runtime (populated from `aLootItms` parsing); kept marked because they remain ghosts at the JSON-DTO level.
-- **Slice E phase 1 (IVerifiable map driven, direct-string fields)**: +3.3k edges, +17 rules. Added `condowners.{aInteractions, aTickers, strContainerCT}`, 12 new `interactions.{Loot*, ShipTest*, CTTestRoom}` direct-string fields, `interactions.strPledgeAddThem`, `conditions.strAnti`. Source: `CodeDocs/iverifiable-ref-map.md` extracted from `IVerifiable.GetVerifiables()` in decomp — supersedes the earlier wiki-derived inferences.
+```
+objects:     32,542   (31,152 from data/ + 1,390 conditions_simple synthetics)
+references:  77,866   (about 91 named rules across folders)
+candidates:     240   (auto-detected by RefCandidateDetector, 184 uncovered by any rule)
+warnings:        15
+```
 
-Vanilla `data/` only: ~7,900 references — almost all richness comes from the `comment_mod/` overlay.
+Vanilla `data/` only (no Comment Mod overlay): ~7,900 references. Almost all the graph richness comes from the overlay.
 
-Outstanding v1 polish (not blocking):
-- ~1,500 dangling references — partly legitimate "missing data" findings, partly a known false-positive rule (`interactions.strTargetPoint` is matched as `→ condowners` because its description says *"(assigned in condowners.json)"*; it's not actually a strName ref). Fix is to clarify the schema description, intended for the future Comment Mod.
-- `CondStringArray` rules: 0 today. Base schemas don't document the cond-string DSL fields (`aStartingConds`, etc.). Same fix path — schema additions.
+For the slice-by-slice history of how the numbers got here, read [DEV-LOG.md](../DEV-LOG.md). For what's next, read [PLAN.md](../PLAN.md).

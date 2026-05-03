@@ -3,7 +3,12 @@
     "allow": [
       "Bash(dotnet build *)",
       "Bash(python ./scrap_scripts/python/06_decomp_schema_crosscheck.py)",
-      "Bash(python ./scrap_scripts/python/08_extract_verifiables.py)"
+      "Bash(python ./scrap_scripts/python/08_extract_verifiables.py)",
+      "Bash(dotnet test *)",
+      "WebFetch(domain:ostranauts.wiki.gg)",
+      "Bash(python utils/python/wiki_cache.py https://ostranauts.wiki.gg/wiki/Basic_Controls https://ostranauts.wiki.gg/wiki/User_Interface https://ostranauts.wiki.gg/wiki/Character_creation https://ostranauts.wiki.gg/wiki/Managing_Atmosphere https://ostranauts.wiki.gg/wiki/Ship_Ownership https://ostranauts.wiki.gg/wiki/Ship_Building https://ostranauts.wiki.gg/wiki/Rooms https://ostranauts.wiki.gg/wiki/Zones https://ostranauts.wiki.gg/wiki/Orders https://ostranauts.wiki.gg/wiki/Salvaging https://ostranauts.wiki.gg/wiki/Trading https://ostranauts.wiki.gg/wiki/Power https://ostranauts.wiki.gg/wiki/Fusion https://ostranauts.wiki.gg/wiki/Flying https://ostranauts.wiki.gg/wiki/Gigs https://ostranauts.wiki.gg/wiki/Gameplay_Loop https://ostranauts.wiki.gg/wiki/Residential_Status https://ostranauts.wiki.gg/wiki/Skills https://ostranauts.wiki.gg/wiki/Traits https://ostranauts.wiki.gg/wiki/First_Aid https://ostranauts.wiki.gg/wiki/Health_and_Safety https://ostranauts.wiki.gg/wiki/Ship_Combat https://ostranauts.wiki.gg/wiki/Asteroid_Mining)",
+      "Bash(python utils/python/wiki_cache.py 'https://ostranauts.wiki.gg/wiki/Combat_\\(Physical\\)' 'https://ostranauts.wiki.gg/wiki/Combat_\\(Social\\)')",
+      "Bash(python utils/python/wiki_cache.py \"https://ostranauts.wiki.gg/wiki/Debug\")"
     ]
   }
 }

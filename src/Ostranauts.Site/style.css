@@ -215,10 +215,26 @@ section#detail {
 .hint { color: var(--muted); }
 
 .detail-head {
+  position: relative;
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.75rem;
   margin-bottom: 1rem;
 }
+.detail-head .copy-ref {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 3px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.detail-head .copy-ref:hover { color: var(--fg); border-color: var(--accent-dim); }
+.detail-head .copy-ref.copied { color: var(--accent); border-color: var(--accent); }
 .detail-head .crumbs {
   color: var(--muted);
   font-size: 0.75rem;

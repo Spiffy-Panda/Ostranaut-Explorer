@@ -317,11 +317,13 @@ function renderObjectDetail(folder, strName) {
   const out = outgoing.get(id) || [];
   const inc = incoming.get(id) || [];
 
+  const chatRef = `${folder}\\${strName}`;
   const html = `
     <div class="detail-head">
       <div class="crumbs">${escapeHtml(folder)}</div>
       <h2>${escapeHtml(strName)}</h2>
       <div class="file">${escapeHtml(node.file)}</div>
+      <button type="button" class="copy-ref" data-ref="${escapeHtml(chatRef)}" title="Copy '${escapeHtml(chatRef)}' to clipboard for pasting into chat">copy ref</button>
     </div>
 
     ${renderTemplateBlock(folder, strName, id)}
@@ -349,6 +351,22 @@ function renderObjectDetail(folder, strName) {
       window.location.hash = `#/o/${encodeURIComponent(tf)}/${encodeURIComponent(tn)}`;
     });
   });
+  // Wire copy-ref button — copies "<folder>\<strName>" for chat-paste.
+  const copyBtn = detailEl.querySelector('.detail-head .copy-ref');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(copyBtn.dataset.ref);
+        const orig = copyBtn.textContent;
+        copyBtn.textContent = 'copied';
+        copyBtn.classList.add('copied');
+        setTimeout(() => { copyBtn.textContent = orig; copyBtn.classList.remove('copied'); }, 1500);
+      } catch (err) {
+        console.error('clipboard write failed', err);
+        copyBtn.textContent = 'error';
+      }
+    });
+  }
   // Wire template editor.
   wireTemplateBlock(folder, strName, id);
 }

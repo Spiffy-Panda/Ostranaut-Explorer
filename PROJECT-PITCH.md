@@ -93,16 +93,27 @@ OstranautDataExplorer/
 
 ## Roadmap
 
-### v0 — baseline + working copy
-- [x] Snapshot `data/` → `data.original/` as the immutable baseline (`scrap_scripts/bash/01_backup_data.sh`). `data/` becomes the working copy where schema edits land.
-- [ ] Decide whether the repo gets `git init`'d. If yes: commit `data/` as the first commit so divergence is diff-visible, and add `data.original/` to `.gitignore` (it's recoverable from the game install or from running the script).
+> Active work — what's *next*, what's in-progress, what's blocked — lives in
+> [PLAN.md](PLAN.md). This roadmap is the long-arc shape only; specifics
+> migrate to PLAN as they become real next steps. Shipped slices live in
+> [DEV-LOG.md](DEV-LOG.md).
+
+### v0 — baseline + working copy *(shipped)*
+
+Repo scaffolded. `data/` baseline workflow established. See DEV-LOG for
+the actual delivery.
 
 ### v1 — explorer
+
 Everything described in this pitch above. Goal: search any object, see forward + backward references, browse a small interactive graph, ship it as a static GitHub Pages site.
 
-**Schema inspector (late v1).** A `/schemas` route on the site that lists every loaded schema (one per source folder), their fields, and the rules `SchemaLoader` derived from each — plus the `x-source` provenance from wiki-derived entries. Lets you see at a glance which folders have rich coverage, which fields aren't yet annotated, and where wiki and hand-edits disagree. Acts as the visual diff for the wiki-driven schema enrichment slice.
+Most v1 surface is shipped (search, detail pages, forward+reverse refs,
+mini-graph, schema inspector, health pages, template engine, code-refs
+panel). What's left in v1 territory — newcomer-onboarding components,
+glossary search, contextual explainers, the late-v1 stat-page generator
+— lives in [PLAN.md](PLAN.md) under *Site / UX*.
 
-**Stat-page generator (late v1).** Once detail pages render real data, add a Builder step that asks a lightweight LLM to write a one-paragraph plain-English summary of each object given its `strName`, fields, and outgoing references — "this is a [coffeemaker] that [requires power], [interacts with crew via X]". Output is cached to disk per object (`build/data/descriptions/<folder>/<strName>.json`) so re-runs don't re-burn API calls; only objects whose source data changed get re-generated. Each detail page renders the summary with a small visible "✨ AI-generated description — verify against source" notice, and embeds machine-readable structured metadata (likely `<script type="application/ld+json">` plus selective `data-*` attributes) so external tooling and other LLMs reading the rendered HTML can extract clean facts without scraping the prose. Hidden meta tags carry full structured fields; the visible notice is the disclosure.
+**Stat-page generator (late v1).** A planned Builder step that asks a lightweight LLM to write a one-paragraph plain-English summary of each object given its `strName`, fields, and outgoing references — "this is a [coffeemaker] that [requires power], [interacts with crew via X]". Output cached per object so re-runs don't burn API calls. Each detail page renders the summary with a visible "AI-generated description — verify against source" notice, and embeds machine-readable structured metadata (likely `<script type="application/ld+json">` plus selective `data-*` attributes) so external tooling can extract clean facts without scraping the prose.
 
 ### v2 — mod-aware tooling, IDE integration, save tools
 Ordered by dependency, not effort.
@@ -144,15 +155,7 @@ The Ostranauts wiki at `ostranauts.wiki.gg` is ~824 articles spread across these
 
 ### Pages flagged for LLM-assist extraction
 
-The deterministic extractor (`utils/python/wiki_extract_schemas.py`) leaves a per-page review queue in [comment_mod/wiki_review_queue.md](comment_mod/wiki_review_queue.md) for fields it couldn't confidently resolve. The pages below are the ones with the most unresolved candidates — the highest-leverage targets for a future LLM-assist extraction pass. Fill in the **Model** column (`haiku` / `sonnet` / `opus`) to direct that pass at each page.
-
-| Page                  | Cached size | Review-queue items | Model  |
-|-----------------------|-------------|--------------------|--------|
-| Conditions            | 3.7 KB      | 16                 | haiku  |
-| Modding/Pledges       | 22.2 KB     | 9                  | opus   |
-| Modding/CondOwners    | 41.1 KB     | 5                  | opus   |
-| Modding/Interactions  | 10.9 KB     | 2                  | sonnet |
-| Modding/Loot          | 8.7 KB      | 2                  | sonnet |
+The deterministic extractor (`utils/python/wiki_extract_schemas.py`) leaves a per-page review queue in [comment_mod/wiki_review_queue.md](comment_mod/wiki_review_queue.md) for fields it couldn't confidently resolve. The page-priority + assigned-model table for the actual extraction pass lives in [PLAN.md](PLAN.md) under *Content / wiki extraction*.
 
 ## Decisions (resolved)
 
@@ -170,14 +173,3 @@ The deterministic extractor (`utils/python/wiki_extract_schemas.py`) leaves a pe
 | 10 | **Hosting:** GitHub Pages. Site needs a configurable base path so `/OstranautDataExplorer/` works. |
 | 11 | **Per-folder summaries:** hybrid (c) — schema's top-level `description` → `data/<folder>/_README.md` → parser-generated stats, fall through in that order. |
 
-## Suggested first slice (once questions are answered)
-
-1. Stand up the C# library skeleton + `dotnet test` harness.
-2. `SchemaLoader` + `DataLoader` — prove we can ingest `data/` without errors.
-3. Hand-curated reference rules for the 5 most important folders (`condowners`, `items`, `conditions`, `interactions`, `loot`) to get something visible fast.
-4. Minimal site: search box + object detail page with forward + reverse references. No graph yet.
-5. Add Cytoscape.js mini-graph.
-6. Expand reference rules to remaining folders.
-7. Add health/lint page.
-
-That order keeps something demoable end-to-end after step 4.

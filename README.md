@@ -118,15 +118,34 @@ Reference rules are derived from `data/schemas/*-schema.json` — specifically f
 
 ## Roadmap (summary)
 
-- **v0** — repository scaffolding, baseline snapshot. *(current)*
-- **v1** — the explorer: search, forward + backward references, interactive graph, static site.
+- **v0** — repository scaffolding, baseline snapshot. *(shipped)*
+- **v1** — the explorer: search, forward + backward references, interactive graph, static site. *(largely shipped; newcomer-onboarding UX components in progress)*
 - **v2** — mod-overlay loader, VS Code language server (full IDE assistance for editing data files), save inspector/editor (starting with `aCrew01`), map explorer, save-map explorer.
 
-Full detail in [PROJECT-PITCH.md](PROJECT-PITCH.md).
+Long-arc design and decisions: [PROJECT-PITCH.md](PROJECT-PITCH.md). Active
+next steps (lives until done, then deleted): [PLAN.md](PLAN.md). What
+shipped when: [DEV-LOG.md](DEV-LOG.md).
+
+## Where things live
+
+| Document                                                              | What's there                                                                 |
+|-----------------------------------------------------------------------|------------------------------------------------------------------------------|
+| [PROJECT-PITCH.md](PROJECT-PITCH.md)                                  | Why this exists, who it's for, architecture, decisions, v2 long-arc roadmap. |
+| [PLAN.md](PLAN.md)                                                    | Active work — what's next, in-progress, blocked, deferred. Shrinks as items ship. |
+| [DEV-LOG.md](DEV-LOG.md)                                              | Reverse-chronological changelog. One entry per slice; what + why.             |
+| [CLAUDE.md](CLAUDE.md)                                                | Operating notes for AI-assisted development. Conventions, workflows, gotchas. |
+| [CODE-DESIGN.md](CODE-DESIGN.md) → `CodeDocs/`                        | LLM-targeted code overviews. Per-file public API, dependencies, status.       |
+| [utils/README.md](utils/README.md)                                    | Catalog of tracked Python utilities (wiki cache, decomp audit, etc.).         |
+| [notes/coverage-gaps.md](notes/coverage-gaps.md)                      | Living scratchpad for parser blind spots before the auto-detector runs.       |
+| [notes/user-stories/](notes/user-stories/)                            | End-to-end modder scenarios that test the site is "good enough."              |
+| [notes/ux/](notes/ux/)                                                | UX plans for site components. Designer-facing specs, content + constraints.   |
+| [notes/wiki-onboarding.md](notes/wiki-onboarding.md)                  | Modder-relevant material harvested from player-facing wiki pages.             |
+| [prose-extraction/README.md](prose-extraction/README.md)              | Per-page provenance from LLM-assist wiki extraction passes.                   |
+| [comment_mod/wiki_review_queue.md](comment_mod/wiki_review_queue.md)  | Per-page review queue for fields the deterministic extractor punted on.       |
 
 ## For AI agents (and the curious)
 
-`CODE-DESIGN.md` is the LLM-targeted index pointing at `CodeDocs/`. It exists so an agent (or a human reviewer) can answer "what does this class do, what's its public API, what depends on it" without opening every `.cs` file — overviews live alongside the code and are kept in sync at commit time. If you're using Claude Code or any agentic coding tool against this repo, that file plus `CLAUDE.md` are the orientation pack.
+`CODE-DESIGN.md` is the LLM-targeted index pointing at `CodeDocs/`. It exists so an agent (or a human reviewer) can answer "what does this class do, what's its public API, what depends on it" without opening every `.cs` file — overviews live alongside the code and are kept in sync at commit time. If you're using Claude Code or any agentic coding tool against this repo, that file plus `CLAUDE.md` are the orientation pack — and `PLAN.md` tells the agent what's actually next.
 
 ## Contributing
 
