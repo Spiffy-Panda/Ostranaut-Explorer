@@ -11,7 +11,8 @@
             },
             "strType": {
                 "type": "string",
-                "description": "Loot type discriminator, e.g. 'condition', 'item', 'CT'."
+                "description": "Declares what kind of reward the table emits (condition, item, trigger, etc.). JSON field on each loot definition. Refers to entry within loot.json.",
+                "x-source": "https://ostranauts.wiki.gg/wiki/Modding/Loot#strType"
             },
             "aCOs": {
                 "type": "array",
@@ -20,6 +21,11 @@
             "aLoots": {
                 "type": "array",
                 "description": "Nested loot entries; each refers to entry within loot.json"
+            },
+            "LootUnit": {
+                "type": "string",
+                "description": "One weighted entry inside a loot table (chance, min/max, sign). Parsed by Loot.ParseLootDef(). Refers to entry within loot.json.",
+                "x-source": "https://ostranauts.wiki.gg/wiki/Modding/Loot#LootUnit"
             }
         }
     }

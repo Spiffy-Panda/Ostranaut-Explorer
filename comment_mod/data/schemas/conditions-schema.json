@@ -1,0 +1,20 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "aNext": {
+                "type": "array",
+                "description": "Array of ConditionTriggers to execute when this condition expires. Doesn't execute if parent CondOwner is destroyed. Refers to entry within condtrigs.json.",
+                "x-source": "https://ostranauts.wiki.gg/wiki/Conditions#aNext"
+            },
+            "aPer": {
+                "type": "array",
+                "description": "Array of Loot to apply for every stack of this condition. Refers to entry within loot.json.",
+                "x-source": "https://ostranauts.wiki.gg/wiki/Conditions#aPer"
+            }
+        }
+    }
+}

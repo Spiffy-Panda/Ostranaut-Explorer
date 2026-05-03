@@ -1,0 +1,15 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "aIAEnd": {
+                "type": "array",
+                "description": "string[] No Array of interaction names that complete pledge. Refers to entry within interactions.json.",
+                "x-source": "https://ostranauts.wiki.gg/wiki/Modding/Pledges#aIAEnd"
+            }
+        }
+    }
+}
