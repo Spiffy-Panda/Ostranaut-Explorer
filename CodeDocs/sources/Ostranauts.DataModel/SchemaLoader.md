@@ -28,7 +28,7 @@ For each file `<folder>-schema.json`, source folder = `<folder>` (e.g. `items-sc
 2. The field's JSON `type` accepts strings — `string`, `array`, `["string", "null"]`, `["array", "null"]`. Numeric/boolean/object types are skipped *even if* their description happens to mention an `X.json`.
 3. The description matches one of the reference patterns below; the captured group is the target folder.
 
-`FieldShape` is `Direct` for string-shaped fields, `StringArray` for array-shaped fields. `CondStringArray` is currently never derived — base-game schemas don't document the cond-string DSL fields. Future schema improvements (intended Comment Mod) can add this coverage.
+`FieldShape` is `Direct` for string-shaped fields, `StringArray` for array-shaped fields. A `StringArray` rule is **promoted to `CondStringArray`** when the field's description matches the marker phrase `\bcondition\s+string\b` (case-insensitive) — that's how schema authors declare the field carries the cond-string DSL (`Name=value xduration`) rather than plain strings.
 
 ## Description patterns (ordered, first match wins)
 

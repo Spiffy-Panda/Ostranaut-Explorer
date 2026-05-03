@@ -100,6 +100,14 @@ public static class SchemaLoader
         return true;
     }
 
+    /// <summary>
+    /// Marker phrase that promotes a StringArray rule to CondStringArray. Schema authors
+    /// add this (in any case, surrounding text doesn't matter) to declare that the array
+    /// holds entries in the cond-string DSL (<c>Name=value xduration</c>).
+    /// </summary>
+    private static readonly Regex CondStringMarker = new(
+        @"\bcondition\s+string", PatternOptions);
+
     private static SchemaCatalog.FieldRule? TryDeriveRule(string sourceFolder, string fieldName, JsonElement fieldDef)
     {
         if (!fieldDef.TryGetProperty("description", out var descProp)) return null;
@@ -113,6 +121,11 @@ public static class SchemaLoader
 
         var targetFolder = ExtractTargetFolder(description!);
         if (targetFolder is null) return null;
+
+        // Promote StringArray -> CondStringArray when the description marks the field as
+        // holding cond-string DSL entries.
+        if (shape == SchemaCatalog.FieldShape.StringArray && CondStringMarker.IsMatch(description!))
+            shape = SchemaCatalog.FieldShape.CondStringArray;
 
         return new SchemaCatalog.FieldRule(sourceFolder, fieldName, targetFolder, shape.Value);
     }

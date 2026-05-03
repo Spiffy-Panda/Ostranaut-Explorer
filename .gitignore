@@ -2,6 +2,9 @@
 /data/
 /data.original/
 
+# Note: comment_mod/ IS tracked. It holds our schema improvements that get
+# overlaid onto data/ at setup time, anticipating the v2 mod-overlay loader.
+
 # Scratch / exploratory scripts (per CLAUDE.md convention)
 /scrap_*/
 

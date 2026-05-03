@@ -34,6 +34,10 @@
             "nNotAReference": {
                 "type": "integer",
                 "description": "An integer that lives in items.json — not a reference, but description mentions a json file."
+            },
+            "aStartingConds": {
+                "type": "array",
+                "description": "Array of condition strings (Name=value*duration); each refers to entry in conditions.json"
             }
         }
     }

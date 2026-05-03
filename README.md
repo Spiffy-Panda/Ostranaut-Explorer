@@ -38,7 +38,15 @@ The base-game data files are not redistributed in this repo — there's no publi
    cp -r data data.original
    ```
 
-   Both `data/` and `data.original/` are gitignored. The snapshot is your recovery point if you mutate schema files locally and want to diff against vanilla. (Once mod-overlay support lands in v2, those local edits migrate into a "Comment Mod" and `data/` returns to vanilla.)
+   Both `data/` and `data.original/` are gitignored. The snapshot is your recovery point if you mutate schema files locally and want to diff against vanilla.
+
+4. **Apply the Comment Mod overlay.** This repo ships schema improvements (added or modified `data/schemas/*-schema.json` files) that significantly extend reference-rule coverage. They live tracked under `comment_mod/` and get overlaid onto `data/` with one command:
+
+   ```bash
+   cp -r comment_mod/. .
+   ```
+
+   Re-run this any time you refresh `data/` from a Steam install or update the comment-mod schemas. Once the v2 mod-overlay loader lands, this manual step goes away and `data/` stays vanilla.
 
 Because the data files aren't in the repo, **CI builds aren't wired up yet**. Builds happen on contributor machines for now. GitHub Actions is on the table once we have a sanctioned source for the data — or once the build can be split so the parser runs locally and only the resulting `graph.js` is published.
 

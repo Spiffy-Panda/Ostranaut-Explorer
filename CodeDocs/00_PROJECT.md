@@ -65,7 +65,7 @@ Detail in `PROJECT-PITCH.md`.
 
 ## Status by file (current truth)
 
-All `Ostranauts.DataModel` types are now real implementations. Real-data smoke test: ~29k objects, ~7,900 references, 26 rules, 6.9 MB `graph.js`.
+All `Ostranauts.DataModel` types are now real implementations. Real-data smoke test (with the Comment Mod overlay applied): ~29k objects, ~52k references, 33 rules, ~17 MB `graph.js`. (Without the overlay: ~7,900 references, 26 rules — the base game's stock schemas are very sparse.)
 
 Outstanding v1 polish (not blocking):
 - ~1,500 dangling references — partly legitimate "missing data" findings, partly a known false-positive rule (`interactions.strTargetPoint` is matched as `→ condowners` because its description says *"(assigned in condowners.json)"*; it's not actually a strName ref). Fix is to clarify the schema description, intended for the future Comment Mod.

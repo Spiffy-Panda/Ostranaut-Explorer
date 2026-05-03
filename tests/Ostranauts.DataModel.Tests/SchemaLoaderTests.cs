@@ -88,4 +88,14 @@ public class SchemaLoaderTests
         var catalog = Load();
         Assert.All(catalog.Rules, r => Assert.Equal("condowners", r.SourceFolder));
     }
+
+    [Fact]
+    public void StringArray_with_condition_string_marker_promotes_to_CondStringArray()
+    {
+        var catalog = Load();
+        var rule = catalog.RuleFor("condowners", "aStartingConds");
+        Assert.NotNull(rule);
+        Assert.Equal("conditions", rule!.TargetFolder);
+        Assert.Equal(SchemaCatalog.FieldShape.CondStringArray, rule.Shape);
+    }
 }

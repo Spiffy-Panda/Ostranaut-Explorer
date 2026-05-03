@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "strName": {
+                "type": "string",
+                "description": "The code name of the condition trigger, as referred to in other files."
+            },
+            "strCondName": {
+                "type": "string",
+                "description": "Name of the condition this trigger sets — refers to entry within conditions.json"
+            },
+            "aReqs": {
+                "type": "array",
+                "description": "Conditions that must be present for this trigger to fire — each refers to entry within conditions.json"
+            },
+            "aForbids": {
+                "type": "array",
+                "description": "Conditions that must NOT be present for this trigger to fire — each refers to entry within conditions.json"
+            },
+            "aTriggers": {
+                "type": "array",
+                "description": "Other condition triggers chained by this one — each refers to entry within condtrigs.json"
+            }
+        }
+    }
+}

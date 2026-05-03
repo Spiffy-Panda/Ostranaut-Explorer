@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "strName": {
+                "type": "string",
+                "description": "The code name of the loot entry, as referred to in other files."
+            },
+            "strType": {
+                "type": "string",
+                "description": "Loot type discriminator, e.g. 'condition', 'item', 'CT'."
+            },
+            "aCOs": {
+                "type": "array",
+                "description": "Condition strings (Name=value*duration) applied by this loot entry — each name refers to entry within conditions.json"
+            },
+            "aLoots": {
+                "type": "array",
+                "description": "Nested loot entries; each refers to entry within loot.json"
+            }
+        }
+    }
+}
