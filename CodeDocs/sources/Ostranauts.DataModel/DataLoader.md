@@ -12,8 +12,15 @@ Walks `dataRoot`, parses each `data/<folder>/*.json` file as a JSON array, and y
 ```csharp
 public static class DataLoader
 {
+    // Single root.
     public static IEnumerable<DataObject> Load(
         string dataRoot,
+        Action<string>? onWarning = null);
+
+    // Multi-root overlay — chains the single-root version over each in order.
+    // Collision handling is downstream in ObjectIndex (last-wins).
+    public static IEnumerable<DataObject> Load(
+        IEnumerable<string> dataRoots,
         Action<string>? onWarning = null);
 }
 ```

@@ -97,6 +97,8 @@ OstranautDataExplorer/
 ### v1 — explorer
 Everything described in this pitch above. Goal: search any object, see forward + backward references, browse a small interactive graph, ship it as a static GitHub Pages site.
 
+**Schema inspector (late v1).** A `/schemas` route on the site that lists every loaded schema (one per source folder), their fields, and the rules `SchemaLoader` derived from each — plus the `x-source` provenance from wiki-derived entries. Lets you see at a glance which folders have rich coverage, which fields aren't yet annotated, and where wiki and hand-edits disagree. Acts as the visual diff for the wiki-driven schema enrichment slice.
+
 **Stat-page generator (late v1).** Once detail pages render real data, add a Builder step that asks a lightweight LLM to write a one-paragraph plain-English summary of each object given its `strName`, fields, and outgoing references — "this is a [coffeemaker] that [requires power], [interacts with crew via X]". Output is cached to disk per object (`build/data/descriptions/<folder>/<strName>.json`) so re-runs don't re-burn API calls; only objects whose source data changed get re-generated. Each detail page renders the summary with a small visible "✨ AI-generated description — verify against source" notice, and embeds machine-readable structured metadata (likely `<script type="application/ld+json">` plus selective `data-*` attributes) so external tooling and other LLMs reading the rendered HTML can extract clean facts without scraping the prose. Hidden meta tags carry full structured fields; the visible notice is the disclosure.
 
 ### v2 — mod-aware tooling, IDE integration, save tools
@@ -116,6 +118,26 @@ Ordered by dependency, not effort.
 7. **General save inspector / editor (non-map).** Extend coverage beyond crew to ship state, inventory, conditions, etc.
 8. **Map explorer.** Visualize ship/station tilemaps from `ships/` and `rooms/` data-tree objects.
 9. **Save map explorer.** Same view, but driven by save-file map state.
+
+## Wiki content map (for posterity)
+
+The Ostranauts wiki at `ostranauts.wiki.gg` is ~824 articles spread across these top categories (size = page count, queried via the MediaWiki `allcategories` endpoint):
+
+| Category | Pages | What's there | Relevant to us? |
+|---|---|---|---|
+| **Items** | 425 | Per-item pages, infobox-driven (sprite, type, mass, manufacturer, lore). One article per `data/items/` entry, roughly. | Indirectly — infoboxes encode field values; could ground-truth rules. |
+| **Locations** | 78 | In-game places (stations, cities, points of interest) organized by region (`Jupiter`, `Mars`, `Belt`, `Earth`, `Ganymed`). | Tangential — relates to `data/star_systems/`, `data/ships/`. |
+| **Corporations** | 33 + 23 commercial | In-universe companies: parent corps and their subsidiaries. World-building. | Low — narrative context, not schema info. |
+| **Hull / HVAC / Control / Furniture / Consumables** | ~70 combined | Item subcategories (each item belongs to one). | Indirect — informs what `nType` values mean. |
+| **Lore** | 7 | World setting, history, factions. | None for the parser. |
+| **Main Mechanics** | 17 | Game systems documentation (combat, AI, social, economy). | Indirect — explains *why* certain refs exist. |
+| **Modding** | small (subpages) | What we care about. JSON modding, BepInEx, CondOwners, Loot, Pledges, glossary. | **Primary target for the wiki crawl.** |
+| **Game updates** | 110 | Patch notes / changelog. | None for the parser. |
+| Templates, Admin, Disambiguations | ~80 combined | Wiki infrastructure. | None. |
+
+**Style.** Every content article uses MediaWiki templates (especially infoboxes) for structured fields, plus free prose. Modding pages use tables-of-fields, code blocks, and sectioned headings. The infobox-template content on item pages is the most structured non-modding data — could in theory be parsed for cross-validation of items/ field values, but that's well beyond v1 scope.
+
+**Crawl scope decision (Q above):** start with `Modding/*` only. The other ~750 articles are valuable context but don't carry the field-to-folder reference info we're after. Revisit if we want item-page infobox extraction later.
 
 ## Decisions (resolved)
 

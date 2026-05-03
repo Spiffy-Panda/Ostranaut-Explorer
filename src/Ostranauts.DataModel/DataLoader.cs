@@ -27,6 +27,18 @@ public static class DataLoader
     };
 
     /// <summary>
+    /// Multi-root variant — walks each root in order and yields all DataObjects.
+    /// (folder, strName) collisions across roots are resolved downstream by
+    /// <see cref="ObjectIndex"/> (last-wins, matches game load-order semantics).
+    /// </summary>
+    public static IEnumerable<DataObject> Load(IEnumerable<string> dataRoots, Action<string>? onWarning = null)
+    {
+        foreach (var root in dataRoots)
+            foreach (var obj in Load(root, onWarning))
+                yield return obj;
+    }
+
+    /// <summary>
     /// Walks <paramref name="dataRoot"/>'s immediate subdirectories. For each folder
     /// not in <see cref="SkippedFolders"/>, parses every <c>*.json</c> file as a
     /// top-level array and yields one DataObject per element.

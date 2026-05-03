@@ -14,7 +14,13 @@ Real-data run against base game schemas (5 files: conditions, condowners, intera
 ```csharp
 public static class SchemaLoader
 {
+    // Single dir.
     public static SchemaCatalog Load(string schemaDir, Action<string>? onWarning = null);
+
+    // Multi-dir overlay — concatenates rules from each dir in order. The returned
+    // SchemaCatalog resolves (sourceFolder, fieldName) collisions with last-wins,
+    // so later dirs (e.g. comment_mod/data/schemas) override earlier ones.
+    public static SchemaCatalog Load(IEnumerable<string> schemaDirs, Action<string>? onWarning = null);
 }
 ```
 

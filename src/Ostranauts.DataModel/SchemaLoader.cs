@@ -47,6 +47,20 @@ public static class SchemaLoader
         CommentHandling = JsonCommentHandling.Skip,
     };
 
+    /// <summary>
+    /// Multi-root variant — loads schemas from each directory in order, then
+    /// returns a single catalog. (sourceFolder, fieldName) collisions are
+    /// resolved by <see cref="SchemaCatalog"/> with last-wins semantics, so
+    /// later roots (e.g. a Comment Mod) override earlier ones.
+    /// </summary>
+    public static SchemaCatalog Load(IEnumerable<string> schemaDirs, Action<string>? onWarning = null)
+    {
+        var allRules = new List<SchemaCatalog.FieldRule>();
+        foreach (var dir in schemaDirs)
+            allRules.AddRange(Load(dir, onWarning).Rules);
+        return new SchemaCatalog(allRules);
+    }
+
     public static SchemaCatalog Load(string schemaDir, Action<string>? onWarning = null)
     {
         if (!Directory.Exists(schemaDir))

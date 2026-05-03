@@ -1,0 +1,4 @@
+[
+  { "strName": "TestOwnerOne", "strItemDef": "OverlaidItem", "fromOverlay": true },
+  { "strName": "OverlayOnly", "strItemDef": "TestItemA" }
+]

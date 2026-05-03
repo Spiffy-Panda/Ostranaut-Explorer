@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "strItemDef": {
+                "type": "string",
+                "description": "OVERLAY VERSION — refers to entry within items.json"
+            },
+            "strNewField": {
+                "type": "string",
+                "description": "Field added by the overlay only — refers to entry within interactions.json"
+            }
+        }
+    }
+}

@@ -24,10 +24,17 @@ public sealed class SchemaCatalog
     private readonly List<FieldRule> _rules;
     private readonly Dictionary<(string folder, string field), FieldRule> _byKey;
 
+    /// <summary>
+    /// When duplicate (SourceFolder, FieldName) keys appear (e.g. base data
+    /// schema overlaid by Comment Mod), the later entry wins for lookups.
+    /// All entries remain visible via <see cref="Rules"/>.
+    /// </summary>
     public SchemaCatalog(IEnumerable<FieldRule> rules)
     {
         _rules = rules.ToList();
-        _byKey = _rules.ToDictionary(r => (r.SourceFolder, r.FieldName));
+        _byKey = new Dictionary<(string folder, string field), FieldRule>();
+        foreach (var r in _rules)
+            _byKey[(r.SourceFolder, r.FieldName)] = r;  // last-wins on collision
     }
 
     public IReadOnlyList<FieldRule> Rules => _rules;

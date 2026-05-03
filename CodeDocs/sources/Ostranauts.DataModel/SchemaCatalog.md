@@ -27,10 +27,12 @@ public sealed class SchemaCatalog
         string TargetFolder,
         FieldShape Shape);
 
+    // Tolerates duplicate (SourceFolder, FieldName) keys with last-wins semantics
+    // — needed for the Comment Mod overlay where the same field gets re-declared.
     public SchemaCatalog(IEnumerable<FieldRule> rules);
 
-    public IReadOnlyList<FieldRule> Rules { get; }
-    public FieldRule? RuleFor(string folder, string field);
+    public IReadOnlyList<FieldRule> Rules { get; }    // includes duplicates in load order
+    public FieldRule? RuleFor(string folder, string field);  // returns the last-wins entry
     public static SchemaCatalog Empty { get; }
 }
 ```

@@ -4,20 +4,20 @@ namespace Ostranauts.Site.Builder;
 
 internal static class Program
 {
-    private const string DefaultDataRoot = "data";
+    private static readonly string[] DefaultRoots = { "data", "comment_mod/data" };
     private const string DefaultOutDir = "build/data";
 
     private static int Main(string[] args)
     {
-        var dataRoot = DefaultDataRoot;
+        var roots = new List<string>();
         var outDir = DefaultOutDir;
 
         for (var i = 0; i < args.Length; i++)
         {
             switch (args[i])
             {
-                case "--data" when i + 1 < args.Length:
-                    dataRoot = args[++i];
+                case "--root" when i + 1 < args.Length:
+                    roots.Add(args[++i]);
                     break;
                 case "--out" when i + 1 < args.Length:
                     outDir = args[++i];
@@ -32,21 +32,30 @@ internal static class Program
             }
         }
 
-        if (!Directory.Exists(dataRoot))
+        // Default: use whichever of the standard roots actually exist on disk,
+        // in priority order (data → comment_mod/data, last-wins).
+        if (roots.Count == 0)
+            roots.AddRange(DefaultRoots.Where(Directory.Exists));
+
+        if (roots.Count == 0)
         {
-            Console.Error.WriteLine($"data root not found: {dataRoot}");
-            Console.Error.WriteLine("see README.md — copy data from your Steam install");
+            Console.Error.WriteLine("no data roots found. Either:");
+            Console.Error.WriteLine("  - place game data in ./data (see README)");
+            Console.Error.WriteLine("  - or pass --root <path> explicitly");
             return 1;
         }
 
-        var schemaDir = Path.Combine(dataRoot, "schemas");
+        Console.WriteLine($"loading from {roots.Count} root(s):");
+        foreach (var r in roots) Console.WriteLine($"  {r}");
+
+        var schemaDirs = roots.Select(r => Path.Combine(r, "schemas")).ToList();
         var warnings = 0;
         var catalog = SchemaLoader.Load(
-            schemaDir,
+            schemaDirs,
             warning => { Console.Error.WriteLine(warning); warnings++; });
 
         var objects = DataLoader
-            .Load(dataRoot, warning => { Console.Error.WriteLine(warning); warnings++; })
+            .Load(roots, warning => { Console.Error.WriteLine(warning); warnings++; })
             .ToList();
 
         var references = objects.SelectMany(o => ReferenceExtractor.Extract(o, catalog)).ToList();
@@ -55,9 +64,6 @@ internal static class Program
             references,
             warning => { Console.Error.WriteLine(warning); warnings++; });
 
-        // .js (not .json) so the static site can load via <script src> from file:// URLs.
-        // The site fetches via script tag rather than fetch() because browsers block
-        // fetch against local files. See GraphExporter for the wrapper format.
         var graphPath = Path.Combine(outDir, "graph.js");
         GraphExporter.WriteJson(index, graphPath);
 
@@ -72,8 +78,9 @@ internal static class Program
 
     private static void PrintUsage()
     {
-        Console.Error.WriteLine("usage: Ostranauts.Site.Builder [--data <dir>] [--out <dir>]");
-        Console.Error.WriteLine($"  --data <dir>  path to game data folder    (default: {DefaultDataRoot})");
-        Console.Error.WriteLine($"  --out  <dir>  output directory            (default: {DefaultOutDir})");
+        Console.Error.WriteLine("usage: Ostranauts.Site.Builder [--root <dir>]... [--out <dir>]");
+        Console.Error.WriteLine("  --root <dir>  data root (repeatable; later roots override earlier)");
+        Console.Error.WriteLine($"                default: any existing of [{string.Join(", ", DefaultRoots)}]");
+        Console.Error.WriteLine($"  --out  <dir>  output directory                  (default: {DefaultOutDir})");
     }
 }
