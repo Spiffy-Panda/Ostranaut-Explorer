@@ -1,0 +1,25 @@
+# Game data — not redistributable. See README for setup instructions.
+/data/
+/data.original/
+
+# Scratch / exploratory scripts (per CLAUDE.md convention)
+/scrap_*/
+
+# Build outputs
+/build/
+**/bin/
+**/obj/
+
+# Node (when the site frontend gets one)
+**/node_modules/
+
+# IDE / editor
+/.vscode/
+/.idea/
+*.user
+*.suo
+.vs/
+
+# OS
+.DS_Store
+Thumbs.db
