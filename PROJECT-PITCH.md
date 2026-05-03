@@ -143,13 +143,13 @@ The Ostranauts wiki at `ostranauts.wiki.gg` is ~824 articles spread across these
 
 The deterministic extractor (`scrap_scripts/python/03_wiki_extract_schemas.py`) leaves a per-page review queue in [comment_mod/wiki_review_queue.md](comment_mod/wiki_review_queue.md) for fields it couldn't confidently resolve. The pages below are the ones with the most unresolved candidates — the highest-leverage targets for a future LLM-assist extraction pass. Fill in the **Model** column (`haiku` / `sonnet` / `opus`) to direct that pass at each page.
 
-| Page                  | Cached size | Review-queue items | Model |
-|-----------------------|-------------|--------------------|-------|
-| Conditions            | 3.7 KB      | 16                 |       |
-| Modding/Pledges       | 22.2 KB     | 9                  |       |
-| Modding/CondOwners    | 41.1 KB     | 5                  |       |
-| Modding/Interactions  | 10.9 KB     | 2                  |       |
-| Modding/Loot          | 8.7 KB      | 2                  |       |
+| Page                  | Cached size | Review-queue items | Model  |
+|-----------------------|-------------|--------------------|--------|
+| Conditions            | 3.7 KB      | 16                 | haiku  |
+| Modding/Pledges       | 22.2 KB     | 9                  | opus   |
+| Modding/CondOwners    | 41.1 KB     | 5                  | opus   |
+| Modding/Interactions  | 10.9 KB     | 2                  | sonnet |
+| Modding/Loot          | 8.7 KB      | 2                  | sonnet |
 
 ## Decisions (resolved)
 
