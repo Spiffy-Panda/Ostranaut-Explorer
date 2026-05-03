@@ -173,10 +173,17 @@ public static class SchemaLoader
             }
         }
 
+        // x-ghost — field documented by schema but decomp says game doesn't
+        // deserialize it. Rule still emits (in case real data uses it); the
+        // flag rides through to the site for visual distinction.
+        var isGhost = fieldDef.TryGetProperty("x-ghost", out var ghostProp)
+            && ghostProp.ValueKind == JsonValueKind.True;
+
         return new SchemaCatalog.FieldRule(
             sourceFolder, fieldName, targetFolder, shape.Value,
             RoutingSibling: routingSibling,
-            RoutingTargets: routingTargets);
+            RoutingTargets: routingTargets,
+            IsGhost: isGhost);
     }
 
     private static string? ExtractTargetFolder(string description)

@@ -32,7 +32,8 @@ public sealed class SchemaCatalog
         string TargetFolder,
         FieldShape Shape,
         string? RoutingSibling = null,
-        IReadOnlyDictionary<string, string>? RoutingTargets = null);
+        IReadOnlyDictionary<string, string>? RoutingTargets = null,
+        bool IsGhost = false);     // x-ghost in schema; not deserialized by C#
 
     // Tolerates duplicate (SourceFolder, FieldName) keys with last-wins semantics
     // — needed for the Comment Mod overlay where the same field gets re-declared.

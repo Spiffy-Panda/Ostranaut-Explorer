@@ -250,3 +250,10 @@ section#detail {
   font-size: 0.75rem;
   margin-left: auto;
 }
+
+/* ghost rules — in schema, not deserialized by game C# */
+.ghost {
+  color: var(--warn);
+  font-style: italic;
+  font-size: 0.75rem;
+}

@@ -9,7 +9,7 @@ namespace Ostranauts.DataModel;
 /// </summary>
 public static class GraphExporter
 {
-    private const int SchemaVersion = 2;
+    private const int SchemaVersion = 3;
 
     private static readonly JsonWriterOptions WriterOptions = new()
     {
@@ -87,6 +87,7 @@ public static class GraphExporter
                 writer.WriteString("fieldName", rule.FieldName);
                 writer.WriteString("targetFolder", rule.TargetFolder);
                 writer.WriteString("shape", rule.Shape.ToString());
+                if (rule.IsGhost) writer.WriteBoolean("isGhost", true);
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();

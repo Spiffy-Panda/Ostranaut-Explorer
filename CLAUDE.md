@@ -28,6 +28,15 @@ This rule applies to subagents too. When delegating to an Agent, include this di
 
 Rationale: keeps the working directory clean, makes prior exploration discoverable, and means the same script can be re-run later without retyping or guessing what the previous attempt looked like.
 
+## Dev log — write before every commit
+
+Before committing, add an entry to [DEV-LOG.md](DEV-LOG.md). Minimum: one line describing what changed and why. For non-obvious changes (design decisions, schema additions, refactors), a short paragraph. Format: `## YYYY-MM-DD — <slug>` header, reverse-chronological order.
+
+## Game engine notes
+
+- The game deserializes JSON with **LitJson** (not Newtonsoft.Json / System.Text.Json). LitJson is case-sensitive and maps JSON keys directly to C# property/field names. No `[JsonProperty]` rename attributes — the JSON key **is** the C# member name. This is relevant when reconciling field names in `decomp/` against data in `data/`.
+- Decompiled C# classes in `decomp/Assembly-CSharp/` are ground truth for what fields the game actually reads. There are 126 `Json*.cs` files; the ones matching data folders (e.g. `JsonCondOwner` → `condowners/`) are authoritative sources for schema work.
+
 ## CodeDocs — read before code, sync before commit
 
 This repo carries an LLM-targeted documentation index at [CODE-DESIGN.md](CODE-DESIGN.md) plus the `CodeDocs/` tree it points at. The point: most code questions can be answered from the per-file overviews without opening the actual `.cs`, which keeps the context budget intact.

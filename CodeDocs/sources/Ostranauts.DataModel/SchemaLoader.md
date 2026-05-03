@@ -39,6 +39,8 @@ For each file `<folder>-schema.json`, source folder = `<folder>` (e.g. `items-sc
 - `\bloot\s+entr(y|ies)\s+string\b` → **`LootEntryArray`** (entries follow `[-]Name=chance x min[-max]`).
 - `\bcondition\s+string\b` → **`CondStringArray`** (entries follow `Name=value xduration`). LootEntry takes precedence when both markers appear.
 
+**Ghost flag** comes from a JSON Schema `x-ghost: true` extension. The decomp cross-check script (`scrap_scripts/python/07_decomp_schema_table.py`) identifies fields documented in schemas but not deserialized by the corresponding `Json*.cs` class; modders may still want to know about them (older docs, mods that use them, future game updates), so they're preserved as ghost rules. Ghost rules still emit edges if real data happens to contain the field — the flag is purely a visual marker carried through to the site's schema inspector.
+
 **Sibling-field routing** is read from two JSON Schema `x-` extensions on the field definition:
 
 - `x-route-by` (string): name of the sibling field whose value picks the actual target folder.

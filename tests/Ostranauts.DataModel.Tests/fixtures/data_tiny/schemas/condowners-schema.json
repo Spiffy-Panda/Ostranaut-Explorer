@@ -38,6 +38,11 @@
             "aStartingConds": {
                 "type": "array",
                 "description": "Array of condition strings (Name=value*duration); each refers to entry in conditions.json"
+            },
+            "strDeprecatedGhost": {
+                "type": "string",
+                "description": "[GHOST: not deserialized by JsonCondOwner anymore.] Refers to entry within items.json.",
+                "x-ghost": true
             }
         }
     }

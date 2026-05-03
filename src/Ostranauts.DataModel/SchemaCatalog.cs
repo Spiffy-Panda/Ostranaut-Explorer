@@ -24,6 +24,13 @@ public sealed class SchemaCatalog
     /// <see cref="RoutingTargets"/>[siblingValue] to pick the actual target;
     /// it falls back to <see cref="TargetFolder"/> only if the sibling value
     /// isn't in the routing map.
+    ///
+    /// <see cref="IsGhost"/> = true means the field is documented by the schema
+    /// but the decompiled C# game class doesn't deserialize it (per
+    /// scrap_scripts/python/07_decomp_schema_table.py). Modder-relevant —
+    /// preserved here in case it's referenced elsewhere (older docs, mods,
+    /// future game updates). Rule still fires; ghost-flag is plumbed through
+    /// to the site for visual distinction.
     /// </summary>
     public sealed record FieldRule(
         string SourceFolder,
@@ -31,7 +38,8 @@ public sealed class SchemaCatalog
         string TargetFolder,
         FieldShape Shape,
         string? RoutingSibling = null,
-        IReadOnlyDictionary<string, string>? RoutingTargets = null);
+        IReadOnlyDictionary<string, string>? RoutingTargets = null,
+        bool IsGhost = false);
 
     private readonly List<FieldRule> _rules;
     private readonly Dictionary<(string folder, string field), FieldRule> _byKey;

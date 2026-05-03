@@ -1,0 +1,35 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "fTensionPeriod": {
+                "type": "number",
+                "description": "[GHOST: not deserialized by JsonPlot in current decomp; preserved as wiki documentation.] Wiki: Time in seconds between different tension events being spawned (bad). Per the decomp, JsonPlot exposes a different surface for plot tuning.",
+                "x-ghost": true
+            },
+            "fReleasePeriod": {
+                "type": "number",
+                "description": "[GHOST: not deserialized by JsonPlot in current decomp.] Wiki: Time in seconds between different release events being spawned (good).",
+                "x-ghost": true
+            },
+            "fAutosavePeriod": {
+                "type": "number",
+                "description": "[GHOST: not deserialized by JsonPlot in current decomp.] Wiki: Time in seconds between autosaves.",
+                "x-ghost": true
+            },
+            "fSocialPeriod": {
+                "type": "number",
+                "description": "[GHOST: not deserialized by JsonPlot in current decomp.] Wiki: Time in seconds after socialising before characters will socialise with the player again.",
+                "x-ghost": true
+            },
+            "dictEventChances": {
+                "type": "object",
+                "description": "[GHOST: not deserialized by JsonPlot in current decomp.] Wiki: Chances for specific plot events to occur. All chances must add up to 1.0.",
+                "x-ghost": true
+            }
+        }
+    }
+}

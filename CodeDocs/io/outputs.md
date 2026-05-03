@@ -19,7 +19,13 @@ Browsers (Firefox, Chrome) block `fetch()` against `file://` URLs by default for
 
 The bytes between `window.GRAPH_DATA = ` and `;` are still valid JSON, so non-browser consumers (a future LSP, mod editor, or CI script) can extract the payload by skipping the prefix and trimming the trailing `;\n`.
 
-### Schema version 2 (current)
+### Schema version 3 (current)
+
+Same shape as v2, with one additive field on rule entries:
+
+- `isGhost` (boolean, optional, omitted when false): marks rules whose field is documented in the schema but **not deserialized by the game's `Json*.cs` class** per `scrap_scripts/python/07_decomp_schema_table.py`. Ghost rules still emit edges if real data contains the field (rare); the flag is a visual marker for the site's schema inspector and a hint to modders that the field may be vestigial.
+
+### Schema version 2 (historical)
 
 Adds a top-level `rules` array describing every `SchemaCatalog.FieldRule` the Builder loaded. Powers the schema inspector page (`#/schemas`). Otherwise compatible with v1.
 

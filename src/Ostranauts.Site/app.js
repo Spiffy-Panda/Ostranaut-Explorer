@@ -7,7 +7,7 @@
 //   #/f/<folder>             — folder index
 //   (anything else)           — empty hint
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const SEARCH_LIMIT = 50;
 const FOLDER_LIMIT = 500; // cap per-folder list to keep render snappy
 
@@ -342,26 +342,31 @@ function renderSchemasIndex() {
   }
 
   const totalRules = (graph.rules ?? []).length;
+  const totalGhosts = (graph.rules ?? []).filter(r => r.isGhost).length;
   const totalEdges = graph.edges.length;
   const folderRows = sourceFolders.map(folder => {
     const rules = rulesBySource.get(folder);
     const edges = rules.reduce((sum, r) => sum + (edgeCountByRule.get(`${folder}:${r.fieldName}`) ?? 0), 0);
-    return { folder, ruleCount: rules.length, edgeCount: edges };
+    const ghostCount = rules.filter(r => r.isGhost).length;
+    return { folder, ruleCount: rules.length, ghostCount, edgeCount: edges };
   }).sort((a, b) => b.edgeCount - a.edgeCount);
 
   detailEl.innerHTML = `
     <div class="detail-head">
       <div class="crumbs">schema inspector</div>
       <h2>Schemas</h2>
-      <div class="file">${totalRules} rules across ${sourceFolders.length} source folders · ${totalEdges.toLocaleString()} edges total</div>
+      <div class="file">
+        ${totalRules} rules across ${sourceFolders.length} source folders · ${totalEdges.toLocaleString()} edges total
+        ${totalGhosts > 0 ? ` · <span class="ghost">${totalGhosts} 👻 ghost rule${totalGhosts === 1 ? '' : 's'}</span>` : ''}
+      </div>
     </div>
     <div class="folder-index">
-      <p class="meta">Folders sorted by total edges produced. Click a folder to drill into its per-field rules.</p>
+      <p class="meta">Folders sorted by total edges produced. Click a folder to drill into its per-field rules. <span class="ghost">👻 = ghost field</span> (in schema but not deserialized by the game's C# class — preserved for modder reference).</p>
       <ul>
-        ${folderRows.map(({ folder, ruleCount, edgeCount }) => `
+        ${folderRows.map(({ folder, ruleCount, ghostCount, edgeCount }) => `
           <li>
             <a href="#/schema/${encodeURIComponent(folder)}">${escapeHtml(folder)}</a>
-            <span class="field"> · ${ruleCount} rule${ruleCount === 1 ? '' : 's'} · ${edgeCount.toLocaleString()} edges</span>
+            <span class="field"> · ${ruleCount} rule${ruleCount === 1 ? '' : 's'}${ghostCount > 0 ? ` (<span class="ghost">${ghostCount} 👻</span>)` : ''} · ${edgeCount.toLocaleString()} edges</span>
           </li>
         `).join('')}
       </ul>
@@ -398,12 +403,18 @@ function renderSchemaDetail(folder) {
           <ul>
             ${items.map(r => {
               const edges = edgeCountByRule.get(`${folder}:${r.fieldName}`) ?? 0;
-              const dim = edges === 0 ? ' style="opacity:0.6"' : '';
+              const dim = edges === 0 && !r.isGhost ? ' style="opacity:0.6"' : '';
+              const ghostBadge = r.isGhost
+                ? ' <span class="ghost" title="In schema but not deserialized by game C#; preserved for modder reference">👻 ghost</span>'
+                : '';
+              const edgesNote = edges === 0
+                ? (r.isGhost ? '' : ' (no values matched)')
+                : '';
               return `<li${dim}>
-                <span class="field">${escapeHtml(r.fieldName)}</span>
+                <span class="field">${escapeHtml(r.fieldName)}</span>${ghostBadge}
                 <span class="arrow">→</span>
                 <a href="#/f/${encodeURIComponent(r.targetFolder)}">${escapeHtml(r.targetFolder)}</a>
-                <span class="meta">${edges.toLocaleString()} edges${edges === 0 ? ' (no values matched)' : ''}</span>
+                <span class="meta">${edges.toLocaleString()} edges${edgesNote}</span>
               </li>`;
             }).join('')}
           </ul>

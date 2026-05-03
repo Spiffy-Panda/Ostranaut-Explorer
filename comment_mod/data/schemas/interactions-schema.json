@@ -9,9 +9,100 @@
                 "type": "string",
                 "description": "Pledge added when this interaction executes. Refers to entry within pledges.json."
             },
+
             "strPledgeRemove": {
                 "type": "string",
-                "description": "Pledge removed when this interaction executes. Refers to entry within pledges.json."
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp; preserved in case mods, future updates, or older docs reference it.] Was hypothesized as a pledge-removal counterpart to strPledgeAdd; the C# class only declares strPledgeAdd / strPledgeAddThem. If you need to remove a pledge in an interaction, look for another mechanism (e.g. CTTest* + condition-based removal). Refers to entry within pledges.json.",
+                "x-ghost": true
+            },
+            "pledge": {
+                "type": "string",
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp; preserved as wiki convention.] Wiki documents this as 'The pledge from pledges.json related to this interaction, if any; null if none' but the C# class has only strPledgeAdd / strPledgeAddThem. Refers to entry within pledges.json.",
+                "x-ghost": true
+            },
+
+            "strLootCTsGive": {
+                "type": ["string", "null"],
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot [us] gives [them] when this interaction happens, defined as CT/trigger type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "x-ghost": true
+            },
+            "strLootCTsLacks": {
+                "type": ["string", "null"],
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot [us] must lack when this interaction happens, defined as CT/trigger type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "x-ghost": true
+            },
+            "strLootCTsRemoveUs": {
+                "type": ["string", "null"],
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot to remove from [us] when this interaction happens, defined as CT/trigger type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "x-ghost": true
+            },
+            "strLootCTsTake": {
+                "type": ["string", "null"],
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot [them] gives [us] when this interaction happens, defined as CT/trigger type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "x-ghost": true
+            },
+            "strLootCTsUse": {
+                "type": ["string", "null"],
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot [us] uses when this interaction happens, defined as CT/trigger type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "x-ghost": true
+            },
+
+            "strLootItmAddUs": {
+                "type": ["string", "null"],
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot items to add to [us] when this interaction happens, defined as item type entry loot names found in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "x-ghost": true
+            },
+            "strLootItmAddThem": {
+                "type": ["string", "null"],
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot items to add to [them] when this interaction happens, defined as item type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "x-ghost": true
+            },
+            "strLootItmInputs": {
+                "type": ["string", "null"],
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot [them] requires in their Lot before this interaction happens, defined as item type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "x-ghost": true
+            },
+            "strLootItmRemoveThem": {
+                "type": ["string", "null"],
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: Loot items to add (sic — wiki text says 'add', but field name suggests remove) to [them] when this interaction happens, defined as item type entry in loot.json or loot_self_reference.json. Refers to entry within loot.json.",
+                "x-ghost": true
+            },
+
+            "strLootRELChangeUs": {
+                "type": ["string", "null"],
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: relationship changes to apply to [us] when this interaction executes. Refers to entry within loot.json.",
+                "x-ghost": true
+            },
+            "strLootRELChangeThem": {
+                "type": ["string", "null"],
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: relationship changes to apply to [them] when this interaction executes. Refers to entry within loot.json.",
+                "x-ghost": true
+            },
+
+            "bDestroyItem": {
+                "type": "boolean",
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: If true, [us] will destroy items after they are removed. false drops on ground.",
+                "x-ghost": true
+            },
+            "bGetItemBefore": {
+                "type": "boolean",
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: If true, this will end social combat and sub UIs. (Note: wiki description appears copy-pasted from bCloser; field semantics unclear.)",
+                "x-ghost": true
+            },
+            "bGiveWholeStack": {
+                "type": "boolean",
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: If true, Give commands will operate on whole stack when removing COs.",
+                "x-ghost": true
+            },
+            "bRemoveWholeStack": {
+                "type": "boolean",
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: If true, Remove commands will operate on whole stack when removing COs.",
+                "x-ghost": true
+            },
+            "bVerboseTrigger": {
+                "type": "boolean",
+                "description": "[GHOST: not deserialized by JsonInteraction in current decomp.] Wiki: If true, will add log messages about why this didn't trigger.",
+                "x-ghost": true
             }
         }
     }

@@ -98,4 +98,19 @@ public class SchemaLoaderTests
         Assert.Equal("conditions", rule!.TargetFolder);
         Assert.Equal(SchemaCatalog.FieldShape.CondStringArray, rule.Shape);
     }
+
+    [Fact]
+    public void Field_with_x_ghost_true_carries_IsGhost_flag()
+    {
+        var catalog = Load();
+        var ghost = catalog.RuleFor("condowners", "strDeprecatedGhost");
+        Assert.NotNull(ghost);
+        Assert.True(ghost!.IsGhost);
+        Assert.Equal("items", ghost.TargetFolder);
+
+        // Non-ghost rules default to IsGhost=false.
+        var notGhost = catalog.RuleFor("condowners", "strItemDef");
+        Assert.NotNull(notGhost);
+        Assert.False(notGhost!.IsGhost);
+    }
 }
