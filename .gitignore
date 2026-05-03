@@ -30,6 +30,9 @@
 *.suo
 .vs/
 
+# Claude Code per-user settings (a shared .claude/settings.json would be tracked)
+.claude/settings.local.json
+
 # OS
 .DS_Store
 Thumbs.db

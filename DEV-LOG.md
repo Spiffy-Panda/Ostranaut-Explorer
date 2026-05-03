@@ -4,6 +4,10 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-03 — Untrack `.claude/settings.local.json`
+
+The Claude Code convention is `.claude/settings.json` = shared (tracked), `.claude/settings.local.json` = per-user (gitignored). This repo had it inverted: only the `.local.json` existed and it was tracked. Added the file to `.gitignore` and `git rm --cached`'d it. Local copy preserved.
+
 ## 2026-05-03 — User stories from `testdata_mods/` source mods
 
 Five new story files in `notes/user-stories/`, derived from studying two real mods sitting in a local `testdata_mods/` working tree (jwebmeister's `FreeTraits_and_StarterShipPlus`, Voideka's `HygieneStation`). Same modder-as-audience framing as the rest of the user-stories folder.
