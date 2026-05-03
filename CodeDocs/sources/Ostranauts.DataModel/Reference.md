@@ -15,6 +15,9 @@ public enum RefKind
     Direct,         // plain string field, e.g. strItemDef
     DirectInArray,  // element of a string-array field, e.g. aInteractions[i]
     Condition,      // embedded condition string e.g. "IsSystem=1.0x1"
+                    //   Metadata: { value: double, duration: int }
+    Loot,           // embedded loot-entry string e.g. "Coughing=1.0x1" (or "-X=0.5x1-3")
+                    //   Metadata: { chance: double, min: double, max: double, positive: bool }
 }
 
 public sealed record Reference(

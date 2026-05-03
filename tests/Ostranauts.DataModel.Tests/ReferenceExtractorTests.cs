@@ -126,4 +126,63 @@ public class ReferenceExtractorTests
         Assert.Equal(2, refs.Count);
         Assert.Equal(new[] { "GoodOne", "GoodTwo" }, refs.Select(r => r.TargetName));
     }
+
+    [Fact]
+    public void LootEntryArray_emits_Loot_refs_with_chance_min_max_positive_metadata()
+    {
+        var obj = Object("loot", "L1", """{"strType":"condition","aCOs":["Coughing=1.0x1","-StatHealRate=0.5x1-3"]}""");
+        var rule = new SchemaCatalog.FieldRule(
+            "loot", "aCOs", "conditions", SchemaCatalog.FieldShape.LootEntryArray);
+        var refs = ReferenceExtractor.Extract(obj, Catalog(rule)).ToList();
+
+        Assert.Equal(2, refs.Count);
+        Assert.All(refs, r => Assert.Equal(RefKind.Loot, r.Kind));
+        Assert.Equal("Coughing", refs[0].TargetName);
+        Assert.Equal(1.0, (double)refs[0].Metadata!["chance"]);
+        Assert.True((bool)refs[0].Metadata!["positive"]);
+        Assert.Equal("StatHealRate", refs[1].TargetName);
+        Assert.False((bool)refs[1].Metadata!["positive"]);
+        Assert.Equal(1.0, (double)refs[1].Metadata!["min"]);
+        Assert.Equal(3.0, (double)refs[1].Metadata!["max"]);
+    }
+
+    [Fact]
+    public void LootEntryArray_routes_target_via_sibling_strType()
+    {
+        var routing = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["condition"] = "conditions",
+            ["item"] = "condowners",
+            ["interaction"] = "interactions",
+        };
+        var rule = new SchemaCatalog.FieldRule(
+            "loot", "aCOs", "conditions", SchemaCatalog.FieldShape.LootEntryArray,
+            RoutingSibling: "strType", RoutingTargets: routing);
+        var catalog = Catalog(rule);
+
+        var lootForItem = Object("loot", "L_item", """{"strType":"item","aCOs":["ItmCoffeemaker01=1.0x1"]}""");
+        var lootForInteraction = Object("loot", "L_int", """{"strType":"interaction","aCOs":["MakeCoffee=1.0x1"]}""");
+        var lootForUnknownType = Object("loot", "L_other", """{"strType":"mystery","aCOs":["X=1.0x1"]}""");
+
+        var itemRef = Assert.Single(ReferenceExtractor.Extract(lootForItem, catalog));
+        Assert.Equal("condowners", itemRef.TargetFolder);
+        var interactionRef = Assert.Single(ReferenceExtractor.Extract(lootForInteraction, catalog));
+        Assert.Equal("interactions", interactionRef.TargetFolder);
+        // Unknown sibling value -> falls back to rule.TargetFolder ("conditions").
+        var fallbackRef = Assert.Single(ReferenceExtractor.Extract(lootForUnknownType, catalog));
+        Assert.Equal("conditions", fallbackRef.TargetFolder);
+    }
+
+    [Fact]
+    public void LootEntryArray_splits_cumulative_pipe_alternatives()
+    {
+        var obj = Object("loot", "L1",
+            """{"strType":"interaction","aCOs":["AltA=0.3x1|AltB=0.5x1|AltC=0.2x1"]}""");
+        var rule = new SchemaCatalog.FieldRule(
+            "loot", "aCOs", "interactions", SchemaCatalog.FieldShape.LootEntryArray);
+        var refs = ReferenceExtractor.Extract(obj, Catalog(rule)).ToList();
+
+        Assert.Equal(3, refs.Count);
+        Assert.Equal(new[] { "AltA", "AltB", "AltC" }, refs.Select(r => r.TargetName));
+    }
 }

@@ -34,7 +34,17 @@ For each file `<folder>-schema.json`, source folder = `<folder>` (e.g. `items-sc
 2. The field's JSON `type` accepts strings — `string`, `array`, `["string", "null"]`, `["array", "null"]`. Numeric/boolean/object types are skipped *even if* their description happens to mention an `X.json`.
 3. The description matches one of the reference patterns below; the captured group is the target folder.
 
-`FieldShape` is `Direct` for string-shaped fields, `StringArray` for array-shaped fields. A `StringArray` rule is **promoted to `CondStringArray`** when the field's description matches the marker phrase `\bcondition\s+string\b` (case-insensitive) — that's how schema authors declare the field carries the cond-string DSL (`Name=value xduration`) rather than plain strings.
+`FieldShape` is `Direct` for string-shaped fields, `StringArray` for array-shaped fields. `StringArray` rules are promoted via marker phrases in the description:
+
+- `\bloot\s+entr(y|ies)\s+string\b` → **`LootEntryArray`** (entries follow `[-]Name=chance x min[-max]`).
+- `\bcondition\s+string\b` → **`CondStringArray`** (entries follow `Name=value xduration`). LootEntry takes precedence when both markers appear.
+
+**Sibling-field routing** is read from two JSON Schema `x-` extensions on the field definition:
+
+- `x-route-by` (string): name of the sibling field whose value picks the actual target folder.
+- `x-route-targets` (object): map from sibling value to target folder.
+
+When set, `ReferenceExtractor.ResolveTarget` consults the sibling field on each object and uses the routed target; falls back to the rule's static `TargetFolder` when the sibling value isn't in the map.
 
 ## Description patterns (ordered, first match wins)
 

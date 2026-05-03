@@ -30,13 +30,25 @@ Adds a top-level `rules` array describing every `SchemaCatalog.FieldRule` the Bu
   "object_count": <int>,
   "reference_count": <int>,
   "nodes": [ /* same as v1 */ ],
-  "edges": [ /* same as v1 */ ],
-  "rules": [                                             // NEW in v2
+  "edges": [
+    // unchanged shape, but `kind` and `metadata` carry new values:
+    {
+      "source":      "<folder>:<strName>",
+      "target":      "<folder>:<strName>",
+      "kind":        "Direct" | "DirectInArray" | "Condition" | "Loot",
+      "sourceField": "<field name>",
+      "metadata": /* one of: */
+        { "value": <number>, "duration": <int> }                                  // Condition
+      | { "chance": <number>, "min": <number>, "max": <number>, "positive": <bool> }  // Loot
+    },
+    ...
+  ],
+  "rules": [
     {
       "sourceFolder": "<folder>",                        // e.g. "condowners"
-      "fieldName": "<field>",                            // e.g. "strItemDef"
+      "fieldName":    "<field>",                         // e.g. "strItemDef"
       "targetFolder": "<folder>",                        // e.g. "items"
-      "shape": "Direct" | "StringArray" | "CondStringArray"
+      "shape":        "Direct" | "StringArray" | "CondStringArray" | "LootEntryArray"
     },
     ...
   ]
@@ -45,7 +57,7 @@ Adds a top-level `rules` array describing every `SchemaCatalog.FieldRule` the Bu
 
 Bump `$schema_version` whenever the structure changes incompatibly. The site's `app.js` reads `$schema_version` and refuses to render on mismatch.
 
-Real-data size today: **~17 MB** for ~29k nodes + ~61k edges + 40 rules. The JS wrapper adds ~22 bytes. Static-fetch territory; sharding decision deferred until well past comfortable browser memory.
+Real-data size today: **~19 MB** for ~31k nodes + ~64k edges + 62 rules (Slice A + B applied). The JS wrapper adds ~22 bytes. Static-fetch territory; sharding decision deferred until well past comfortable browser memory.
 
 ### Schema version 1 (historical)
 

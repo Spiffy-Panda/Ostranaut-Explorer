@@ -8,6 +8,8 @@ public enum RefKind
     DirectInArray,
     /// <summary>Embedded condition string e.g. "IsSystem=1.0x1" — the name part references conditions/.</summary>
     Condition,
+    /// <summary>Embedded loot-entry string e.g. "Coughing=1.0x1" — name+chance+min+max+positive on Metadata.</summary>
+    Loot,
 }
 
 /// <summary>

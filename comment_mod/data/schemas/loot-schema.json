@@ -11,18 +11,31 @@
             },
             "strType": {
                 "type": "string",
-                "description": "Enum tag dispatching to game code (condition, item, trigger, interaction, condrule, lifeevent, ship, repeat, surviveo2, ...). NOT a strName reference; render as a badge on detail pages and use to route aCOs targets per the type-routed-refs design.",
+                "description": "Enum tag dispatching to game code (condition, item, trigger, interaction, condrule, lifeevent, ship, pspec, relationship, text, data, ...). NOT a strName reference; render as a badge on detail pages and use to route aCOs targets via the type-routed-refs design.",
                 "x-source": "https://ostranauts.wiki.gg/wiki/Modding/Loot#strType",
                 "x-enum": true
             },
             "aCOs": {
                 "type": "array",
-                "description": "Condition strings (Name=chance x min-max) applied by this loot entry. Target folder is type-routed by sibling strType (condition→conditions, item→condowners, trigger→condtrigs, interaction→interactions, condrule→condrules, lifeevent→lifeevents, ship→ships); the v1 fallback treats them as refs to entry within conditions.json which catches the most common case.",
-                "x-source": "https://ostranauts.wiki.gg/wiki/Modding/Loot#aCOs"
+                "description": "Loot entry strings ([-]Name=chance x min[-max]) applied by this loot table. Each name refers to entry within conditions.json by default, but the actual target folder is type-routed by sibling strType per the x-route-targets map.",
+                "x-source": "https://ostranauts.wiki.gg/wiki/Modding/Loot#aCOs",
+                "x-route-by": "strType",
+                "x-route-targets": {
+                    "condition": "conditions",
+                    "item": "condowners",
+                    "trigger": "condtrigs",
+                    "interaction": "interactions",
+                    "condrule": "condrules",
+                    "lifeevent": "lifeevents",
+                    "ship": "ships",
+                    "pspec": "personspecs",
+                    "relationship": "conditions",
+                    "text": "loot"
+                }
             },
             "aLoots": {
                 "type": "array",
-                "description": "Nested loot entries; each refers to entry within loot.json"
+                "description": "Loot entry strings ([-]Name=chance x min[-max]) referencing other loot tables. Each name refers to entry within loot.json."
             }
         }
     }

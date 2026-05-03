@@ -27,6 +27,17 @@ Stateless. Streams via yield. Returns no edges (yield break) if `obj.Fields` isn
 | `Direct` | string value | One `Reference(Kind=Direct)` per non-empty, non-placeholder string. |
 | `StringArray` | array of strings | One `Reference(Kind=DirectInArray)` per non-empty, non-placeholder element. |
 | `CondStringArray` | array of condition strings (`Name=value xduration`) | One `Reference(Kind=Condition)` per parseable element. `Metadata` carries `value` (double) and `duration` (int). |
+| `LootEntryArray` | array of loot strings (`[-]Name=chance x min[-max]`, `\|`-separated cumulative alternatives in one slot) | One `Reference(Kind=Loot)` per parseable entry (cumulative slot expands to multiple). `Metadata` carries `chance`, `min`, `max` (doubles) and `positive` (bool, false for leading-`-` payouts). Target folder is resolved via `ResolveTarget` (sibling-routed if rule has routing config, else `rule.TargetFolder`). |
+
+## Target resolution
+
+`ResolveTarget(obj, rule)` returns the effective target folder for one rule applied to one object:
+
+1. If the rule has no `RoutingSibling` / `RoutingTargets` → returns `rule.TargetFolder` directly.
+2. Otherwise reads `obj.Fields[rule.RoutingSibling]`. If missing or non-string → falls back to `rule.TargetFolder`.
+3. Looks up the sibling value in `rule.RoutingTargets` (case-insensitive). Hit returns the routed folder; miss returns `rule.TargetFolder`.
+
+This is what makes `loot.aCOs` route to different folders per parent `strType`: a loot entry with `strType="item"` emits aCOs refs into `condowners/`, while `strType="condition"` emits into `conditions/`.
 
 For each shape, values that fail their kind check (wrong JSON value type, empty string, malformed cond-string, placeholder token) are silently dropped — never throws.
 

@@ -122,6 +122,14 @@ public static class SchemaLoader
     private static readonly Regex CondStringMarker = new(
         @"\bcondition\s+string", PatternOptions);
 
+    /// <summary>
+    /// Marker phrase that promotes a StringArray rule to LootEntryArray. Schema authors
+    /// add this to declare entries follow the <c>[-]Name=chance x min[-max]</c> format
+    /// from <c>Loot.aCOs</c>.
+    /// </summary>
+    private static readonly Regex LootEntryMarker = new(
+        @"\bloot\s+entr(?:y|ies)\s+string", PatternOptions);
+
     private static SchemaCatalog.FieldRule? TryDeriveRule(string sourceFolder, string fieldName, JsonElement fieldDef)
     {
         if (!fieldDef.TryGetProperty("description", out var descProp)) return null;
@@ -136,12 +144,39 @@ public static class SchemaLoader
         var targetFolder = ExtractTargetFolder(description!);
         if (targetFolder is null) return null;
 
-        // Promote StringArray -> CondStringArray when the description marks the field as
-        // holding cond-string DSL entries.
-        if (shape == SchemaCatalog.FieldShape.StringArray && CondStringMarker.IsMatch(description!))
-            shape = SchemaCatalog.FieldShape.CondStringArray;
+        // Promote StringArray -> CondStringArray / LootEntryArray when the description
+        // marks the field's content format. LootEntry takes precedence (more specific).
+        if (shape == SchemaCatalog.FieldShape.StringArray)
+        {
+            if (LootEntryMarker.IsMatch(description!))
+                shape = SchemaCatalog.FieldShape.LootEntryArray;
+            else if (CondStringMarker.IsMatch(description!))
+                shape = SchemaCatalog.FieldShape.CondStringArray;
+        }
 
-        return new SchemaCatalog.FieldRule(sourceFolder, fieldName, targetFolder, shape.Value);
+        // x-route-by + x-route-targets — sibling-field-routed target folders.
+        // E.g. loot.aCOs is type-routed by sibling strType.
+        string? routingSibling = null;
+        IReadOnlyDictionary<string, string>? routingTargets = null;
+        if (fieldDef.TryGetProperty("x-route-by", out var routeByProp)
+            && routeByProp.ValueKind == JsonValueKind.String)
+        {
+            routingSibling = routeByProp.GetString();
+            if (fieldDef.TryGetProperty("x-route-targets", out var routeTargetsProp)
+                && routeTargetsProp.ValueKind == JsonValueKind.Object)
+            {
+                var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var prop in routeTargetsProp.EnumerateObject())
+                    if (prop.Value.ValueKind == JsonValueKind.String)
+                        map[prop.Name] = prop.Value.GetString()!;
+                if (map.Count > 0) routingTargets = map;
+            }
+        }
+
+        return new SchemaCatalog.FieldRule(
+            sourceFolder, fieldName, targetFolder, shape.Value,
+            RoutingSibling: routingSibling,
+            RoutingTargets: routingTargets);
     }
 
     private static string? ExtractTargetFolder(string description)

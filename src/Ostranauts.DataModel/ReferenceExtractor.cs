@@ -38,8 +38,34 @@ public static class ReferenceExtractor
                 case SchemaCatalog.FieldShape.CondStringArray:
                     foreach (var r in ExtractCondStringArray(obj, field, rule)) yield return r;
                     break;
+
+                case SchemaCatalog.FieldShape.LootEntryArray:
+                    foreach (var r in ExtractLootEntryArray(obj, field, rule)) yield return r;
+                    break;
             }
         }
+    }
+
+    /// <summary>
+    /// Resolves the effective target folder for a rule, applying sibling-field
+    /// routing if configured. Returns null if a routing-required value is missing
+    /// — caller can decide to fall through to <c>rule.TargetFolder</c> or skip.
+    /// </summary>
+    private static string ResolveTarget(DataObject obj, SchemaCatalog.FieldRule rule)
+    {
+        if (rule.RoutingSibling is null || rule.RoutingTargets is null)
+            return rule.TargetFolder;
+
+        if (!obj.Fields.TryGetProperty(rule.RoutingSibling, out var siblingProp)
+            || siblingProp.ValueKind != JsonValueKind.String)
+            return rule.TargetFolder;
+
+        var siblingValue = siblingProp.GetString();
+        if (siblingValue is null) return rule.TargetFolder;
+
+        return rule.RoutingTargets.TryGetValue(siblingValue, out var routed)
+            ? routed
+            : rule.TargetFolder;
     }
 
     private static IEnumerable<Reference> ExtractDirect(DataObject obj, JsonProperty field, SchemaCatalog.FieldRule rule)
@@ -96,6 +122,40 @@ public static class ReferenceExtractor
                     ["value"] = parsed.Value,
                     ["duration"] = parsed.Duration,
                 });
+        }
+    }
+
+    private static IEnumerable<Reference> ExtractLootEntryArray(DataObject obj, JsonProperty field, SchemaCatalog.FieldRule rule)
+    {
+        if (field.Value.ValueKind != JsonValueKind.Array) yield break;
+
+        // Resolve the routed target once per object; sibling-field value doesn't
+        // change across the array's elements.
+        var target = ResolveTarget(obj, rule);
+
+        foreach (var element in field.Value.EnumerateArray())
+        {
+            if (element.ValueKind != JsonValueKind.String) continue;
+            var raw = element.GetString();
+            if (string.IsNullOrEmpty(raw)) continue;
+
+            // One slot can hold multiple |-separated alternatives.
+            foreach (var parsed in LootStringParser.ParseSlot(raw!))
+            {
+                if (PlaceholderToken.IsMatch(parsed.Name)) continue;
+
+                yield return new Reference(
+                    obj.Folder, obj.StrName, field.Name,
+                    target, parsed.Name,
+                    RefKind.Loot,
+                    Metadata: new Dictionary<string, object>
+                    {
+                        ["chance"] = parsed.Chance,
+                        ["min"] = parsed.MinCount,
+                        ["max"] = parsed.MaxCount,
+                        ["positive"] = parsed.Positive,
+                    });
+            }
         }
     }
 }

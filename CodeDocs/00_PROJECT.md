@@ -65,7 +65,12 @@ Detail in `PROJECT-PITCH.md`.
 
 ## Status by file (current truth)
 
-All `Ostranauts.DataModel` types are now real implementations. Real-data smoke test (with the Comment Mod overlay applied): **~31k objects, ~56k references, 62 rules**. The 31k object count includes ~1,800 entries previously invisible because `DataLoader` skipped nested subdirectories like `interactions/plotIAs/`. The 56k reference count is *cleaner* than the previous 61k — removing the `loot.strType` enum-as-ref misclassification dropped ~6k dangling edges, while adding real schemas for `condrules`, `pledges`, `personspecs`, `homeworlds`, `crime`, `jobs` plus the `interactions` pledge fields added ~1.1k real edges across the pledge-attach chain and condrule wiring. (Vanilla `data/` only: ~7,900 references — the wiki-derived + hand-curated schemas in `comment_mod/` are doing all the work.)
+All `Ostranauts.DataModel` types are now real implementations. Real-data smoke test (with the Comment Mod overlay applied): **~31k objects, ~64k references, 62 rules**. Recent jumps:
+
+- **Slice A (subdir traversal + 7 schema additions)**: +1.8k objects from nested subdirs; net edges -5k as the bogus `loot.strType→loot` rule's dangling spam went away while +1.1k real edges came in across condrules, pledges, personspecs, homeworlds, crime, jobs.
+- **Slice B (type-routed `loot.aCOs` + LootEntryArray + edge metadata)**: +7.7k edges. The single `aCOs` field now produces 22.7k edges spread across 9 target folders (conditions, condowners, condtrigs, loot, interactions, ships, personspecs, lifeevents, condrules) per the parent loot's `strType`. Loot edges carry `chance`/`min`/`max`/`positive` metadata so detail pages can show negative payouts and probability ranges.
+
+Vanilla `data/` only: ~7,900 references — almost all richness comes from the `comment_mod/` overlay.
 
 Outstanding v1 polish (not blocking):
 - ~1,500 dangling references — partly legitimate "missing data" findings, partly a known false-positive rule (`interactions.strTargetPoint` is matched as `→ condowners` because its description says *"(assigned in condowners.json)"*; it's not actually a strName ref). Fix is to clarify the schema description, intended for the future Comment Mod.

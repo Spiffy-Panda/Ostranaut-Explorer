@@ -16,16 +16,23 @@ public sealed class SchemaCatalog
 {
     public enum FieldShape
     {
-        Direct,
-        StringArray,
-        CondStringArray,
+        Direct,           // plain string field
+        StringArray,      // array of strings
+        CondStringArray,  // array of "Name=value xduration" entries
+        LootEntryArray,   // array of "[-]Name=chance x min[-max]" entries (loot.aCOs etc.)
     }
 
+    // RoutingSibling + RoutingTargets enable per-object target resolution: the
+    // extractor reads obj.Fields[RoutingSibling] and uses RoutingTargets[siblingValue]
+    // as the target folder. Falls back to TargetFolder when the sibling value isn't
+    // in the routing map. Used for loot.aCOs which routes by the parent's strType.
     public sealed record FieldRule(
         string SourceFolder,
         string FieldName,
         string TargetFolder,
-        FieldShape Shape);
+        FieldShape Shape,
+        string? RoutingSibling = null,
+        IReadOnlyDictionary<string, string>? RoutingTargets = null);
 
     // Tolerates duplicate (SourceFolder, FieldName) keys with last-wins semantics
     // — needed for the Comment Mod overlay where the same field gets re-declared.
