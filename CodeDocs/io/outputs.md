@@ -19,32 +19,24 @@ Browsers (Firefox, Chrome) block `fetch()` against `file://` URLs by default for
 
 The bytes between `window.GRAPH_DATA = ` and `;` are still valid JSON, so non-browser consumers (a future LSP, mod editor, or CI script) can extract the payload by skipping the prefix and trimming the trailing `;\n`.
 
-### Schema version 1 (current)
+### Schema version 2 (current)
 
-`nodes` and `edges` both populate. Schema is versioned via `$schema_version` inside the payload; the site checks it and refuses to render with a clear message on mismatch.
+Adds a top-level `rules` array describing every `SchemaCatalog.FieldRule` the Builder loaded. Powers the schema inspector page (`#/schemas`). Otherwise compatible with v1.
 
 ```jsonc
 {
-  "$schema_version": 1,
+  "$schema_version": 2,
   "generated_by": "Ostranauts.Site.Builder",
-  "object_count": <int>,                                 // index.Objects.Count (~29k vs base data)
-  "reference_count": <int>,                              // index.References.Count (~7900 vs base data)
-  "nodes": [
+  "object_count": <int>,
+  "reference_count": <int>,
+  "nodes": [ /* same as v1 */ ],
+  "edges": [ /* same as v1 */ ],
+  "rules": [                                             // NEW in v2
     {
-      "id": "<folder>:<strName>",                        // composite key; matches edge endpoints
-      "folder": "<folder>",                              // e.g. "condowners"
-      "strName": "<strName>",                            // e.g. "ItmGalleyCoffeemaker01"
-      "file": "<file path>"                              // e.g. "data\\condowners\\condowners.json"
-    },
-    ...
-  ],
-  "edges": [
-    {
-      "source": "<folder>:<strName>",
-      "target": "<folder>:<strName>",
-      "kind": "Direct" | "DirectInArray" | "Condition",
-      "sourceField": "<field name>",
-      "metadata": { "value": <number>, "duration": <int> }   // present for Condition kind only
+      "sourceFolder": "<folder>",                        // e.g. "condowners"
+      "fieldName": "<field>",                            // e.g. "strItemDef"
+      "targetFolder": "<folder>",                        // e.g. "items"
+      "shape": "Direct" | "StringArray" | "CondStringArray"
     },
     ...
   ]
@@ -53,7 +45,11 @@ The bytes between `window.GRAPH_DATA = ` and `;` are still valid JSON, so non-br
 
 Bump `$schema_version` whenever the structure changes incompatibly. The site's `app.js` reads `$schema_version` and refuses to render on mismatch.
 
-Real-data size today: **~6.9 MB** for ~29k nodes + ~7.9k edges. The JS wrapper adds ~22 bytes — negligible. Static-fetch territory; sharding decision deferred until well past 10 MB.
+Real-data size today: **~17 MB** for ~29k nodes + ~61k edges + 40 rules. The JS wrapper adds ~22 bytes. Static-fetch territory; sharding decision deferred until well past comfortable browser memory.
+
+### Schema version 1 (historical)
+
+Same as v2 but without the `rules` array. Replaced when the schema inspector landed.
 
 ### Sharding (future)
 

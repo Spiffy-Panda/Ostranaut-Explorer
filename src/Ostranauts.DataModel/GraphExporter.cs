@@ -9,7 +9,7 @@ namespace Ostranauts.DataModel;
 /// </summary>
 public static class GraphExporter
 {
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 2;
 
     private static readonly JsonWriterOptions WriterOptions = new()
     {
@@ -25,7 +25,7 @@ public static class GraphExporter
     /// The bytes between the assignment and the trailing <c>;</c> are
     /// valid JSON, so non-browser consumers can still extract the payload.
     /// </summary>
-    public static void WriteJson(ObjectIndex index, string outPath)
+    public static void WriteJson(ObjectIndex index, string outPath, SchemaCatalog? catalog = null)
     {
         var dir = Path.GetDirectoryName(outPath);
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
@@ -74,6 +74,23 @@ public static class GraphExporter
             writer.WriteEndObject();
         }
         writer.WriteEndArray();
+
+        // rules — schema-derived field rules, for the schema inspector page.
+        // Optional (omitted from older callers); v2 schema_version.
+        if (catalog is not null)
+        {
+            writer.WriteStartArray("rules");
+            foreach (var rule in catalog.Rules)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("sourceFolder", rule.SourceFolder);
+                writer.WriteString("fieldName", rule.FieldName);
+                writer.WriteString("targetFolder", rule.TargetFolder);
+                writer.WriteString("shape", rule.Shape.ToString());
+                writer.WriteEndObject();
+            }
+            writer.WriteEndArray();
+        }
 
         writer.WriteEndObject();
 

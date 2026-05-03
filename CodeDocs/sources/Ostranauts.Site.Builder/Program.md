@@ -35,7 +35,7 @@ var objects = DataLoader.Load(roots, w => { ... }).ToList();
 var references = objects.SelectMany(o => ReferenceExtractor.Extract(o, catalog)).ToList();
 var index = new ObjectIndex(objects, references, w => { ... });
 
-GraphExporter.WriteJson(index, Path.Combine(outDir, "graph.js"));
+GraphExporter.WriteJson(index, Path.Combine(outDir, "graph.js"), catalog);  // catalog also serialized for the schema inspector
 ```
 
 Stdout: lists each loaded root, then the written-path plus `objects`, `references`, `rules` counts; if any warnings fired, the count is reported pointing at stderr.

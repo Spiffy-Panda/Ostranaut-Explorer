@@ -65,7 +65,7 @@ internal static class Program
             warning => { Console.Error.WriteLine(warning); warnings++; });
 
         var graphPath = Path.Combine(outDir, "graph.js");
-        GraphExporter.WriteJson(index, graphPath);
+        GraphExporter.WriteJson(index, graphPath, catalog);
 
         Console.WriteLine($"wrote {graphPath}");
         Console.WriteLine($"  objects:    {index.Objects.Count}");

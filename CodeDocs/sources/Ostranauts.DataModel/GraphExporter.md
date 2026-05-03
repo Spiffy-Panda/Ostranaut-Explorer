@@ -14,11 +14,14 @@ The output is **JS-wrapped JSON**: literal text `window.GRAPH_DATA = ` followed 
 ```csharp
 public static class GraphExporter
 {
-    public static void WriteJson(ObjectIndex index, string outPath);
+    // catalog is optional; when provided, its rules are serialized into the
+    // graph.js "rules" array (v2 schema). Without it, "rules" is omitted
+    // and the file remains v1-shape but still tagged $schema_version=2.
+    public static void WriteJson(ObjectIndex index, string outPath, SchemaCatalog? catalog = null);
 }
 ```
 
-Despite the method name, callers pass a `.js` path (e.g. `build/data/graph.js`). Creates parent directories if missing. Always overwrites. Streams via `Utf8JsonWriter` to avoid building the entire payload in memory (the real file is ~7 MB).
+Despite the method name, callers pass a `.js` path (e.g. `build/data/graph.js`). Creates parent directories if missing. Always overwrites. Streams via `Utf8JsonWriter` to avoid building the entire payload in memory (the real file is ~17 MB at present).
 
 ## Output shape — schema version 1
 
