@@ -15,6 +15,17 @@ public sealed class SchemaCatalog
         CondStringArray,  // array of "Name=val xdur" entries, e.g. aStartingConds
         LootEntryArray,   // array of "[-]Name=chance x min[-max]" entries, e.g. Loot.aCOs.
                           // Often paired with sibling-routing on a strType field.
+
+        // Slice E phase 2 — encoded-array shapes per CodeDocs/iverifiable-ref-map.md:
+
+        InverseArray,         // array of "Name,..." entries; split on `,`, take [0].
+                              // E.g. JsonInteraction.aInverse — references inverse interactions.
+        CondRuleAttachArray,  // array of "RuleName=fModifier" entries; split on `=`, take [0]
+                              // as the ref, parse [1] as double for fModifier metadata.
+                              // E.g. JsonCondOwner.aStartingCondRules.
+        LootItmsArray,        // array of "verb,lootName[,...]" entries; split on `,`, verb at [0],
+                              // loot ref at [1]. E.g. JsonInteraction.aLootItms.
+                              // Verbs: addus, addthem, removethem, take, use, lacks, input, give, removeus.
     }
 
     /// <summary>

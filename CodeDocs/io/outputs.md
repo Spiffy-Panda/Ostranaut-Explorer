@@ -41,11 +41,15 @@ Adds a top-level `rules` array describing every `SchemaCatalog.FieldRule` the Bu
     {
       "source":      "<folder>:<strName>",
       "target":      "<folder>:<strName>",
-      "kind":        "Direct" | "DirectInArray" | "Condition" | "Loot",
+      "kind":        "Direct" | "DirectInArray" | "Condition" | "Loot"
+                   | "Inverse" | "CondRuleAttach" | "LootItm",
       "sourceField": "<field name>",
       "metadata": /* one of: */
         { "value": <number>, "duration": <int> }                                  // Condition
       | { "chance": <number>, "min": <number>, "max": <number>, "positive": <bool> }  // Loot
+      | { "args": [<string>, ...] }                                               // Inverse (when extra tokens)
+      | { "fModifier": <number> }                                                 // CondRuleAttach (when "=value")
+      | { "verb": <string>, "args"?: [<string>, ...] }                            // LootItm
     },
     ...
   ],

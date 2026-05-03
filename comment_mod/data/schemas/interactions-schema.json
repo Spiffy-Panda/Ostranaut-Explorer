@@ -65,6 +65,17 @@
                 "description": "Ship spec test applied to [3rd]'s ship. Refers to entry within shipspecs.json."
             },
 
+            "aInverse": {
+                "type": "array",
+                "description": "Inverse interactions this triggers in the granter. Each entry is 'InteractionName,...' (extra tokens after the comma are role-swap markers). Refers to entry within interactions.json. Per IVerifiable / JsonInteraction.GetVerifiables.",
+                "x-shape": "InverseArray"
+            },
+            "aLootItms": {
+                "type": "array",
+                "description": "Verb-encoded list of item / loot operations. Each entry is 'verb,lootName[,boolArg,...]'. Verbs: addus, addthem, removethem, take, use, lacks, input, give, removeus. The lootName refers to entry within loot.json; the verb is preserved on edge metadata. Per IVerifiable / JsonInteraction.GetVerifiables.",
+                "x-shape": "LootItmsArray"
+            },
+
             "strPledgeRemove": {
                 "type": "string",
                 "description": "[GHOST: not deserialized by JsonInteraction in current decomp; preserved in case mods, future updates, or older docs reference it.] Was hypothesized as a pledge-removal counterpart to strPledgeAdd; the C# class only declares strPledgeAdd / strPledgeAddThem. If you need to remove a pledge in an interaction, look for another mechanism (e.g. CTTest* + condition-based removal). Refers to entry within pledges.json.",

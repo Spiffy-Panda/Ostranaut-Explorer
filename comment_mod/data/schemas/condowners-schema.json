@@ -50,6 +50,11 @@
                 "type": "array",
                 "description": "Conditions applied at spawn. Array of condition strings (Name=value*duration) — each name refers to entry within conditions.json"
             },
+            "aStartingCondRules" : {
+                "type": "array",
+                "description": "CondRules attached at spawn. Each entry is 'RuleName=fModifier' — the name refers to entry within condrules.json; the fModifier (double, default 1.0) scales fMin/fMax thresholds at runtime. Per IVerifiable / JsonCondOwner.GetVerifiables.",
+                "x-shape": "CondRuleAttachArray"
+            },
             "aTickers" : {
                 "type": "array",
                 "description": "Tickers attached to this condowner (scheduled events / timers). Each refers to entry within tickers.json. (Per IVerifiable map / JsonCondOwner.GetVerifiables.)"

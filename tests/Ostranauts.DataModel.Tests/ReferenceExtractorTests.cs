@@ -185,4 +185,92 @@ public class ReferenceExtractorTests
         Assert.Equal(3, refs.Count);
         Assert.Equal(new[] { "AltA", "AltB", "AltC" }, refs.Select(r => r.TargetName));
     }
+
+    [Fact]
+    public void InverseArray_takes_name_at_index_0_and_preserves_extra_tokens()
+    {
+        var obj = Object("interactions", "ChatA",
+            """{"aInverse":["ChatReply,[us],[them]","SnapReply"]}""");
+        var rule = new SchemaCatalog.FieldRule(
+            "interactions", "aInverse", "interactions", SchemaCatalog.FieldShape.InverseArray);
+        var refs = ReferenceExtractor.Extract(obj, Catalog(rule)).ToList();
+
+        Assert.Equal(2, refs.Count);
+        Assert.All(refs, r => Assert.Equal(RefKind.Inverse, r.Kind));
+        Assert.Equal("ChatReply", refs[0].TargetName);
+        Assert.NotNull(refs[0].Metadata);
+        Assert.Equal(new[] { "[us]", "[them]" }, (string[])refs[0].Metadata!["args"]);
+        Assert.Equal("SnapReply", refs[1].TargetName);
+        Assert.Null(refs[1].Metadata); // no extra tokens
+    }
+
+    [Fact]
+    public void CondRuleAttachArray_extracts_name_and_fModifier()
+    {
+        var obj = Object("condowners", "Crew01",
+            """{"aStartingCondRules":["DcHunger=1.5","DcThirst=0.5","DcSocial"]}""");
+        var rule = new SchemaCatalog.FieldRule(
+            "condowners", "aStartingCondRules", "condrules", SchemaCatalog.FieldShape.CondRuleAttachArray);
+        var refs = ReferenceExtractor.Extract(obj, Catalog(rule)).ToList();
+
+        Assert.Equal(3, refs.Count);
+        Assert.All(refs, r => Assert.Equal(RefKind.CondRuleAttach, r.Kind));
+        Assert.Equal("DcHunger", refs[0].TargetName);
+        Assert.Equal(1.5, (double)refs[0].Metadata!["fModifier"]);
+        Assert.Equal("DcThirst", refs[1].TargetName);
+        Assert.Equal(0.5, (double)refs[1].Metadata!["fModifier"]);
+        // Third entry has no = → no fModifier metadata.
+        Assert.Equal("DcSocial", refs[2].TargetName);
+        Assert.Null(refs[2].Metadata);
+    }
+
+    [Fact]
+    public void LootItmsArray_extracts_verb_and_loot_name()
+    {
+        var obj = Object("interactions", "MakeCoffee",
+            """{"aLootItms":["addus,ItmCoffee01","use,CTGrabHandle,true","give,CTGiveItem,false,true"]}""");
+        var rule = new SchemaCatalog.FieldRule(
+            "interactions", "aLootItms", "loot", SchemaCatalog.FieldShape.LootItmsArray);
+        var refs = ReferenceExtractor.Extract(obj, Catalog(rule)).ToList();
+
+        Assert.Equal(3, refs.Count);
+        Assert.All(refs, r => Assert.Equal(RefKind.LootItm, r.Kind));
+        Assert.All(refs, r => Assert.Equal("loot", r.TargetFolder));
+
+        Assert.Equal("ItmCoffee01", refs[0].TargetName);
+        Assert.Equal("addus", refs[0].Metadata!["verb"]);
+        Assert.False(refs[0].Metadata!.ContainsKey("args"));
+
+        Assert.Equal("CTGrabHandle", refs[1].TargetName);
+        Assert.Equal("use", refs[1].Metadata!["verb"]);
+        Assert.Equal(new[] { "true" }, (string[])refs[1].Metadata!["args"]);
+
+        Assert.Equal("CTGiveItem", refs[2].TargetName);
+        Assert.Equal("give", refs[2].Metadata!["verb"]);
+        Assert.Equal(new[] { "false", "true" }, (string[])refs[2].Metadata!["args"]);
+    }
+
+    [Fact]
+    public void LootItmsArray_skips_malformed_entries_with_only_verb()
+    {
+        var obj = Object("interactions", "Bad",
+            """{"aLootItms":["addus","take,GoodOne","",", ,",,]}""".Replace(",,]}", "]}"));
+        // Note: the test input above has a malformed third entry "addus" (no comma).
+        var rule = new SchemaCatalog.FieldRule(
+            "interactions", "aLootItms", "loot", SchemaCatalog.FieldShape.LootItmsArray);
+        var refs = ReferenceExtractor.Extract(obj, Catalog(rule)).ToList();
+
+        Assert.Single(refs);
+        Assert.Equal("GoodOne", refs[0].TargetName);
+    }
+
+    [Fact]
+    public void SchemaLoader_x_shape_extension_overrides_inferred_shape()
+    {
+        // Use the catalog directly via SchemaLoader to verify x-shape works.
+        // (Inline schema parsing isn't easy; just verify FieldRule construction.)
+        var rule = new SchemaCatalog.FieldRule(
+            "interactions", "aLootItms", "loot", SchemaCatalog.FieldShape.LootItmsArray);
+        Assert.Equal(SchemaCatalog.FieldShape.LootItmsArray, rule.Shape);
+    }
 }

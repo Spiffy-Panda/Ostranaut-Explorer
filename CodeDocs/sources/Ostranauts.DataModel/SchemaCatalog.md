@@ -16,10 +16,16 @@ public sealed class SchemaCatalog
 {
     public enum FieldShape
     {
-        Direct,           // plain string field
-        StringArray,      // array of strings
-        CondStringArray,  // array of "Name=value xduration" entries
-        LootEntryArray,   // array of "[-]Name=chance x min[-max]" entries (loot.aCOs etc.)
+        Direct,                // plain string field
+        StringArray,           // array of strings
+        CondStringArray,       // array of "Name=value xduration" entries
+        LootEntryArray,        // array of "[-]Name=chance x min[-max]" entries (loot.aCOs etc.)
+        // Phase 2 (encoded-array shapes per CodeDocs/iverifiable-ref-map.md):
+        InverseArray,          // "Name,..." — split on `,`, take [0] (e.g. JsonInteraction.aInverse)
+        CondRuleAttachArray,   // "RuleName=fModifier" — name + fModifier metadata
+                               //   (e.g. JsonCondOwner.aStartingCondRules)
+        LootItmsArray,         // "verb,lootName[,...]" — name at [1], verb metadata
+                               //   (e.g. JsonInteraction.aLootItms)
     }
 
     // RoutingSibling + RoutingTargets enable per-object target resolution: the

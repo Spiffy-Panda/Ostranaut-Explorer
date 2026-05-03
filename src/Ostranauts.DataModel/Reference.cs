@@ -10,6 +10,12 @@ public enum RefKind
     Condition,
     /// <summary>Embedded loot-entry string e.g. "Coughing=1.0x1" — name+chance+min+max+positive on Metadata.</summary>
     Loot,
+    /// <summary>aLootItms verb-encoded entry, e.g. "addus,ItmFoo01,true". Metadata: { verb: string, args: [string,...] }.</summary>
+    LootItm,
+    /// <summary>aStartingCondRules entry "RuleName=fModifier" — fModifier on Metadata.</summary>
+    CondRuleAttach,
+    /// <summary>aInverse entry "InteractionName,..." — extra tokens on Metadata.args.</summary>
+    Inverse,
 }
 
 /// <summary>

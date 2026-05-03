@@ -154,6 +154,16 @@ public static class SchemaLoader
                 shape = SchemaCatalog.FieldShape.CondStringArray;
         }
 
+        // x-shape — explicit shape override. Takes precedence over inference + markers.
+        // Used for the encoded-array shapes (LootItmsArray, InverseArray, CondRuleAttachArray)
+        // that don't have a natural English marker phrase.
+        if (fieldDef.TryGetProperty("x-shape", out var xShapeProp)
+            && xShapeProp.ValueKind == JsonValueKind.String
+            && Enum.TryParse<SchemaCatalog.FieldShape>(xShapeProp.GetString(), ignoreCase: false, out var xShape))
+        {
+            shape = xShape;
+        }
+
         // x-route-by + x-route-targets — sibling-field-routed target folders.
         // E.g. loot.aCOs is type-routed by sibling strType.
         string? routingSibling = null;

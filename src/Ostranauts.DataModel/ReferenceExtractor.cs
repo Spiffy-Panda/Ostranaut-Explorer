@@ -42,6 +42,18 @@ public static class ReferenceExtractor
                 case SchemaCatalog.FieldShape.LootEntryArray:
                     foreach (var r in ExtractLootEntryArray(obj, field, rule)) yield return r;
                     break;
+
+                case SchemaCatalog.FieldShape.InverseArray:
+                    foreach (var r in ExtractInverseArray(obj, field, rule)) yield return r;
+                    break;
+
+                case SchemaCatalog.FieldShape.CondRuleAttachArray:
+                    foreach (var r in ExtractCondRuleAttachArray(obj, field, rule)) yield return r;
+                    break;
+
+                case SchemaCatalog.FieldShape.LootItmsArray:
+                    foreach (var r in ExtractLootItmsArray(obj, field, rule)) yield return r;
+                    break;
             }
         }
     }
@@ -122,6 +134,108 @@ public static class ReferenceExtractor
                     ["value"] = parsed.Value,
                     ["duration"] = parsed.Duration,
                 });
+        }
+    }
+
+    private static IEnumerable<Reference> ExtractInverseArray(DataObject obj, JsonProperty field, SchemaCatalog.FieldRule rule)
+    {
+        if (field.Value.ValueKind != JsonValueKind.Array) yield break;
+        var target = ResolveTarget(obj, rule);
+
+        foreach (var element in field.Value.EnumerateArray())
+        {
+            if (element.ValueKind != JsonValueKind.String) continue;
+            var raw = element.GetString();
+            if (string.IsNullOrEmpty(raw)) continue;
+
+            var parts = raw!.Split(',');
+            var name = parts[0].Trim();
+            if (string.IsNullOrEmpty(name)) continue;
+            if (PlaceholderToken.IsMatch(name)) continue;
+
+            var meta = new Dictionary<string, object>();
+            if (parts.Length > 1)
+                meta["args"] = parts.Skip(1).Select(p => p.Trim()).ToArray();
+
+            yield return new Reference(
+                obj.Folder, obj.StrName, field.Name,
+                target, name,
+                RefKind.Inverse,
+                Metadata: meta.Count > 0 ? meta : null);
+        }
+    }
+
+    private static IEnumerable<Reference> ExtractCondRuleAttachArray(DataObject obj, JsonProperty field, SchemaCatalog.FieldRule rule)
+    {
+        if (field.Value.ValueKind != JsonValueKind.Array) yield break;
+        var target = ResolveTarget(obj, rule);
+
+        foreach (var element in field.Value.EnumerateArray())
+        {
+            if (element.ValueKind != JsonValueKind.String) continue;
+            var raw = element.GetString();
+            if (string.IsNullOrEmpty(raw)) continue;
+
+            var eq = raw!.IndexOf('=');
+            string name;
+            double? fModifier = null;
+            if (eq <= 0)
+            {
+                name = raw.Trim();
+            }
+            else
+            {
+                name = raw.Substring(0, eq).Trim();
+                if (eq < raw.Length - 1
+                    && double.TryParse(raw.Substring(eq + 1), System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+                {
+                    fModifier = parsed;
+                }
+            }
+            if (string.IsNullOrEmpty(name)) continue;
+            if (PlaceholderToken.IsMatch(name)) continue;
+
+            var meta = new Dictionary<string, object>();
+            if (fModifier.HasValue) meta["fModifier"] = fModifier.Value;
+
+            yield return new Reference(
+                obj.Folder, obj.StrName, field.Name,
+                target, name,
+                RefKind.CondRuleAttach,
+                Metadata: meta.Count > 0 ? meta : null);
+        }
+    }
+
+    private static IEnumerable<Reference> ExtractLootItmsArray(DataObject obj, JsonProperty field, SchemaCatalog.FieldRule rule)
+    {
+        if (field.Value.ValueKind != JsonValueKind.Array) yield break;
+        var target = ResolveTarget(obj, rule);
+
+        foreach (var element in field.Value.EnumerateArray())
+        {
+            if (element.ValueKind != JsonValueKind.String) continue;
+            var raw = element.GetString();
+            if (string.IsNullOrEmpty(raw)) continue;
+
+            var parts = raw!.Split(',');
+            // Need at least verb (0) + lootName (1).
+            if (parts.Length < 2) continue;
+
+            var verb = parts[0].Trim();
+            var name = parts[1].Trim();
+            if (string.IsNullOrEmpty(name)) continue;
+            if (PlaceholderToken.IsMatch(name)) continue;
+
+            var meta = new Dictionary<string, object> { ["verb"] = verb };
+            if (parts.Length > 2)
+                meta["args"] = parts.Skip(2).Select(p => p.Trim()).ToArray();
+
+            yield return new Reference(
+                obj.Folder, obj.StrName, field.Name,
+                target, name,
+                RefKind.LootItm,
+                Metadata: meta);
         }
     }
 

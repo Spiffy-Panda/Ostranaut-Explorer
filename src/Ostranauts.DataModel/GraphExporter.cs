@@ -113,6 +113,11 @@ public static class GraphExporter
             case float f: writer.WriteNumber(key, f); break;
             case decimal m: writer.WriteNumber(key, m); break;
             case null: writer.WriteNull(key); break;
+            case string[] arr:
+                writer.WriteStartArray(key);
+                foreach (var s in arr) writer.WriteStringValue(s);
+                writer.WriteEndArray();
+                break;
             default: writer.WriteString(key, value.ToString() ?? ""); break;
         }
     }

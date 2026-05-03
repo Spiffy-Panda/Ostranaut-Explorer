@@ -28,6 +28,9 @@ Stateless. Streams via yield. Returns no edges (yield break) if `obj.Fields` isn
 | `StringArray` | array of strings | One `Reference(Kind=DirectInArray)` per non-empty, non-placeholder element. |
 | `CondStringArray` | array of condition strings (`Name=value xduration`) | One `Reference(Kind=Condition)` per parseable element. `Metadata` carries `value` (double) and `duration` (int). |
 | `LootEntryArray` | array of loot strings (`[-]Name=chance x min[-max]`, `\|`-separated cumulative alternatives in one slot) | One `Reference(Kind=Loot)` per parseable entry (cumulative slot expands to multiple). `Metadata` carries `chance`, `min`, `max` (doubles) and `positive` (bool, false for leading-`-` payouts). Target folder is resolved via `ResolveTarget` (sibling-routed if rule has routing config, else `rule.TargetFolder`). |
+| `InverseArray` | array of `"Name,..."` entries (e.g. `aInverse`) | Split on `,`, take [0] as the name. `Reference(Kind=Inverse)`. `Metadata.args = string[]` of trailing tokens when present (otherwise null). |
+| `CondRuleAttachArray` | array of `"RuleName=fModifier"` entries (e.g. `aStartingCondRules`) | Split on `=`. Take [0] as ref. If [1] parses as a double, attach as `Metadata.fModifier`. `Reference(Kind=CondRuleAttach)`. |
+| `LootItmsArray` | array of `"verb,lootName[,...]"` entries (e.g. `aLootItms`) | Split on `,`. Verb at [0] (preserved on `Metadata.verb`), name at [1]. Trailing tokens go on `Metadata.args = string[]`. `Reference(Kind=LootItm)`. Entries with fewer than 2 tokens are skipped silently. |
 
 ## Target resolution
 
