@@ -27,6 +27,18 @@ This rule applies to subagents too. When delegating to an Agent, include this di
 
 Rationale: keeps the working directory clean, makes prior exploration discoverable, and means the same script can be re-run later without retyping or guessing what the previous attempt looked like.
 
+## CodeDocs — read before code, sync before commit
+
+This repo carries an LLM-targeted documentation index at [CODE-DESIGN.md](CODE-DESIGN.md) plus the `CodeDocs/` tree it points at. The point: most code questions can be answered from the per-file overviews without opening the actual `.cs`, which keeps the context budget intact.
+
+Rules:
+
+1. **Load before navigating code.** Before opening any source file (Read, Grep, Glob into `src/` or `tests/`), read `CODE-DESIGN.md` and `CodeDocs/00_PROJECT.md`. They're small. They tell you whether the file you were going to grep for already has an overview.
+2. **Sync before any commit.** If you modified a `.cs` file, the matching `CodeDocs/sources/<Project>/<File>.md` must reflect the new state — public API signatures, status (real/stubbed), dependencies, who uses it. If you changed a generated/consumed file format, update `CodeDocs/io/inputs.md` or `outputs.md`. The pre-commit checklist is "every changed code file has a synced overview."
+3. **On noticed desync, full audit.** If you read an overview and it's wrong (claims a method that doesn't exist, or misses a public member that does), don't just fix that one. Sweep the whole `CodeDocs/sources/` and `CodeDocs/io/` against the current code and re-sync everything that drifted. The trust value of the system depends on it being globally accurate, not locally patched.
+
+**Pass this directive into subagent prompts.** A subagent that ignores CodeDocs both wastes its own context and risks drifting the index by editing code without updating overviews.
+
 ## Wiki cache — fetch once, re-read locally
 
 `wiki_cache/` is a gitignored local cache of Ostranauts wiki pages. **Always check the cache before reaching for `WebFetch`.** Wiki content rarely changes mid-session, and the cache keeps the full wikitext (much richer than `WebFetch`'s prompt-summarized output).

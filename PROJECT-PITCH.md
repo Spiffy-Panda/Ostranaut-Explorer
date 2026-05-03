@@ -97,6 +97,8 @@ OstranautDataExplorer/
 ### v1 — explorer
 Everything described in this pitch above. Goal: search any object, see forward + backward references, browse a small interactive graph, ship it as a static GitHub Pages site.
 
+**Stat-page generator (late v1).** Once detail pages render real data, add a Builder step that asks a lightweight LLM to write a one-paragraph plain-English summary of each object given its `strName`, fields, and outgoing references — "this is a [coffeemaker] that [requires power], [interacts with crew via X]". Output is cached to disk per object (`build/data/descriptions/<folder>/<strName>.json`) so re-runs don't re-burn API calls; only objects whose source data changed get re-generated. Each detail page renders the summary with a small visible "✨ AI-generated description — verify against source" notice, and embeds machine-readable structured metadata (likely `<script type="application/ld+json">` plus selective `data-*` attributes) so external tooling and other LLMs reading the rendered HTML can extract clean facts without scraping the prose. Hidden meta tags carry full structured fields; the visible notice is the disclosure.
+
 ### v2 — mod-aware tooling, IDE integration, save tools
 Ordered by dependency, not effort.
 

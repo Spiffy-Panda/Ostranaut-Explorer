@@ -91,6 +91,10 @@ Reference rules are derived from `data/schemas/*-schema.json` — specifically f
 
 Full detail in [PROJECT-PITCH.md](PROJECT-PITCH.md).
 
+## For AI agents (and the curious)
+
+`CODE-DESIGN.md` is the LLM-targeted index pointing at `CodeDocs/`. It exists so an agent (or a human reviewer) can answer "what does this class do, what's its public API, what depends on it" without opening every `.cs` file — overviews live alongside the code and are kept in sync at commit time. If you're using Claude Code or any agentic coding tool against this repo, that file plus `CLAUDE.md` are the orientation pack.
+
 ## Contributing
 
 Not open for outside contributions yet — the project is still pre-v1. If you stumbled on it and want to follow along, the pitch and CLAUDE.md will tell you most of what you need.
