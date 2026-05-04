@@ -305,8 +305,8 @@ loot.json          →   CONDNeedsReducedPer  (strType: condition)
 
 <h4>Where it goes on disk</h4>
 <pre><code>&lt;Steam&gt;/steamapps/common/Ostranauts/Ostranauts_Data/
-├── loading_order.json              ← see below
 └── Mods/
+    ├── loading_order.json          ← see below
     └── NeedsReducedTrait/          ← this whole folder is the mod
         ├── mod_info.json
         └── data/
@@ -334,7 +334,7 @@ loot.json          →   CONDNeedsReducedPer  (strType: condition)
 <p class="small">Bump <code>strGameVersion</code> if you're on a newer Ostranauts build. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Modding/Data_Modding#mod_info.json">Modding/Data Modding § mod_info.json</a>.)</span></p>
 
 <h3><code>loading_order.json</code></h3>
-<div class="filebar"><span>Ostranauts_Data/loading_order.json</span></div>
+<div class="filebar"><span>Ostranauts_Data/Mods/loading_order.json</span></div>
 <pre><code>[
   {
     "strName": "Mod Loading Order",
@@ -347,7 +347,7 @@ loot.json          →   CONDNeedsReducedPer  (strType: condition)
   }
 ]
 </code></pre>
-<p class="small">This file lives <em>one level above</em> the <code>Mods/</code> folder, not inside the mod folder. The folder name in <code>aLoadOrder</code> must match the mod folder name <strong>exactly, case‑sensitive</strong>. You can also let the game generate this for you by clicking the <strong>Mods</strong> button in <em>Options → Files</em>. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Modding/Data_Modding#loading_order.json">Modding/Data Modding § loading_order.json</a>.)</span></p>
+<p class="small">This file lives <em>inside</em> <code>Ostranauts_Data/Mods/</code>, alongside the individual mod folders — not inside any specific mod folder. The folder name in <code>aLoadOrder</code> must match the mod folder name <strong>exactly, case‑sensitive</strong>. You can also let the game generate this for you by clicking the <strong>Mods</strong> button in <em>Options → Files</em>. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Modding/Data_Modding#loading_order.json">Modding/Data Modding § loading_order.json</a> still documents the older <code>Ostranauts_Data/loading_order.json</code> location; the current game places it inside <code>Mods/</code>.)</span></p>
 
 <h3>The trait condition</h3>
 <div class="filebar"><span>Mods/NeedsReducedTrait/data/conditions/conditions_needsreduced.json</span></div>
@@ -418,7 +418,7 @@ loot.json          →   CONDNeedsReducedPer  (strType: condition)
 <p class="small">The format is <code>TraitName,score,ageCost</code>. <code>0,0</code> means "free pick, no in‑game age cost." Use <code>3,1</code> or similar if you'd rather it cost trait‑budget points and a year of starting age, the way the base game's <code>IsCharismatic,3,1</code> does.</p>
 
 <div class="callout good">
-<strong>That's the whole mod.</strong> Five files (four under your mod folder, plus <code>loading_order.json</code> at the <code>Ostranauts_Data/</code> level), no edits to base‑game data. The trait should appear in the character‑creation trait list under "Needs Reduced" and apply <code>IsNeedsReduced</code> to the player on game start.
+<strong>That's the whole mod.</strong> Five files (four under your mod folder, plus <code>loading_order.json</code> in <code>Ostranauts_Data/Mods/</code> alongside the mod folders), no edits to base‑game data. The trait should appear in the character‑creation trait list under "Needs Reduced" and apply <code>IsNeedsReduced</code> to the player on game start.
 </div>
 
 <h2 id="values">6 · Tuning the values</h2>
@@ -505,7 +505,7 @@ loot.json          →   CONDNeedsReducedPer  (strType: condition)
   <li><strong>Player has the condition but needs still trigger.</strong> Open the player's status panel and look for the trait listed (which is why <code>nDisplaySelf: 2</code> matters during testing). If the underlying need still drops into discomfort, raise the magnitude on the relevant <code>Thresh*</code> entry.</li>
   <li><strong>Hunger or hygiene still trip.</strong> Those two are <em>only</em> handled by the rate‑slowing block. If they still trip, increase the magnitude of the relevant <code>-Stat*Rate</code> entry toward <code>1.0</code>.</li>
   <li><strong>Crash on game load.</strong> Almost always a JSON syntax error in one of the four files — missing comma, unterminated string, trailing comma in <code>aCOs</code>. Run the file through any JSON linter; LitJson is unforgiving.</li>
-  <li><strong>Mod doesn't load at all.</strong> Verify <code>mod_info.json</code> exists at the mod folder root and is valid JSON. Verify <code>loading_order.json</code> sits in <code>Ostranauts_Data/</code> (one level above <code>Mods/</code>) and includes your folder name in <code>aLoadOrder</code>. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Modding/Data_Modding">Modding/Data Modding</a> troubleshooting section.)</span></li>
+  <li><strong>Mod doesn't load at all.</strong> Verify <code>mod_info.json</code> exists at the mod folder root and is valid JSON. Verify <code>loading_order.json</code> sits in <code>Ostranauts_Data/Mods/</code> (alongside the mod folders, not inside any one of them) and includes your folder name in <code>aLoadOrder</code>. If you have an older copy at <code>Ostranauts_Data/loading_order.json</code> from following pre‑update wiki instructions, the current game build won't read it — move it. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Modding/Data_Modding">Modding/Data Modding</a> troubleshooting section.)</span></li>
 </ol>
 
 <h2 id="sources">10 · Sources</h2>

@@ -4,6 +4,10 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-03 — Fix loading_order.json location in needs-suppression handoff and user story
+
+The handoff (`notes/handoff/needs-suppression-mod-guide.html`) and the user story (`notes/user-stories/mod-suppress-needs.md`) both documented `loading_order.json` as living at `Ostranauts_Data/loading_order.json` (one level above `Mods/`). Direct evidence from a current install showed the actual location is `Ostranauts_Data/Mods/loading_order.json` — inside the `Mods/` folder, alongside individual mod folders. The wiki ([Modding/Data Modding § loading_order.json](https://ostranauts.wiki.gg/wiki/Modding/Data_Modding#loading_order.json)) still documents the older location; the game has since moved it. Five spots in the handoff updated (file tree, filebar header, location explanation, mod summary, troubleshooting); the user story Files-table entry updated. Both updates note the wiki discrepancy explicitly so future readers don't trip on it. The troubleshooting section also tells migrating modders to move any stale `Ostranauts_Data/loading_order.json` they have from following pre-update wiki instructions.
+
 ## 2026-05-03 — Paraphrase Discord conversation in mod-suppress-needs user story
 
 The "## The conversation that drove this" section in `notes/user-stories/mod-suppress-needs.md` previously transcribed three Discord messages verbatim, including one identifying name. Replaced with a paraphrased summary that preserves the substance — modder asked about feasibility of a needs-suppressing player trait before committing to learning the mod system, was told prior art existed via tick-effect modifications, flagged intimidation about zero baseline knowledge as the actual blocker. Names dropped; the load-bearing intimidation detail preserved.

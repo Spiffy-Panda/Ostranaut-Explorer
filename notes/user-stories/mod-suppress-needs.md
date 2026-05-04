@@ -155,7 +155,7 @@ entries notes this caveat explicitly.
 | `data/loot/<mod_folder>` | Loot entry of `strType: condition` (e.g. `CONDNeedsReducedPer`) whose `aCOs` lists the `Thresh*` and `-StatXRate` effects. Modeled on `CONDApatheticPer`. |
 | `data/traitscores/<mod_folder>` | Adds the trait to the character-creation selection pool (`IsNeedsReduced,0,0` for free, or `3,1` to match base-game cost shape). |
 | `mod_info.json` | Loader identification (`strName`, `strAuthor`, `strGameVersion`, `strModVersion`, `strNotes`). |
-| `Ostranauts_Data/loading_order.json` | Sits one level *above* the mod folder. Lists `"core"` then the mod's folder name in `aLoadOrder`. The game auto-creates this when you click the **Mods** button in Options→Files. |
+| `Ostranauts_Data/Mods/loading_order.json` | Sits inside the `Mods/` folder, alongside individual mod folders (not inside any one of them). Lists `"core"` then the mod's folder name in `aLoadOrder`. The game auto-creates this when you click the **Mods** button in Options→Files. (The wiki still documents the older `Ostranauts_Data/` location — the game has since moved it.) |
 
 ---
 
