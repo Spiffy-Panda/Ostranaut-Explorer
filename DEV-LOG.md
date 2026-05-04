@@ -4,6 +4,12 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-03 — README reconciliation: Limitations section + stale-claim fixups
+
+Stale parts of the README pruned (status line *"pre-v1, skeleton and planning only"* → *"v1 in active development"* with link to live demo and Limitations section; CI claim *"not wired up yet"* → current state of "parser only ever runs on contributor machines, public Pages ships frame only"; project-layout directory name `OstranautDataExplorer/` → `Ostranaut-Explorer/`; title harmonized with repo and cover).
+
+Added a "Limitations — what's not in the box yet" section near the bottom that consolidates what was previously scattered across [PLAN.md](PLAN.md), [notes/coverage-gaps.md](notes/coverage-gaps.md), and [notes/ux/](notes/ux/): missing site features (glossary card UX 1.1, explainer banners 1.2, inline schema descriptions 1.3, filter pills 1.6, cluster pages 3.1, template-hub pages 3.2, smaller 1.4/1.7-1.12 components, `/help/debug` migration); parser coverage gaps (5 of ~70 folders schema-covered upstream, 184 uncovered ref candidates pending promotion, stat-bar → `Stat*` audit at 1 of 11 confirmed, mod-overlay load order out of scope until v2); content gaps (5 pending LLM extraction passes on flagged Modding wiki pages, `nDisplaySelf` semantics, needs-suppression handoff still untested in-game). The aim is that a fresh visitor or contributor sees the honest limits in one place and knows where each one is tracked in detail.
+
 ## 2026-05-03 — Public Pages bundle + cover page + four-factor pre-push check
 
 Set up the static "public bundle" for GitHub Pages. The site frame, `comment_mod/`, and `notes/handoff/` ship; the C# parser never runs in CI. Game data isn't redistributable, so the public deploy carries empty data stubs and a cover page that explains the empty-data state up-front, then describes each tab. Visitors who want a populated explorer clone the repo and run `make site` locally with Ostranauts installed.

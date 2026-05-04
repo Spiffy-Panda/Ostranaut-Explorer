@@ -1,8 +1,8 @@
-# Ostranaut Data Explorer
+# Ostranaut Explorer
 
 A static-site explorer for the [Ostranauts](https://store.steampowered.com/app/1022980/Ostranauts/) game data tree. Pick any object by `strName` and immediately see what it points to, what points to it, and the surrounding reference graph — IDE-style "Find Usages" for a game where everything is a `CondOwner` referencing other `CondOwner`s by string name.
 
-> **Status: pre-v1.** Project skeleton and planning only. See [PROJECT-PITCH.md](PROJECT-PITCH.md) for the full design and roadmap.
+> **Status: v1 in active development.** The site frame, parser, and core search/navigation tabs are working. UX onboarding components, cluster/template-hub pages, and several content gaps are still in flight — see [Limitations](#limitations--whats-not-in-the-box-yet) below for the honest list. Public demo (frame only, no game data) at <https://spiffy-panda.github.io/Ostranaut-Explorer/>. Long-arc design in [PROJECT-PITCH.md](PROJECT-PITCH.md).
 
 ## Why
 
@@ -51,7 +51,7 @@ The base-game data files are not redistributed in this repo — there's no publi
    dotnet run --project src/Ostranauts.Site.Builder -- --root data --root my_mod/data
    ```
 
-Because the data files aren't in the repo, **CI builds aren't wired up yet**. Builds happen on contributor machines for now. GitHub Actions is on the table once we have a sanctioned source for the data — or once the build can be split so the parser runs locally and only the resulting `graph.js` is published.
+Because the game data isn't redistributable, **the parser only ever runs on contributor machines** — never in CI, never on a hosted runner. The public Pages deploy at <https://spiffy-panda.github.io/Ostranaut-Explorer/> ships the static site frame, the cover page describing each tab, and the bundled handoffs only; the data tabs are empty there. To populate them, follow the steps above and run `make` locally.
 
 5. **(Optional) Decompile the game's `Assembly-CSharp.dll`** so the parser can cross-check schemas against the C# source of truth and the site can show hardcoded code references on object detail pages. Per the [Ostranauts wiki](https://ostranauts.wiki.gg/wiki/Modding/BepInEx_Modding), the recommended decompiler is **[dnSpy](https://github.com/dnSpyEx/dnSpy)**.
 
@@ -84,21 +84,27 @@ make           # from Git Bash on Windows, or any POSIX shell
 build.bat      # double-clickable wrapper that invokes `make` under Git Bash
 ```
 
-The build runs the C# parser against `data/`, emits `graph.js` (a JS-wrapped JSON payload), and assembles the static site under `build/`. Open `build/index.html` directly in a browser to use the explorer offline — no local server needed — or push `build/` to GitHub Pages.
+The build runs the C# parser against `data/`, emits `graph.js` (a JS-wrapped JSON payload), and assembles the static site under `build/`. Open `build/index.html` directly in a browser to use the explorer offline — no local server needed. The landing page is the cover (the same one visible on the public demo); click **Explorer** in the tab bar to enter the navigable data view.
+
+`make site-public` produces a frame-only bundle under `build-public/` with no game-data derivatives. That's what `.github/workflows/pages.yml` deploys on every push.
 
 ## Project layout
 
 ```
-OstranautDataExplorer/
+Ostranaut-Explorer/
 ├── data/                          # game data (gitignored, you supply)
 ├── data.original/                 # baseline snapshot (gitignored, optional)
+├── comment_mod/                   # tracked schema overlay (extends base-game schemas)
 ├── src/
 │   ├── Ostranauts.DataModel/      # C# library — parsing, indexing, graph
 │   │                              # targets netstandard2.1 (mod-loadable)
 │   ├── Ostranauts.Site.Builder/   # CLI: net8.0, emits graph.js (JS-wrapped JSON)
-│   └── Ostranauts.Site/           # vanilla JS + Cytoscape.js frontend
+│   └── Ostranauts.Site/           # cover (index.html) + explorer (explorer.html), vanilla JS + Cytoscape.js
+├── notes/handoff/                 # standalone HTML pages that ship under build/handoff/
 ├── scrap_scripts/                 # exploratory / one-off scripts (gitignored)
-├── build/                         # `make` output, ready for GitHub Pages
+├── build/                         # `make` output, full bundle (gitignored)
+├── build-public/                  # `make site-public` output, no game-data (gitignored)
+├── .github/workflows/pages.yml    # deploys build-public/ to GitHub Pages
 ├── Makefile
 ├── build.bat                      # Windows wrapper for `make`
 ├── CLAUDE.md                      # operating notes for AI-assisted development
@@ -125,6 +131,38 @@ Reference rules are derived from `data/schemas/*-schema.json` — specifically f
 Long-arc design and decisions: [PROJECT-PITCH.md](PROJECT-PITCH.md). Active
 next steps (lives until done, then deleted): [PLAN.md](PLAN.md). What
 shipped when: [DEV-LOG.md](DEV-LOG.md).
+
+## Limitations — what's not in the box yet
+
+The public demo at <https://spiffy-panda.github.io/Ostranaut-Explorer/> ships the site frame, the cover page describing each tab, and the bundled handoffs only — there's no graph data. To see anything in the data tabs you must clone the repo and run `make site` locally with Ostranauts installed (see [Setting up locally](#setting-up-locally)).
+
+Beyond the empty-data caveat, several substantive parts are stubbed, deferred, or not yet built. [PLAN.md](PLAN.md) tracks current priority; [notes/coverage-gaps.md](notes/coverage-gaps.md) tracks parser blind spots.
+
+**Site features not yet built** (see [notes/ux/](notes/ux/) for full specs):
+
+- **Glossary card + concept search (UX 1.1).** Search-bar fallback when strName matches return zero, with a hand-seeded alias map (~30 seed entries). Gates both newcomer-onboarding user stories.
+- **Per-prefix contextual explainer banners (UX 1.2).** Short banners keyed on naming convention (`Stat*`, `Thresh*`, `COND*`, `Itm*`, `ACT*`, `DRUG*`).
+- **Inline schema field descriptions (UX 1.3).** Currently hover-only; newcomers don't know to hover.
+- **Filter pills on incoming refs (UX 1.6).** Plain-language pill set above any ref list >5 rows.
+- **Cluster pages (UX 3.1).** Per-folder prefix-cluster pages with curation overlay, three-tier auto-detection, and a *"compared with the neighborhood"* table as the centerpiece.
+- **Template-hub pages (UX 3.2).** For one-object-as-type-definition cases like `ItmBodyPart01` (used as `strItemDef` by 20+ `Wound*` entries). Includes a blast-radius callout when editing a template would affect every instance.
+- Several smaller UX components (1.4 derived `Thresh<X>` sidebar, 1.7 DSL primer popover, 1.8 `strType` dispatch tooltip, 1.9 *"Why is this in `X/`?"* note, 1.10 *"Edit this"* callout, 1.11 live-build diff, 1.12 plain-language wiki links).
+- A static `/help/debug` route migrated from the wiki Debug page.
+
+**Parser coverage gaps:**
+
+- Only **5 of ~70 data folders** carry a base-game schema. `comment_mod/data/schemas/` extends coverage but is far from complete.
+- The auto-detector found **184 uncovered ref candidates** (`build/data/ref_candidates.js`) that haven't been promoted to schema overlays. See [PLAN.md](PLAN.md) → *Slice E phase 6* for status.
+- Stat-bar → `Stat*` strName mappings are partial — only `StatGrav` confirmed of eleven UI bars. See [PLAN.md](PLAN.md) → *Stat bars cross-validation audit*.
+- **Mod-overlay load order beyond the simple `data/` + `comment_mod/data/` pair is out of scope** until a v2 mod-aware loader. The Builder accepts ordered roots today, but there's no `mod_info.json` / `loading_order.json` resolver.
+
+**Content gaps:**
+
+- LLM-assist extraction passes pending on five flagged Modding wiki pages (Conditions, Modding/Pledges, Modding/CondOwners, Modding/Interactions, Modding/Loot).
+- `nDisplaySelf` field semantics not yet captured in the schema (gates the *crew-exercise-invisible-need* user story).
+- The *needs-suppression* mod handoff (linked under `/handoff/`) is a starting scaffold and is **untested in-game** — verified workflow happens once the explorer is populated.
+
+When you visit a populated explorer with real data, expect to encounter fields with no description, folders with no schema, and references the parser can't yet resolve. Those gaps are the work surface — they're tracked rather than hidden, so contributors can pick the next overlay or component.
 
 ## Where things live
 
