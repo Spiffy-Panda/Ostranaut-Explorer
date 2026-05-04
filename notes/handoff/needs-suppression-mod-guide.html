@@ -410,12 +410,12 @@ loot.json          →   CONDNeedsReducedPer  (strType: condition)
   {
     "strName" : "Trait Scores,1",
     "aValues" : [
-      "IsNeedsReduced,0,0"
+      "IsNeedsReduced,0,1"
     ]
   }
 ]
 </code></pre>
-<p class="small">The format is <code>TraitName,score,ageCost</code>. <code>0,0</code> means "free pick, no in‑game age cost." Use <code>3,1</code> or similar if you'd rather it cost trait‑budget points and a year of starting age, the way the base game's <code>IsCharismatic,3,1</code> does.</p>
+<p class="small">The format is <code>TraitName,score,ageCost</code>. <strong>The age cost (second number) must be at least <code>1</code></strong> — the chargen UI (and the trait‑budget calculator) silently filter out any entry with <code>ageCost=0</code>, so <code>0,0</code> looks like a free pick on paper but never appears in the trait list. <code>0,1</code> means "free in score budget, costs 1 year of starting age" — the convention used by the FreeTraits mod. Use <code>3,1</code> to match the base game's cost shape for a strong positive trait (like <code>IsCharismatic,3,1</code>).</p>
 
 <div class="callout good">
 <strong>That's the whole mod.</strong> Five files (four under your mod folder, plus <code>loading_order.json</code> in <code>Ostranauts_Data/Mods/</code> alongside the mod folders), no edits to base‑game data. The trait should appear in the character‑creation trait list under "Needs Reduced" and apply <code>IsNeedsReduced</code> to the player on game start.
@@ -500,7 +500,7 @@ loot.json          →   CONDNeedsReducedPer  (strType: condition)
 
 <h2 id="debug">9 · If it doesn't work — quick debugging</h2>
 <ol>
-  <li><strong>Trait doesn't appear in character creation.</strong> Check that <code>traitscores_needsreduced.json</code>'s outer <code>strName</code> is exactly <code>"Trait Scores,1"</code> — the comma‑1 is part of the name. Then check <code>loading_order.json</code> includes your folder name and the spelling matches.</li>
+  <li><strong>Trait doesn't appear in character creation.</strong> Check that <code>traitscores_needsreduced.json</code>'s outer <code>strName</code> is exactly <code>"Trait Scores,1"</code> — the comma‑1 is part of the name. Then check that the <code>ageCost</code> (third number in the <code>TraitName,score,ageCost</code> tuple) is <strong>not <code>0</code></strong> — the chargen UI silently drops any entry with <code>ageCost=0</code>. <code>0,1</code> is the cheapest entry that will actually show. Then check <code>loading_order.json</code> includes your folder name and the spelling matches.</li>
   <li><strong>Trait appears but the player doesn't get the condition.</strong> Open the console and run <code>addcond IsNeedsReduced</code> on the player to confirm the condition itself is well‑formed. If <em>that</em> works but starting a new game with the trait selected doesn't, the wiring between traitscores and condition application is the suspect.</li>
   <li><strong>Player has the condition but needs still trigger.</strong> Open the player's status panel and look for the trait listed (which is why <code>nDisplaySelf: 2</code> matters during testing). If the underlying need still drops into discomfort, raise the magnitude on the relevant <code>Thresh*</code> entry.</li>
   <li><strong>Hunger or hygiene still trip.</strong> Those two are <em>only</em> handled by the rate‑slowing block. If they still trip, increase the magnitude of the relevant <code>-Stat*Rate</code> entry toward <code>1.0</code>.</li>

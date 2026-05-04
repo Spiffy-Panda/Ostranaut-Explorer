@@ -4,6 +4,14 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-03 — Fix traitscores `ageCost=0` filter in needs-suppression handoff and user story
+
+The handoff and user story documented `0,0` as "free pick, no in-game age cost" for traitscores entries. Empirically false: a trait registered as `0,0` does not appear in character creation. Confirmed by `decomp/Assembly-CSharp/GUIChargenTraits.cs:146` (the chargen UI's `DrawShelves` skips entries where `keyValuePair.Value[1] != 0` is false) and `:58` (the score-budget calculator applies the same filter). The second number is the **age cost**, and `0` makes the trait invisible to chargen. The FreeTraits mod uses `0,1` for everything ("free in score budget, 1 year mandatory cost") which is the cheapest visible option.
+
+Updated the handoff's example to `IsNeedsReduced,0,1`, rewrote the explanation to call out the filter, and appended the cause to the "Trait doesn't appear" troubleshooting bullet. Updated the user story's Files-table entry to match. Cited `GUIChargenTraits.cs:146`/`:58` inline so future readers can verify.
+
+Earlier confusion (mid-session) about whether the mod's traitscores entry replaces core's: it does not. `dictTraitsTemp` is local to each `LoadMod(strFolderPath, ...)` invocation, so each mod's traitscores file is parsed in isolation and its entries get added to the global `DataHandler.dictTraitScores` keyed by **trait name** (not by the outer "Trait Scores,1" name). Additive merge at the trait-name level. The outer entry's strName collision doesn't matter.
+
 ## 2026-05-03 — Fix loading_order.json location in needs-suppression handoff and user story
 
 The handoff (`notes/handoff/needs-suppression-mod-guide.html`) and the user story (`notes/user-stories/mod-suppress-needs.md`) both documented `loading_order.json` as living at `Ostranauts_Data/loading_order.json` (one level above `Mods/`). Direct evidence from a current install showed the actual location is `Ostranauts_Data/Mods/loading_order.json` — inside the `Mods/` folder, alongside individual mod folders. The wiki ([Modding/Data Modding § loading_order.json](https://ostranauts.wiki.gg/wiki/Modding/Data_Modding#loading_order.json)) still documents the older location; the game has since moved it. Five spots in the handoff updated (file tree, filebar header, location explanation, mod summary, troubleshooting); the user story Files-table entry updated. Both updates note the wiki discrepancy explicitly so future readers don't trip on it. The troubleshooting section also tells migrating modders to move any stale `Ostranauts_Data/loading_order.json` they have from following pre-update wiki instructions.
