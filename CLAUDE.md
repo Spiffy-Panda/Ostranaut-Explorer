@@ -57,6 +57,17 @@ Rationale: keeps the working directory clean, makes prior exploration discoverab
 
 Before committing, add an entry to [DEV-LOG.md](DEV-LOG.md). Minimum: one line describing what changed and why. For non-obvious changes (design decisions, schema additions, refactors), a short paragraph. Format: `## YYYY-MM-DD — <slug>` header, reverse-chronological order.
 
+## Pre-push check — four-factor fair use review
+
+Anything pushed to the public Pages bundle (site code, [comment_mod/](comment_mod/), [notes/handoff/](notes/handoff/), anything else copied into `build-public/`) becomes publicly redistributed content. Before pushing changes that touch these surfaces, walk the four factors on the new content:
+
+1. **Purpose and character of the use** — transformative use (modder-facing tooling, schema methodology, parser writeups) clears this; verbatim in-game prose does not.
+2. **Nature of the copyrighted work** — game data and decompiled C# are proprietary creative work; our schema overlays, prose, and tooling are not.
+3. **Amount and substantiality of the portion taken** — small representative excerpts only. Large strName tables, full condowner dumps, screenshotted in-game UI tip the scale.
+4. **Effect on the potential market** — the data is useless without Ostranauts loaded around it, so substitution risk is generally low. But a handoff that fully explains a mechanic without the game shifts this.
+
+Data-only handoffs (no decompiled C#, no BepIn / engine-side code) usually clear factors 1, 2, and 4 trivially; only factor 3 is plausibly violable, and only at scale. The check is still worth running explicitly — note in the commit or PR message which factor(s) you weighed if it's not obvious. If a handoff drifts toward "comprehensive game manual," pull it back before pushing.
+
 ## Game engine notes
 
 - The game deserializes JSON with **LitJson** (not Newtonsoft.Json / System.Text.Json). LitJson is case-sensitive and maps JSON keys directly to C# property/field names. No `[JsonProperty]` rename attributes — the JSON key **is** the C# member name. This is relevant when reconciling field names in `decomp/` against data in `data/`.

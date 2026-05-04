@@ -17,6 +17,7 @@
 
 # Build outputs
 /build/
+/build-public/
 **/bin/
 **/obj/
 

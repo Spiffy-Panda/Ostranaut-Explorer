@@ -3,39 +3,119 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Ostranaut Data Explorer</title>
+  <title>Ostranaut Explorer</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    main.cover {
+      display: block;
+      max-width: 56rem;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+    main.cover section { margin-bottom: 2.25rem; }
+    main.cover h2 {
+      font-size: 0.8125rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 0.875rem;
+      font-weight: 600;
+    }
+    main.cover p { margin: 0 0 0.75rem; }
+    main.cover p:last-child { margin: 0; }
+    .demo-banner {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--warn);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+    }
+    .demo-banner .banner-label {
+      color: var(--warn);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 0 0 0.5rem;
+    }
+    .tab-grid {
+      display: grid;
+      gap: 0.875rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 50rem) {
+      .tab-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .tab-card {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+    }
+    .tab-card h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+    .tab-card h3 a { color: var(--accent); }
+    .tab-card p { color: var(--fg); }
+    .tab-card .meta {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.5rem;
+    }
+  </style>
 </head>
 <body>
   <header>
-    <h1>Ostranaut Data Explorer</h1>
-    <div class="search-wrap">
-      <input id="search" type="search" autocomplete="off" placeholder="search by strName or folder…">
-      <ul id="search-results" hidden></ul>
-    </div>
-    <p class="status" id="status">loading…</p>
+    <h1>Ostranaut Explorer</h1>
+    <p class="status">data-graph navigator for Ostranauts modders</p>
   </header>
-  <nav id="tabs" aria-label="primary navigation">
-    <a href="#/" data-tab="home" title="Search and click your way through the data tree. The default landing page.">Explorer</a>
-    <a href="#/schemas" data-tab="schemas" title="What reference rules the parser learned from each folder's schema. Use this to see which folders have rich coverage and which need schema overlays.">Schemas</a>
-    <a href="#/health/coverage" data-tab="coverage" title="Which folders the parser sees no edges for, and what the detector found instead. Use this to spot blind spots and pick the next schema overlay to write.">Coverage</a>
-    <a href="#/health/data" data-tab="data-health" title="Dangling refs (target doesn't exist), orphans (nothing points to them), and cross-folder duplicate strNames. Often indicates data bugs or missing extractors.">Data Health</a>
-    <a href="#/llm-candidates" data-tab="llm" title="Top objects by incoming-ref count, with clipboard buttons that produce self-contained LLM prompts for folder templates or per-object blurbs.">LLM Candidates</a>
-  </nav>
-  <main>
-    <aside id="folders">
-      <h2>Folders</h2>
-      <ul id="folder-list"></ul>
-    </aside>
-    <section id="detail">
-      <p class="hint">Pick an object from the search bar or a folder on the left.</p>
+  <main class="cover">
+    <section class="demo-banner">
+      <p class="banner-label">⚠ Empty dataset · Public demo</p>
+      <p>The tabs are empty here. The explorer is populated by parsing your local copy of the game's <code>data/</code> tree, which isn't redistributable. Clone the repo, run <code>make site</code> with Ostranauts installed, and the same UI lights up against your real data — read on for what each tab does once that's loaded.</p>
+    </section>
+
+    <section>
+      <h2>What this is</h2>
+      <p>Ostranauts ships ~70 folders of JSON arrays driving every condition, condowner, interaction, loot table, and pledge in the game. References between objects are plain <code>strName</code> strings — no foreign keys, no schema enforcement, just convention. Modders editing this tree want to know: what entries reference <em>this</em> one? what does this field do? where are the folders nobody has documented yet?</p>
+      <p>The explorer parses the data with a schema-driven extractor (rules derived from schema field descriptions, not hand-curated), and renders the resulting graph as a navigable site. Each tab below addresses a different question.</p>
+    </section>
+
+    <section>
+      <h2>Tabs</h2>
+      <div class="tab-grid">
+        <article class="tab-card">
+          <h3><a href="explorer.html#/">Explorer</a></h3>
+          <p>Search and click your way through the data tree. Find the JSON entry for any item, condition, or interaction, and trace incoming/outgoing references with edge metadata (condition values, loot weights) preserved.</p>
+          <p class="meta">default landing</p>
+        </article>
+        <article class="tab-card">
+          <h3><a href="explorer.html#/schemas">Schemas</a></h3>
+          <p>What reference rules the parser learned from each folder's schema. See which folders have rich coverage and which still need overlays in <code>comment_mod/</code>.</p>
+          <p class="meta">~5 of ~70 folders covered upstream</p>
+        </article>
+        <article class="tab-card">
+          <h3><a href="explorer.html#/health/coverage">Coverage</a></h3>
+          <p>Folders the parser sees no edges for, plus what the auto-detector found instead. Promote a candidate into the Comment Mod and the field becomes a real edge on the next build.</p>
+          <p class="meta">working surface for schema gardening</p>
+        </article>
+        <article class="tab-card">
+          <h3><a href="explorer.html#/health/data">Data Health</a></h3>
+          <p>Dangling refs (target doesn't exist), orphans (nothing points to them), and cross-folder duplicate <code>strName</code>s. Surfaces real bugs in the data, sometimes blind spots in the extractor.</p>
+          <p class="meta">audit view</p>
+        </article>
+        <article class="tab-card">
+          <h3><a href="explorer.html#/llm-candidates">LLM Candidates</a></h3>
+          <p>Top objects ranked by incoming-reference count, with copy-to-clipboard buttons producing self-contained LLM prompts for folder templates or per-object blurbs. Drafts go through a model you choose.</p>
+          <p class="meta">optional tooling</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Repo</h2>
+      <p><a href="https://github.com/Spiffy-Panda/Ostranaut-Explorer">Spiffy-Panda/Ostranaut-Explorer</a> on GitHub. Issues, schema overlay PRs, and user-story rewrites all welcome.</p>
     </section>
   </main>
-  <!-- v5 split payloads. All set their respective window globals via JS-wrapped JSON. -->
-  <script src="data/graph.js"></script>           <!-- window.GRAPH_DATA: nodes, edges, rules -->
-  <script src="data/properties.js"></script>      <!-- window.NODE_PROPS: per-node scalar fields -->
-  <script src="data/code_refs.js"></script>       <!-- window.CODE_REFS: hardcoded string refs from decomp (optional) -->
-  <script src="data/ref_candidates.js"></script>  <!-- window.REF_CANDIDATES: detector-derived ref candidates -->
-  <script src="app.js"></script>
 </body>
 </html>

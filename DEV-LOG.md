@@ -4,6 +4,16 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-03 — Public Pages bundle + cover page + four-factor pre-push check
+
+Set up the static "public bundle" for GitHub Pages. The site frame, `comment_mod/`, and `notes/handoff/` ship; the C# parser never runs in CI. Game data isn't redistributable, so the public deploy carries empty data stubs and a cover page that explains the empty-data state up-front, then describes each tab. Visitors who want a populated explorer clone the repo and run `make site` locally with Ostranauts installed.
+
+Renamed `src/Ostranauts.Site/index.html` → `explorer.html` (content unchanged) and made the new `index.html` the cover page. Local `make run` now opens the cover, one click from the explorer — same UX as Pages visitors. Cover styling reuses the dark theme variables from `style.css` plus a small inline block for cover-specific layout (the global `main { display: grid; ... }` rule is the explorer's two-pane layout, overridden with `display: block` on `main.cover`). A bordered orange-warn "Empty dataset · Public demo" header makes the missing-data state explicit so visitors don't click into the tabs expecting them to work.
+
+Added a "Pre-push check — four-factor fair use review" section to CLAUDE.md. Anything pushed to the public bundle is publicly redistributed content, so the four factors get walked: purpose/character, nature, amount/substantiality, market effect. Most data-only handoffs clear factors 1, 2, 4 trivially; only factor 3 is plausibly violable (full strName dumps, comprehensive game-manual handoffs). The check is the audit trail.
+
+`make site-public` target produces `build-public/` (~132K — site files + cover + handoffs + four 30-byte data stubs). `.github/workflows/pages.yml` runs that target on push to main/master and deploys via `actions/upload-pages-artifact` + `actions/deploy-pages`. Runner needs only `make` / `bash` / `cp` — no .NET, no game tree. `.gitignore` excludes `/build-public/`.
+
 ## 2026-05-03 — Needs-suppression mod handoff page + Makefile copy step
 
 Wrote a self-contained HTML guide for the modder from the `mod-suppress-needs.md` user story: how to build a player-trait that flatlines hunger / thirst / sleep / hygiene / psych needs. It's untested (the explorer doesn't ship yet) and presented as a starting scaffold, not a verified mod. Lives at `notes/handoff/needs-suppression-mod-guide.html`.

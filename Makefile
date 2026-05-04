@@ -1,12 +1,13 @@
-.PHONY: all clean lib cli site test build run
+.PHONY: all clean lib cli site site-public test build run
 
-BUILD_DIR     ?= build
-SITE_SRC      := src/Ostranauts.Site
-HANDOFF_SRC   := notes/handoff
-BUILDER_PROJ  := src/Ostranauts.Site.Builder/Ostranauts.Site.Builder.csproj
-LIB_PROJ      := src/Ostranauts.DataModel/Ostranauts.DataModel.csproj
-TEST_PROJ     := tests/Ostranauts.DataModel.Tests/Ostranauts.DataModel.Tests.csproj
-CONFIG        ?= Release
+BUILD_DIR        ?= build
+PUBLIC_BUILD_DIR ?= build-public
+SITE_SRC         := src/Ostranauts.Site
+HANDOFF_SRC      := notes/handoff
+BUILDER_PROJ     := src/Ostranauts.Site.Builder/Ostranauts.Site.Builder.csproj
+LIB_PROJ         := src/Ostranauts.DataModel/Ostranauts.DataModel.csproj
+TEST_PROJ        := tests/Ostranauts.DataModel.Tests/Ostranauts.DataModel.Tests.csproj
+CONFIG           ?= Release
 
 all: site
 
@@ -40,10 +41,28 @@ endif
 
 build: site
 
+# Public bundle: site frame + cover + handoffs + empty data stubs. No
+# game-data derivatives, so this is what GitHub Pages publishes. The
+# parser never runs here — the runner doesn't need .NET or the game tree.
+# See CLAUDE.md "Pre-push check — four-factor fair use review" before
+# adding anything new to this surface.
+site-public:
+	rm -rf $(PUBLIC_BUILD_DIR)
+	mkdir -p $(PUBLIC_BUILD_DIR)/data
+	cp -r $(SITE_SRC)/. $(PUBLIC_BUILD_DIR)/
+	@echo 'window.GRAPH_DATA = { nodes: [], edges: [], rules: {}, _isPublicBundle: true };' > $(PUBLIC_BUILD_DIR)/data/graph.js
+	@echo 'window.NODE_PROPS = {};' > $(PUBLIC_BUILD_DIR)/data/properties.js
+	@echo 'window.CODE_REFS = {};' > $(PUBLIC_BUILD_DIR)/data/code_refs.js
+	@echo 'window.REF_CANDIDATES = {};' > $(PUBLIC_BUILD_DIR)/data/ref_candidates.js
+	@if [ -d "$(HANDOFF_SRC)" ]; then \
+		mkdir -p $(PUBLIC_BUILD_DIR)/handoff; \
+		cp -r $(HANDOFF_SRC)/. $(PUBLIC_BUILD_DIR)/handoff/; \
+	fi
+
 # Convenience: open the built site in the default browser (Windows / Git Bash).
 run: site
 	@start "" "$(BUILD_DIR)/index.html" || xdg-open "$(BUILD_DIR)/index.html" || open "$(BUILD_DIR)/index.html"
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) $(PUBLIC_BUILD_DIR)
 	dotnet clean -c $(CONFIG) --nologo
