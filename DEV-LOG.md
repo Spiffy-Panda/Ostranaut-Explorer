@@ -4,6 +4,10 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-03 — Paraphrase Discord conversation in mod-suppress-needs user story
+
+The "## The conversation that drove this" section in `notes/user-stories/mod-suppress-needs.md` previously transcribed three Discord messages verbatim, including one identifying name. Replaced with a paraphrased summary that preserves the substance — modder asked about feasibility of a needs-suppressing player trait before committing to learning the mod system, was told prior art existed via tick-effect modifications, flagged intimidation about zero baseline knowledge as the actual blocker. Names dropped; the load-bearing intimidation detail preserved.
+
 ## 2026-05-03 — README reconciliation: Limitations section + stale-claim fixups
 
 Stale parts of the README pruned (status line *"pre-v1, skeleton and planning only"* → *"v1 in active development"* with link to live demo and Limitations section; CI claim *"not wired up yet"* → current state of "parser only ever runs on contributor machines, public Pages ships frame only"; project-layout directory name `OstranautDataExplorer/` → `Ostranaut-Explorer/`; title harmonized with repo and cover).

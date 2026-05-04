@@ -4,19 +4,21 @@
 
 ## The conversation that drove this
 
-> **Modder (she/they):** so before i start pouring effort into learning how to
-> mod ostranauts, how feasible is it to make some specific-to-player trait that
-> flatlines certain needs so they don't shift enough to have gameplay impact on
-> things? if there's prior art in this space i'd love to see that, too (i
-> searched, couldn't find anything, but that could just be from not knowing
-> what keywords to use)
->
-> **Other:** I think Joshu posted something recently along those lines about
-> modding the tickers that affect needs to accomplish this
->
-> **Modder:** […] trying to figure out how to address this from a starting
-> point of zero understanding of how the game's stuff is engineered is pretty
-> intimidating
+A Discord exchange seeded this story (paraphrased; original participants
+not named). A prospective modder, before committing time to learning
+Ostranauts modding at all, asked whether a player-specific trait that
+flatlines certain needs — enough that they don't shift far enough to
+have gameplay impact — was feasible, and whether prior art existed. They
+had searched but found nothing, suspecting a vocabulary mismatch rather
+than a real absence. Another modder confirmed prior art does exist,
+pointing toward modding the tick-effect mechanism that drives needs.
+The asker said they were intimidated by needing to figure this out from
+zero understanding of how the game's data is engineered.
+
+That intimidation is the load-bearing detail. The story below is shaped
+around showing feasibility *and* teaching the path in the same explorer
+session — so a modder in that position can decide whether to commit
+without having to ask again.
 
 ---
 
