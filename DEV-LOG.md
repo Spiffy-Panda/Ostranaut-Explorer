@@ -4,6 +4,14 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-03 — Reframe needs-suppression handoff around `addcond`, demote chargen-trait to optional
+
+The handoff previously led with "register a selectable trait at character creation" and treated `addcond IsNeedsReduced` as a fallback for existing saves. Empirically, the chargen-trait path conflicts with at least one other mod that touches the same global "Trait Scores,1" bucket (FreeTraits in particular ships a full replacement of the base list with score-zeroed entries; load-order interactions are unpredictable). Reframed the handoff to recommend the `addcond` path as primary, with the traitscores file marked as optional and gated behind a `.callout warn` block that names the conflict and the chargen-UI gotchas.
+
+Also corrected an interpretation error introduced in the prior commit: I had said the format was `TraitName,score,ageCost` and that "ageCost must be ≥1." Re-reading `GUIChargenTraits.cs:81` (sums `Value[0]` as the year cost) and `:146` (filters on `Value[1] != 0`) shows the format is actually `TraitName,ageCost,visibilityFlag` — first number is the displayed year cost (signed), second is a visibility flag that gates whether the trait shows in chargen at all. `0,1` is a valid "free, 0 year" entry, contrary to what I'd documented. The user-story Files-table entry was updated to match.
+
+Section 7 promoted from "applying it to a save you've already started" to "applying the trait — the recommended way." Subtitle, section 1 framing, model diagram, troubleshooting, and TOC entry all aligned to the new voice.
+
 ## 2026-05-03 — Fix traitscores `ageCost=0` filter in needs-suppression handoff and user story
 
 The handoff and user story documented `0,0` as "free pick, no in-game age cost" for traitscores entries. Empirically false: a trait registered as `0,0` does not appear in character creation. Confirmed by `decomp/Assembly-CSharp/GUIChargenTraits.cs:146` (the chargen UI's `DrawShelves` skips entries where `keyValuePair.Value[1] != 0` is false) and `:58` (the score-budget calculator applies the same filter). The second number is the **age cost**, and `0` makes the trait invisible to chargen. The FreeTraits mod uses `0,1` for everything ("free in score budget, 1 year mandatory cost") which is the cheapest visible option.

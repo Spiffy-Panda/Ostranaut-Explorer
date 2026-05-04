@@ -196,7 +196,7 @@
 <main>
 
 <h1>A player trait that flatlines needs</h1>
-<p class="subtitle">A starting point for an Ostranauts mod. Adds a single character-creation trait that holds your physical and psychological needs below their discomfort thresholds.</p>
+<p class="subtitle">A starting point for an Ostranauts mod. Adds a condition (<code>IsNeedsReduced</code>) that holds your physical and psychological needs below their discomfort thresholds. The recommended path is to grant it via the <code>addcond</code> debug console command — picker‑selectable at character creation is supported but optional and conflicts with at least one other mod (see §5).</p>
 
 <div class="callout warn">
 <strong>This is untested.</strong> I have not built or run this mod against the game. It is assembled from patterns the base game already uses (the <code>aPer → CONDxxxPer → aCOs</code> chain that wires every existing trait), but the specific combination here has not been verified in‑game. Treat it as a scaffold to copy, drop into <code>Mods/</code>, and then iterate on once you can see what the game actually does with it. The values, especially, are first guesses.
@@ -211,7 +211,7 @@
   <li><a href="#mechanisms">The two suppression mechanisms (and which stat takes which)</a></li>
   <li><a href="#files">The mod files, copy‑pasteable</a></li>
   <li><a href="#values">Tuning the values</a></li>
-  <li><a href="#existing">Applying it to a save you've already started</a></li>
+  <li><a href="#existing">Applying the trait (the recommended way)</a></li>
   <li><a href="#pitfalls">Pitfalls and confusable names</a></li>
   <li><a href="#debug">If it doesn't work — quick debugging</a></li>
   <li><a href="#sources">Sources</a></li>
@@ -219,17 +219,17 @@
 </div>
 
 <h2 id="what">1 · What the mod does</h2>
-<p>It registers a new selectable trait at character creation called <strong>Needs Reduced</strong>. Picking it gives the player one condition (<code>IsNeedsReduced</code>), which holds a periodic effect that shifts the trigger thresholds for hunger (Satiety), thirst (Hydration), sleep, fatigue, and the psychological stats far enough that the discomfort conditions never actually fire during normal play. It also slows the consumption rates for malnutrition (<code>StatFood</code>) and dirtiness (<code>StatHygiene</code>), because those two needs don't have a <code>Thresh*</code> handle to grab.</p>
-<p>It is purely additive: new files, no edits to any base‑game data. Safe to install on an existing save (with one extra step to grant the trait to a character that's already alive — see §7).</p>
+<p>It defines a condition called <strong>Needs Reduced</strong> (<code>IsNeedsReduced</code>) whose periodic effect shifts the trigger thresholds for hunger (Satiety), thirst (Hydration), sleep, fatigue, and the psychological stats far enough that the discomfort conditions never actually fire during normal play. It also slows the consumption rates for malnutrition (<code>StatFood</code>) and dirtiness (<code>StatHygiene</code>), because those two needs don't have a <code>Thresh*</code> handle to grab.</p>
+<p><strong>The recommended way to use it</strong> is to grant the condition through the in‑game debug console (<code>addcond IsNeedsReduced</code>) at any point — fresh save or existing character. See §7 for the workflow. The condition + loot files are all you actually need on disk.</p>
+<p>Optionally, the mod can also register the condition as a player‑pickable trait at character creation. That path adds one extra file (<code>traitscores</code>), is more intrusive, and conflicts with at least one other mod that touches traitscores. The warning callout in §5 explains the tradeoffs; skip it unless you specifically want the trait to appear in the chargen picker.</p>
+<p>It is purely additive: new files, no edits to any base‑game data.</p>
 
 <h2 id="model">2 · The model in 60 seconds</h2>
 <p>Every "trait" in Ostranauts is a <strong>Condition</strong> living in <code>data/conditions/</code>. The trait condition itself doesn't <em>do</em> anything mechanical — it carries a name, description, and a list called <code>aPer</code>. Each entry in <code>aPer</code> names a periodic Loot entry that gets re‑applied on a tick. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Conditions">Conditions</a> — the <code>aPer</code> field is documented as "Array of Loot to apply for every stack of this condition.")</span></p>
 <p>Those periodic effects live in <code>data/loot/</code> as Loot entries with <code>strType: condition</code>. Their <code>aCOs</code> field is a list of strings shaped like <code>StatName=chanceXmin-max</code>, and that's where the actual numbers happen. <span class="src">(Wiki: <a href="https://ostranauts.wiki.gg/wiki/Modding/Loot">Modding/Loot</a> — "Each entry follows the pattern <code>Name = chance x min-max</code>.")</span></p>
 <p>The chain looks like:</p>
 
-<pre><code>traitscores.json   →   the trait shows up in character creation
-       ↓ (just a name + a score + an age cost)
-conditions.json    →   IsNeedsReduced
+<pre><code>conditions.json    →   IsNeedsReduced                    ← the trait
        ↓ aPer
 loot.json          →   CONDNeedsReducedPer  (strType: condition)
        ↓ aCOs
@@ -237,6 +237,10 @@ loot.json          →   CONDNeedsReducedPer  (strType: condition)
                        ThreshStatHydration = 1.0 x 0.95
                        -StatFoodRate = 1.0 x 0.95
                        ... etc
+
+[optional]
+traitscores.json   →   makes IsNeedsReduced selectable at chargen
+                       (skip this and grant via `addcond IsNeedsReduced`)
 </code></pre>
 
 <p>Two important pattern notes you'll see in the existing data:</p>
@@ -404,7 +408,18 @@ loot.json          →   CONDNeedsReducedPer  (strType: condition)
 </code></pre>
 <p class="small">First block: every stat that has a real <code>Thresh*</code> handle. Second block: the rate‑slowing fallback for the four "consumption rate" stats. Hygiene and food (malnutrition) are handled <em>only</em> by the second block, since they don't have a <code>Thresh*</code>.</p>
 
-<h3>Register the trait at character creation</h3>
+<h3>Register the trait at character creation <span style="font-weight: 400; color: var(--muted, #999);">(optional — read warning first)</span></h3>
+
+<div class="callout warn">
+<strong>The character‑creation registration is optional and worth skipping unless you specifically need the trait to be picker‑selectable.</strong>
+<ul>
+  <li><strong>Recommended path:</strong> ship only the condition + loot files above. To get the trait onto a character — at any point, including on a fresh save — open the in‑game console and run <code>addcond IsNeedsReduced</code> (see §7). You don't need a traitscores file at all.</li>
+  <li><strong>Mod conflicts.</strong> The traitscores file below writes into a global "Trait Scores,1" bucket that every mod's traitscores file shares. <strong>This method does not work cleanly alongside at least one other mod</strong> — for example, the <a href="https://github.com/jwebmeister/ostranauts_mods">FreeTraits</a> mod replaces the entire base trait list with score‑zeroed entries, and load‑order interactions between two mods that both touch this bucket can produce surprising results. If you ship a traitscores file, expect to test against your specific mod stack.</li>
+  <li><strong>Chargen UI gotcha.</strong> A trait whose visibility flag (the second number in <code>TraitName,ageCost,visibilityFlag</code>) is <code>0</code> is silently dropped from the chargen picker, even though the entry exists in the data and can still be granted via <code>addcond</code>. <code>0,1</code> shows as a "0 year" free trait; <code>0,0</code> shows up nowhere.</li>
+</ul>
+If you still want the picker‑selectable version after that, here's the recipe.
+</div>
+
 <div class="filebar"><span>Mods/NeedsReducedTrait/data/traitscores/traitscores_needsreduced.json</span></div>
 <pre><code>[
   {
@@ -415,7 +430,7 @@ loot.json          →   CONDNeedsReducedPer  (strType: condition)
   }
 ]
 </code></pre>
-<p class="small">The format is <code>TraitName,score,ageCost</code>. <strong>The age cost (second number) must be at least <code>1</code></strong> — the chargen UI (and the trait‑budget calculator) silently filter out any entry with <code>ageCost=0</code>, so <code>0,0</code> looks like a free pick on paper but never appears in the trait list. <code>0,1</code> means "free in score budget, costs 1 year of starting age" — the convention used by the FreeTraits mod. Use <code>3,1</code> to match the base game's cost shape for a strong positive trait (like <code>IsCharismatic,3,1</code>).</p>
+<p class="small">The format is <code>TraitName,ageCost,visibilityFlag</code>. The <strong>first number is the age cost displayed in chargen</strong> (signed; positive = costs years of starting age, negative = a "bad" trait that gives years back). The <strong>second number is a visibility flag</strong> that must be non‑zero or the chargen UI silently drops the trait. <code>0,1</code> shows as a free "0 year" pick (FreeTraits convention); <code>3,1</code> matches the base game's strong positive trait shape (<code>IsCharismatic,3,1</code>); <code>0,0</code> is invisible to chargen even though the entry exists. Verified in <code>GUIChargenTraits.cs:81</code> (sums <code>Value[0]</code> as the year cost) and <code>:146</code> (filters on <code>Value[1] != 0</code>).</p>
 
 <div class="callout good">
 <strong>That's the whole mod.</strong> Five files (four under your mod folder, plus <code>loading_order.json</code> in <code>Ostranauts_Data/Mods/</code> alongside the mod folders), no edits to base‑game data. The trait should appear in the character‑creation trait list under "Needs Reduced" and apply <code>IsNeedsReduced</code> to the player on game start.
@@ -440,12 +455,13 @@ loot.json          →   CONDNeedsReducedPer  (strType: condition)
 <h3>Don't go too high</h3>
 <p>If you over‑shift a stat (especially a psychological one), you may push it past the <em>upper</em> end of the condrule — at which point the highest‑tier discomfort can fire instead of the lowest. Land softly: start at <code>1.0x0.5</code>, raise gradually until comfort holds.</p>
 
-<h2 id="existing">7 · Applying it to a save you've already started</h2>
-<p>The mod itself is safe to enable mid‑save — you're only adding new entries. But your existing character won't <em>have</em> the new trait yet, because traits are handed out at character creation.</p>
-<p>To grant it on the spot, open the in‑game console and run:</p>
+<h2 id="existing">7 · Applying the trait — the recommended way</h2>
+<p>The cleanest way to use this mod, on a fresh save or an existing one, is to grant the condition directly via the in‑game debug console. <strong>You don't need the traitscores file for this</strong> — the condition + loot files alone are enough. No character‑creation conflicts to worry about, no chargen UI gotchas.</p>
+<p>Open the console and run:</p>
 <pre><code>addcond IsNeedsReduced</code></pre>
 <p>That attaches the condition to the targeted character (usually the player). Because <code>IsNeedsReduced</code>'s <code>fDuration</code> is <code>0.0</code> it will persist forever, and the periodic effect will start firing on the next tick.</p>
-<p>If you ever want to remove it: <code>removecond IsNeedsReduced</code>. <span class="src">(See <a href="https://ostranauts.wiki.gg/wiki/Debug">Debug</a> on the wiki for the console basics.)</span></p>
+<p>If you ever want to remove it: <code>removecond IsNeedsReduced</code>. <span class="src">(See <a href="https://ostranauts.wiki.gg/wiki/Debug">Debug</a> on the wiki for the console basics, including how to enable it if it isn't already.)</span></p>
+<p>This works the same on a save that started before the mod was installed — the mod itself is safe to enable mid‑save because it only adds new entries.</p>
 
 <div class="callout warn">
 <strong>What you should NOT do.</strong> Do not edit <code>data/condrules/condrules.json</code> to raise the discomfort thresholds directly. That mutates an entry the base game (and existing saves) already reference, and risks corrupting in‑progress condition state. The whole reason this mod uses the <code>Thresh*</code> mechanism is to avoid that — you're stacking a shift on top of the existing rule, not editing it.
@@ -500,7 +516,7 @@ loot.json          →   CONDNeedsReducedPer  (strType: condition)
 
 <h2 id="debug">9 · If it doesn't work — quick debugging</h2>
 <ol>
-  <li><strong>Trait doesn't appear in character creation.</strong> Check that <code>traitscores_needsreduced.json</code>'s outer <code>strName</code> is exactly <code>"Trait Scores,1"</code> — the comma‑1 is part of the name. Then check that the <code>ageCost</code> (third number in the <code>TraitName,score,ageCost</code> tuple) is <strong>not <code>0</code></strong> — the chargen UI silently drops any entry with <code>ageCost=0</code>. <code>0,1</code> is the cheapest entry that will actually show. Then check <code>loading_order.json</code> includes your folder name and the spelling matches.</li>
+  <li><strong>Trait doesn't appear in character creation.</strong> First: do you actually need the chargen path? The recommended workflow is <code>addcond IsNeedsReduced</code> in §7 — skip the traitscores file entirely. If you do need it picker‑selectable: check that the outer <code>strName</code> is exactly <code>"Trait Scores,1"</code> (the comma‑1 is part of the name); check that the third number in <code>TraitName,ageCost,visibilityFlag</code> (the visibility flag) is <strong>not <code>0</code></strong> — the chargen UI silently drops any entry with that flag set to zero, even though the entry exists in the data. <code>0,1</code> shows as a free "0 year" pick. Finally, check <code>loading_order.json</code> includes your folder name and the spelling matches.</li>
   <li><strong>Trait appears but the player doesn't get the condition.</strong> Open the console and run <code>addcond IsNeedsReduced</code> on the player to confirm the condition itself is well‑formed. If <em>that</em> works but starting a new game with the trait selected doesn't, the wiring between traitscores and condition application is the suspect.</li>
   <li><strong>Player has the condition but needs still trigger.</strong> Open the player's status panel and look for the trait listed (which is why <code>nDisplaySelf: 2</code> matters during testing). If the underlying need still drops into discomfort, raise the magnitude on the relevant <code>Thresh*</code> entry.</li>
   <li><strong>Hunger or hygiene still trip.</strong> Those two are <em>only</em> handled by the rate‑slowing block. If they still trip, increase the magnitude of the relevant <code>-Stat*Rate</code> entry toward <code>1.0</code>.</li>
