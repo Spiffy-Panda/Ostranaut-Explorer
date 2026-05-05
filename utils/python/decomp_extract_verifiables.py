@@ -1,11 +1,10 @@
-"""
-08_extract_verifiables.py
+"""decomp_extract_verifiables.py
 
 Extracts the full GetVerifiables() method body from every IVerifiable class
 in decomp/Assembly-CSharp/ and prints them with source file + line numbers.
 
 Usage:
-    python ./scrap_scripts/python/08_extract_verifiables.py
+    python ./utils/python/decomp_extract_verifiables.py
 """
 
 from pathlib import Path

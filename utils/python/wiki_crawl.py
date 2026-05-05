@@ -1,12 +1,12 @@
 """Recursively crawl the Ostranauts wiki from a seed page, caching every
 reachable page that matches a path filter.
 
-Reuses the cache machinery from 01_wiki_cache.py. After fetching a page,
+Reuses the cache machinery from wiki_cache.py. After fetching a page,
 scans its wikitext for [[Internal Link]] references and queues any matching
 the filter that aren't already cached.
 
 Usage:
-    python scrap_scripts/python/02_wiki_crawl.py [--prefix Modding] [--max 200]
+    python utils/python/wiki_crawl.py [--prefix Modding] [--max 200]
 
 Defaults: seed = "Modding", prefix filter = "Modding", max pages = 200.
 By default re-uses anything already cached on disk; pass --refresh to

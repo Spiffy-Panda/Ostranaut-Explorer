@@ -1,5 +1,4 @@
-"""
-06_decomp_schema_crosscheck.py
+"""decomp_schema_crosscheck.py
 
 Diffs decompiled C# Json*.cs classes against our JSON schemas.
 
@@ -10,7 +9,7 @@ For each class that maps to a known schema folder, reports:
 Also lists unmatched classes and unmatched schemas at the end.
 
 Usage:
-    python ./scrap_scripts/python/06_decomp_schema_crosscheck.py [--verbose]
+    python ./utils/python/decomp_schema_crosscheck.py [--verbose]
 """
 
 import argparse

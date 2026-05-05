@@ -21,7 +21,7 @@ Strategy (deterministic — no LLM):
    resolved goes into comment_mod/wiki_review_queue.md.
 
 Usage:
-    python scrap_scripts/python/03_wiki_extract_schemas.py
+    python utils/python/wiki_extract_schemas.py
 """
 
 from __future__ import annotations
@@ -413,7 +413,7 @@ def main() -> int:
     REVIEW_QUEUE_PATH.parent.mkdir(parents=True, exist_ok=True)
     with REVIEW_QUEUE_PATH.open("w", encoding="utf-8") as f:
         f.write("# Wiki review queue\n\n")
-        f.write("Items the deterministic extractor (`scrap_scripts/python/03_wiki_extract_schemas.py`)\n")
+        f.write("Items the deterministic extractor (`utils/python/wiki_extract_schemas.py`)\n")
         f.write("couldn't confidently resolve. Review in batches; check the box once handled\n")
         f.write("(either by adding to `PAGE_TO_FOLDER`, editing the wiki page, or hand-curating\n")
         f.write("the affected schema file).\n\n")

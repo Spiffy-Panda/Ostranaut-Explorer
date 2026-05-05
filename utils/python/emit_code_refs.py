@@ -1,4 +1,4 @@
-"""10_emit_code_refs.py
+"""emit_code_refs.py
 
 Scans decomp/Assembly-CSharp/ for hardcoded `"<strName>"` quoted-literal
 references to any data name in the current graph.js, then writes a
@@ -9,8 +9,8 @@ see "this data name is referenced from game code at AIShipManager.cs:1007"
 even though the schema-driven extractor can't see those refs.
 
 Usage:
-    python ./scrap_scripts/python/10_emit_code_refs.py
-    python ./scrap_scripts/python/10_emit_code_refs.py --graph build/data/graph.js --out build/data/code_refs.js
+    python ./utils/python/emit_code_refs.py
+    python ./utils/python/emit_code_refs.py --graph build/data/graph.js --out build/data/code_refs.js
 
 Default IO:
     in:  build/data/graph.js

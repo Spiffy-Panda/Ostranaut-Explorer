@@ -1,4 +1,4 @@
-"""09_decomp_string_search.py
+"""decomp_string_search.py
 
 Regex-grep for `"<key>"` literal string occurrences across the decompiled
 C# source tree. Catches references to data names that the JSON-schema
@@ -10,13 +10,13 @@ Reports file path, line number, and the line itself for each hit. Optional
 
 Usage:
     # one key
-    python ./scrap_scripts/python/09_decomp_string_search.py EmbarkCommand
+    python ./utils/python/decomp_string_search.py EmbarkCommand
 
     # several
-    python ./scrap_scripts/python/09_decomp_string_search.py EmbarkCommand DcFood Coughing
+    python ./utils/python/decomp_string_search.py EmbarkCommand DcFood Coughing
 
     # surrounding context (3 lines before, 3 after)
-    python ./scrap_scripts/python/09_decomp_string_search.py --context 3 EmbarkCommand
+    python ./utils/python/decomp_string_search.py --context 3 EmbarkCommand
 
     # restrict matching to identifier-shaped names (no spaces, alnum/_)
     # (already the default; opt out with --no-strict to allow any text inside quotes)

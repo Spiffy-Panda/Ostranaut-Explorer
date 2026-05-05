@@ -1,5 +1,4 @@
-"""
-07_decomp_schema_table.py
+"""decomp_schema_table.py
 
 Produces a single markdown table with columns: name | type | schema
   Y  = field exists in the merged schema
@@ -9,7 +8,7 @@ Produces a single markdown table with columns: name | type | schema
 One full-width "header" row per class/schema pair separates groups.
 
 Usage:
-    python ./scrap_scripts/python/07_decomp_schema_table.py [--out FILE]
+    python ./utils/python/decomp_schema_table.py [--out FILE]
 
 By default prints to stdout. Pass --out to write to a file instead.
 """

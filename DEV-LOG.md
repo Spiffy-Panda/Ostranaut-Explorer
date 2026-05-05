@@ -4,6 +4,24 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-04 — Audit pass: fix stale `scrap_scripts/python/<NN>_*.py` references after the promotion commit
+
+Eight scripts were promoted from `scrap_scripts/python/` to `utils/python/` (with their `<NN>_` prefix dropped) in commit `bbcb9cf`, but several call-sites still pointed at the old paths. Found via a `scrap_scripts/python/[0-9]+_` grep across the tree.
+
+Fixed:
+
+- `src/Ostranauts.Site/app.js:59` — the runtime "code_refs.js not loaded — Run … to generate it" console-info message pointed at `scrap_scripts/python/10_emit_code_refs.py`. Now points at `utils/python/emit_code_refs.py`.
+- `src/Ostranauts.DataModel/SchemaCatalog.cs:48` — XML-doc comment on the `IsGhost` rule referenced `scrap_scripts/python/07_decomp_schema_table.py`. Now `utils/python/decomp_schema_table.py`.
+- Eight promoted scripts' own docstring Usage sections (`decomp_extract_verifiables`, `decomp_schema_crosscheck`, `decomp_schema_table`, `decomp_string_search`, `emit_code_refs`, `wiki_cache`, `wiki_crawl`, `wiki_extract_schemas`).
+- `utils/python/wiki_extract_schemas.py:416` — the line that *generates* the `comment_mod/wiki_review_queue.md` header. Both the generator and the current generated output (`comment_mod/wiki_review_queue.md:3`) corrected so future regenerations stay clean.
+- `PLAN-AST.md` *Build wiring* — the *"stale path in app.js:59"* commentary was now itself stale (the path was just fixed). Rewritten to clarify that the runtime message was corrected separately; the Makefile wiring (the actual Phase 1 deliverable) is still missing.
+
+Deliberately not touched:
+
+- `DEV-LOG.md` historical entries about the promotion event itself.
+- `prose-extraction/Modding__CondOwners-opus.md` — provenance documentation that records what scripts were used at extraction time. The script in question (`05_condowners_keys.py`) was one of the two kept in scrap per the prior audit, so the ref is still accurate at the time it was written.
+- The convention/policy refs in `.gitignore`, `CLAUDE.md`, `PROJECT-PITCH.md`, `README.md`, `utils/README.md` — these define the `utils/` ↔ `scrap_scripts/` split.
+
 ## 2026-05-04 — Split PLAN.md into EXPLORER + AST axes; add code-side roadmap
 
 Two planning axes had been bleeding into one file. Split them:

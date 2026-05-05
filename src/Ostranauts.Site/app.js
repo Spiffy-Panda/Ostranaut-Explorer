@@ -56,7 +56,7 @@ function main() {
     console.info('properties.js not loaded — Fields block on detail pages will be empty.');
   }
   if (typeof window.CODE_REFS === 'undefined') {
-    console.info('code_refs.js not loaded — Code references block will be omitted. Run scrap_scripts/python/10_emit_code_refs.py to generate it.');
+    console.info('code_refs.js not loaded — Code references block will be omitted. Run utils/python/emit_code_refs.py to generate it.');
   }
   if (typeof window.REF_CANDIDATES === 'undefined') {
     console.info('ref_candidates.js not loaded — auto-detected refs will be hidden. Re-run the Builder to generate it.');

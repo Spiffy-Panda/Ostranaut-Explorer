@@ -121,9 +121,7 @@ Once `code:class` / `code:method` / `code:component` nodes exist, an inheritance
 
 ## Build wiring
 
-The current Makefile `site` target (line 29) does **not** invoke `emit_code_refs.py` — `code_refs.js` is missing from `build/data/` on every fresh build. The site's graceful-degradation log message (`app.js:53-59`) silently became the default. Phase 1 fixes this by integrating into the Builder, so `code_graph.js` (or merged `graph.js`) emits unconditionally.
-
-The stale path in `app.js:59` (`scrap_scripts/python/10_emit_code_refs.py` — promoted to `utils/python/emit_code_refs.py` in commit `bbcb9cf`) gets fixed in the same commit that retires the fallback path, not before.
+The current Makefile `site` target (line 29) does **not** invoke `emit_code_refs.py` — `code_refs.js` is missing from `build/data/` on every fresh build. The site's graceful-degradation log message (`app.js:53-59`) silently became the default. Phase 1 fixes this by integrating into the Builder, so `code_graph.js` (or merged `graph.js`) emits unconditionally. (The runtime log message itself was corrected to point at the promoted `utils/python/emit_code_refs.py` path in a separate audit pass; the Makefile wiring is still missing.)
 
 ---
 

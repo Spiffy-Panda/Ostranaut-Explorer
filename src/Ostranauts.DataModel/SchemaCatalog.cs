@@ -45,7 +45,7 @@ public sealed class SchemaCatalog
     ///
     /// <see cref="IsGhost"/> = true means the field is documented by the schema
     /// but the decompiled C# game class doesn't deserialize it (per
-    /// scrap_scripts/python/07_decomp_schema_table.py). Modder-relevant —
+    /// utils/python/decomp_schema_table.py). Modder-relevant —
     /// preserved here in case it's referenced elsewhere (older docs, mods,
     /// future game updates). Rule still fires; ghost-flag is plumbed through
     /// to the site for visual distinction.

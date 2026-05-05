@@ -1,6 +1,6 @@
 # Wiki review queue
 
-Items the deterministic extractor (`scrap_scripts/python/03_wiki_extract_schemas.py`)
+Items the deterministic extractor (`utils/python/wiki_extract_schemas.py`)
 couldn't confidently resolve. Review in batches; check the box once handled
 (either by adding to `PAGE_TO_FOLDER`, editing the wiki page, or hand-curating
 the affected schema file).

@@ -5,11 +5,11 @@ more LLM-friendly than scraped HTML — already-structured headings, lists,
 inline links, no presentation noise.
 
 Usage:
-    python scrap_scripts/python/01_wiki_cache.py <url-or-page-title> [...]
+    python utils/python/wiki_cache.py <url-or-page-title> [...]
 
 Examples:
-    python scrap_scripts/python/01_wiki_cache.py https://ostranauts.wiki.gg/wiki/Modding/Data_Modding
-    python scrap_scripts/python/01_wiki_cache.py Modding/CondOwners
+    python utils/python/wiki_cache.py https://ostranauts.wiki.gg/wiki/Modding/Data_Modding
+    python utils/python/wiki_cache.py Modding/CondOwners
 
 Idempotent: skips fetch if the cache file already exists. Pass --refresh
 to force a re-fetch.
