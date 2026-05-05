@@ -401,6 +401,10 @@ function isCodeRefEdge(edge) { return CODE_REF_KINDS.has(edge.kind); }
 // strNames the method body / class initializer mentions, with file:line pulled
 // from the edge metadata so a modder can jump straight at the decomp source.
 function renderCodeNodeDetail(folder, strName, id, node) {
+  if (folder === 'code-component') {
+    renderCodeComponentDetail(folder, strName, id, node);
+    return;
+  }
   const out = outgoing.get(id) || [];
   const fields = (window.NODE_PROPS ?? {})[id] ?? {};
   const lineRange = (fields.lineStart && fields.lineEnd)
@@ -435,6 +439,128 @@ function renderCodeNodeDetail(folder, strName, id, node) {
       window.location.hash = `#/o/${encodeURIComponent(tf)}/${encodeURIComponent(tn)}`;
     });
   });
+}
+
+// Detail page for code-component nodes (PLAN-AST Phase 2). Each node represents
+// one entry in the CondOwner.AddCommand dispatcher table — i.e. one command a
+// condowner's aUpdateCommands string can invoke. Renders three blocks:
+//   - In-ports: positional arg specs from the dispatcher (typed where resolvable
+//     via DataHandler.Get*; otherwise shown as untyped).
+//   - Conditions touched: literal-string AddCond/RemCond/HasCond patterns
+//     scanned out of the implementing class's method bodies.
+//   - Wired-by: the condowners whose aUpdateCommands strings invoke this command.
+function renderCodeComponentDetail(folder, strName, id, node) {
+  const fields = (window.NODE_PROPS ?? {})[id] ?? {};
+  const inPorts = Array.isArray(fields.inPorts) ? fields.inPorts : [];
+  const produces = Array.isArray(fields.produces) ? fields.produces : [];
+  const arity = fields.arityMin ?? '?';
+  const implType = fields.implementingType || '(none)';
+  const dispLine = fields.dispatcherLine ?? '?';
+  const dispFile = fields.dispatcherFile || '';
+  const inc = (incoming.get(id) ?? []).filter(e => e.kind === 'WiresTo');
+  const out = outgoing.get(id) ?? [];
+  const condEdges = out.filter(e => e.kind === 'ProducesCondition' || e.kind === 'ConsumesCondition' || e.kind === 'ObservesCondition');
+
+  // Group wired-by condowners — they're typically one edge per condowner+command,
+  // so this is just a listing.
+  const wiredCondowners = inc.map(e => {
+    const [sf, sn] = splitId(e.source);
+    return { sourceId: e.source, folder: sf, name: sn, raw: e.metadata?.raw ?? '' };
+  });
+
+  // Group cond edges by role for readability.
+  const byRole = { produces: [], consumes: [], observes: [] };
+  for (const e of condEdges) {
+    const role = e.kind === 'ProducesCondition' ? 'produces'
+      : e.kind === 'ConsumesCondition' ? 'consumes' : 'observes';
+    byRole[role].push(e);
+  }
+
+  detailEl.innerHTML = `
+    <div class="detail-head">
+      <div class="crumbs">${escapeHtml(folder)}</div>
+      <h2>${escapeHtml(strName)}</h2>
+      <div class="file">implementing type: <code>${escapeHtml(implType)}</code> · arity ≥ ${escapeHtml(String(arity))} · dispatcher: ${escapeHtml(dispFile)}:${escapeHtml(String(dispLine))}</div>
+    </div>
+    <p class="page-blurb">
+      Synthetic node from <strong>PLAN-AST Phase 2</strong>: each entry in <code>CondOwner.AddCommand</code>'s dispatcher
+      becomes a code-component. <code>condowners</code> reach one of these via an <code>aUpdateCommands</code> string like
+      <code>"${escapeHtml(strName)},arg1,arg2"</code>; positional args resolved through <code>DataHandler.Get*</code>
+      become typed in-ports below.
+    </p>
+
+    <div class="refs-block">
+      <h3>In-ports (${inPorts.length})</h3>
+      ${renderInPorts(inPorts)}
+    </div>
+
+    <div class="refs-block">
+      <h3>Conditions touched (${condEdges.length})</h3>
+      ${renderConditionRoles(byRole)}
+    </div>
+
+    <div class="refs-block">
+      <h3>Wired by ${wiredCondowners.length} condowner${wiredCondowners.length === 1 ? '' : 's'} via aUpdateCommands</h3>
+      ${renderWiredCondowners(wiredCondowners)}
+    </div>
+  `;
+
+  detailEl.querySelectorAll('a[data-id]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = a.getAttribute('data-id');
+      const [tf, tn] = splitId(target);
+      window.location.hash = `#/o/${encodeURIComponent(tf)}/${encodeURIComponent(tn)}`;
+    });
+  });
+}
+
+function renderInPorts(inPorts) {
+  if (inPorts.length === 0) return '<p class="empty">no positional args</p>';
+  const rows = inPorts.map(p => {
+    const folder = p.targetFolder || '';
+    const folderHtml = folder
+      ? `<a href="#/f/${encodeURIComponent(folder)}">${escapeHtml(folder)}</a>`
+      : '<span class="muted">untyped</span>';
+    const sourceLabel = p.source && p.source !== 'untyped'
+      ? `<span class="muted">(${escapeHtml(p.source)})</span>` : '';
+    return `<li>
+      <span class="port-index">[${escapeHtml(String(p.index))}]</span>
+      → ${folderHtml} ${sourceLabel}
+    </li>`;
+  }).join('');
+  return `<ul class="ports-list">${rows}</ul>`;
+}
+
+function renderConditionRoles(byRole) {
+  const sections = ['produces', 'consumes', 'observes'].map(role => {
+    const items = byRole[role];
+    if (items.length === 0) return '';
+    const rows = items.sort((a, b) => a.target.localeCompare(b.target)).map(e => {
+      const [tf, tn] = splitId(e.target);
+      const link = nodesById.has(e.target)
+        ? `<a href="#/o/${encodeURIComponent(tf)}/${encodeURIComponent(tn)}" data-id="${escapeAttr(e.target)}">${escapeHtml(tn)}</a>`
+        : `<span class="dangling">${escapeHtml(tn)}</span>`;
+      const verb = e.metadata?.verb ?? e.sourceField ?? '';
+      const method = e.metadata?.method ?? '';
+      const line = e.metadata?.line ?? '';
+      return `<li>${link} <span class="meta">[${escapeHtml(verb)} in ${escapeHtml(method)}:${escapeHtml(String(line))}]</span></li>`;
+    }).join('');
+    return `<div class="cond-role"><h4>${role} (${items.length})</h4><ul>${rows}</ul></div>`;
+  });
+  const nonEmpty = sections.filter(s => s !== '');
+  return nonEmpty.length === 0 ? '<p class="empty">no literal-string AddCond/RemCond/HasCond calls in this component</p>' : nonEmpty.join('');
+}
+
+function renderWiredCondowners(rows) {
+  if (rows.length === 0) return '<p class="empty">no condowners reference this component</p>';
+  const sorted = rows.sort((a, b) => a.name.localeCompare(b.name));
+  const items = sorted.slice(0, 200).map(r => `<li>
+    <a href="#/o/${encodeURIComponent(r.folder)}/${encodeURIComponent(r.name)}" data-id="${escapeAttr(r.sourceId)}">${escapeHtml(r.name)}</a>
+    <span class="meta"><code>${escapeHtml(r.raw)}</code></span>
+  </li>`).join('');
+  const truncated = sorted.length > 200 ? `<p class="meta">+${sorted.length - 200} more</p>` : '';
+  return `<ul class="wired-list">${items}</ul>${truncated}`;
 }
 
 function renderCodeOutgoing(edges) {
@@ -880,6 +1006,16 @@ function renderAltFolderSuffix(primaryFolder, strName) {
 
 function renderMetadata(metadata) {
   const parts = [];
+  // PLAN-AST Phase 2: WiresTo edges carry the full aUpdateCommands raw string
+  // and the position of the resolved arg. Show position [N] inline so modders
+  // can map "Referenced by aUpdateCommands" entries back to the right token.
+  if ('commandName' in metadata && 'position' in metadata) {
+    parts.push(`pos=${metadata.position}`);
+  }
+  // PLAN-AST Phase 2: ProducesCondition / ConsumesCondition / ObservesCondition
+  // edges carry the verb (AddCond / RemoveCond / HasCond / ...). Inline-tag so
+  // a conditions/* detail page distinguishes producers from observers at a glance.
+  if ('verb' in metadata) parts.push(metadata.verb);
   if ('value' in metadata) parts.push(`value=${metadata.value}`);
   if ('duration' in metadata) parts.push(`dur=${metadata.duration}`);
   return parts.length ? ` <span class="meta">[${parts.join(' ')}]</span>` : '';

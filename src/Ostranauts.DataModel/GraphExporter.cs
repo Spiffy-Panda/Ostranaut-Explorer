@@ -114,10 +114,11 @@ public static class GraphExporter
 
     /// <summary>
     /// Writes properties.js: window.NODE_PROPS = { "&lt;nodeId&gt;": { fieldName: value, ... }, ... }.
-    /// Holds the scalar (string/number/bool/null) JSON fields per node so the graph
-    /// file can stay graph-only. Arrays and nested objects are skipped (those are
-    /// either edges or omitted by design). strName is also skipped — already on
-    /// the node header in graph.js.
+    /// Carries scalar (string/number/bool/null) JSON fields plus — for synthetic
+    /// code-* nodes — array/object fields too (PLAN-AST Phase 2 packs <c>inPorts</c>
+    /// and <c>produces</c> there). Data-side nodes still skip arrays/objects to
+    /// keep the file lean; those values are graph edges, not viewable scalars.
+    /// strName is always skipped — already on the node header in graph.js.
     /// </summary>
     private static void WritePropertiesFile(ObjectIndex index, string outPath)
     {
@@ -133,25 +134,25 @@ public static class GraphExporter
             // Skip nodes with zero scalar fields to keep the file lean.
             if (obj.Fields.ValueKind != JsonValueKind.Object) continue;
 
+            var includeStructured = obj.Folder.StartsWith("code-", StringComparison.Ordinal);
             var any = false;
             foreach (var prop in obj.Fields.EnumerateObject())
             {
                 if (prop.Name == "strName") continue;
-                switch (prop.Value.ValueKind)
+                var include = prop.Value.ValueKind switch
                 {
-                    case JsonValueKind.String:
-                    case JsonValueKind.Number:
-                    case JsonValueKind.True:
-                    case JsonValueKind.False:
-                    case JsonValueKind.Null:
-                        if (!any)
-                        {
-                            writer.WriteStartObject($"{obj.Folder}:{obj.StrName}");
-                            any = true;
-                        }
-                        prop.WriteTo(writer);
-                        break;
+                    JsonValueKind.String or JsonValueKind.Number or JsonValueKind.True
+                        or JsonValueKind.False or JsonValueKind.Null => true,
+                    JsonValueKind.Array or JsonValueKind.Object => includeStructured,
+                    _ => false,
+                };
+                if (!include) continue;
+                if (!any)
+                {
+                    writer.WriteStartObject($"{obj.Folder}:{obj.StrName}");
+                    any = true;
                 }
+                prop.WriteTo(writer);
             }
             if (any) writer.WriteEndObject();
         }

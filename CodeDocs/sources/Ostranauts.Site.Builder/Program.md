@@ -47,13 +47,25 @@ bool Exists(string f, string n) => existenceSet.Contains((f, n));
 
 var references = objects.SelectMany(o => ReferenceExtractor.Extract(o, catalog, Exists)).ToList();
 
-// PLAN-AST Phase 1: parse decomp/, promote methods/classes carrying string
-// literals to code-side DataObjects + emit one Reference per literal whose
-// value matches a known data strName (one edge per matching folder).
+// PLAN-AST Phase 1+2: parse decomp/ once, run two passes over the parsed trees.
 if (decomp/Assembly-CSharp exists or --decomp passed) {
-    var (codeObjs, codeRefs, parsed, skipped) = RunDecompIndex(decompRoot, foldersByName, ...);
-    objects.AddRange(codeObjs);
-    references.AddRange(codeRefs);
+    var parsedTrees = DecompIndexer.ParseTrees(decompRoot, repoRoot, ...);
+
+    // Phase 1: code-method / code-class nodes + literal-in-{method,class} edges.
+    var phase1 = DecompIndexer.Index(parsedTrees);
+    var (codeObjs1, codeRefs1) = BridgePhase1(phase1, foldersByName);
+    objects.AddRange(codeObjs1);
+    references.AddRange(codeRefs1);
+
+    // Phase 2: ComponentIndexer reads CondOwner.AddCommand dispatcher, emits
+    // code-component nodes with in-ports + produces/consumes/observes condition
+    // edges. Builder also walks every condowners.aUpdateCommands string and
+    // emits WiresTo edges to the matching code-component plus typed positional
+    // -arg edges to resolved data folders.
+    var components = ComponentIndexer.Index(parsedTrees, ...);
+    var (codeObjs2, codeRefs2, _, _) = BridgePhase2(components, objects, existenceSet);
+    objects.AddRange(codeObjs2);
+    references.AddRange(codeRefs2);
 }
 
 var index = new ObjectIndex(objects, references, w => { ... });
@@ -65,11 +77,11 @@ var candidates = RefCandidateDetector.Detect(objects, catalog);
 CandidateExporter.WriteJs(candidates, Path.Combine(outDir, "ref_candidates.js"));
 ```
 
-`RunDecompIndex` is a private helper that calls `DecompIndexer.Index`, then synthesizes one `DataObject` per `CodeNode` (with `qualifiedName` / `lineStart` / `lineEnd` packed into `Fields` so they flow through to `properties.js`) and one `Reference` per `(CodeLiteralEdge, matching data folder)` pair.
+`BridgePhase1` synthesizes one `DataObject` per `CodeNode` (with `qualifiedName` / `lineStart` / `lineEnd` packed into `Fields` so they flow through to `properties.js`) and one `Reference` per `(CodeLiteralEdge, matching data folder)` pair. `BridgePhase2` does the same for `code-component` nodes (packing `inPorts` / `produces` arrays) and additionally walks every condowner's `aUpdateCommands` strings to emit `WiresTo` edges to components + their typed positional-arg targets.
 
-Stdout: lists each loaded root, decomp-pipeline summary if it ran (`parsed N files, K code nodes, M resolved literal edges`), then the written-path plus `objects`, `references`, `rules`, and `candidates` counts; if any warnings fired, the count is reported pointing at stderr.
+Stdout: lists each loaded root, both decomp-pipeline summaries if they ran (`phase 1: parsed N files, K nodes, M edges` / `phase 2: K components, M wires-to + N produces/consumes/observes`), then the written-path plus `objects`, `references`, `rules`, and `candidates` counts; if any warnings fired, the count is reported pointing at stderr.
 
-Real-data run (vanilla `data/` + `comment_mod/data/` overlay + `decomp/Assembly-CSharp/`): ~34.5k objects (incl. ~1.4k conditions_simple synthetics + ~2.0k code nodes), ~83.2k references (incl. ~5.3k AST literal edges), 91 rules, ~241 detector candidates (~185 uncovered).
+Real-data run (vanilla `data/` + `comment_mod/data/` overlay + `decomp/Assembly-CSharp/`): 34,558 objects (1,390 conditions_simple synthetics + 2,002 Phase 1 code nodes + 14 Phase 2 code-component nodes), 84,655 references (5,304 Phase 1 literal edges + 1,367 Phase 2 wires-to + 118 Phase 2 cond-touch edges), 91 rules, 243 detector candidates (187 uncovered).
 
 ## Depends on
 

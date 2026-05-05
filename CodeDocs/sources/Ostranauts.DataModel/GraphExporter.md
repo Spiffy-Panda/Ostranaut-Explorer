@@ -25,7 +25,9 @@ Despite the method name, callers pass a `.js` path (e.g. `build/data/graph.js`).
 
 ## Output shape — schema version 6
 
-Schema v6 is v5 + first-class **code-side nodes** (PLAN-AST Phase 1). Synthetic `code-method` / `code-class` DataObjects (built by the Builder from `DecompIndexer`) flow through `ObjectIndex` and serialize alongside data nodes. Two new edge `kind` values appear in `edges[]`: `LiteralInMethod` and `LiteralInClass`, both with `metadata { line, text }`.
+Schema v6 is v5 + first-class **code-side nodes** (PLAN-AST Phase 1 + 2). Synthetic `code-method` / `code-class` (Phase 1) and `code-component` (Phase 2) DataObjects flow through `ObjectIndex` and serialize alongside data nodes. New edge `kind` values: `LiteralInMethod`, `LiteralInClass`, `WiresTo`, `ProducesCondition`, `ConsumesCondition`, `ObservesCondition`.
+
+`code-component` nodes carry structured (`array` / `object`) values in `properties.js` for `inPorts` and `produces` — the `WritePropertiesFile` opt-in is gated on `Folder.StartsWith("code-")` so data-side nodes still skip arrays/objects (those are graph edges, not viewable scalars).
 
 Writes a PAIR of files: `graph.js` (the path passed in) plus a sibling `properties.js` in the same directory. The graph file is graph-only (nodes + edges + rules); per-node scalar fields move to `properties.js` under `window.NODE_PROPS`. See `CodeDocs/io/outputs.md` for the full v6 spec.
 

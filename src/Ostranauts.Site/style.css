@@ -406,6 +406,32 @@ section#detail {
 .code-out .arrow { margin-right: 0.4rem; color: var(--muted); }
 .code-out .meta { color: var(--muted); font-size: 0.75rem; }
 
+/* code-component detail (PLAN-AST Phase 2) — in-port specs, cond-touch
+   role groupings, condowner wiring listings */
+.ports-list { list-style: none; padding: 0; margin: 0; font-size: 0.85rem; }
+.ports-list > li { margin: 0.25rem 0; }
+.ports-list .port-index {
+  display: inline-block; min-width: 2rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--muted);
+}
+.ports-list .muted { color: var(--muted); font-size: 0.75rem; }
+.cond-role { margin-bottom: 0.75rem; }
+.cond-role h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.cond-role ul { list-style: none; padding: 0; margin: 0; font-size: 0.85rem; }
+.cond-role li { margin: 0.15rem 0; }
+.cond-role .meta { color: var(--muted); font-size: 0.75rem; }
+.wired-list { list-style: none; padding: 0; margin: 0; font-size: 0.85rem; }
+.wired-list li { margin: 0.15rem 0; }
+.wired-list .meta { color: var(--muted); font-size: 0.75rem; margin-left: 0.5rem; }
+
 /* dotted underline + help cursor on field-group headers when they have a tooltip */
 .refs-block .group-head[title] {
   border-bottom: 1px dotted var(--border);

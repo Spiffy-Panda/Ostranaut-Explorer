@@ -99,22 +99,37 @@ internal static class Program
 
         var references = objects.SelectMany(o => ReferenceExtractor.Extract(o, catalog, Exists)).ToList();
 
-        // PLAN-AST Phase 1: parse decomp/, promote methods/classes carrying
-        // string literals to code-side DataObjects, and emit one Reference per
-        // literal whose value matches a known data strName.
+        // PLAN-AST Phase 1+2: parse decomp/ once, then run two analysis passes
+        // over the same parsed trees:
+        //   Phase 1 (DecompIndexer): code-method / code-class nodes + literal edges.
+        //   Phase 2 (ComponentIndexer): code-component nodes from CondOwner.AddCommand
+        //   dispatcher + condowners.aUpdateCommands wiring + AddCond producers.
         if (!decompExplicitlyDisabled)
         {
             var resolvedDecompRoot = decompRoot ?? (Directory.Exists(DefaultDecompRoot) ? DefaultDecompRoot : null);
             if (resolvedDecompRoot is not null)
             {
-                var (codeObjs, codeRefs, parsed, skipped) = RunDecompIndex(
-                    resolvedDecompRoot,
-                    foldersByName,
-                    warning => { Console.Error.WriteLine(warning); warnings++; });
+                var phaseWarn = (string warning) => { Console.Error.WriteLine(warning); warnings++; };
+                var repoRoot = Directory.GetCurrentDirectory();
 
-                Console.WriteLine($"decomp: parsed {parsed} files ({skipped} skipped), {codeObjs.Count} code nodes, {codeRefs.Count} resolved literal edges");
-                objects.AddRange(codeObjs);
-                references.AddRange(codeRefs);
+                // Single parse — both phases reuse the same SyntaxTree set.
+                var parsedTrees = DecompIndexer.ParseTrees(resolvedDecompRoot, repoRoot, phaseWarn);
+
+                // Phase 1.
+                var phase1 = DecompIndexer.Index(parsedTrees);
+                var phase1Bridge = BridgePhase1(phase1, foldersByName);
+                Console.WriteLine($"decomp phase 1: parsed {phase1.FilesParsed} files ({phase1.FilesSkipped} skipped), {phase1Bridge.Objects.Count} code nodes, {phase1Bridge.References.Count} resolved literal edges");
+                objects.AddRange(phase1Bridge.Objects);
+                references.AddRange(phase1Bridge.References);
+
+                // Phase 2 — depends on the freshly-extended object set so
+                // produces/consumes-condition edges can resolve against
+                // conditions/* nodes that exist after Phase 1 too.
+                var components = ComponentIndexer.Index(parsedTrees, phaseWarn);
+                var phase2Bridge = BridgePhase2(components, objects, existenceSet);
+                Console.WriteLine($"decomp phase 2: {phase2Bridge.Objects.Count} code-component nodes, {phase2Bridge.WiresToCount} wires-to + {phase2Bridge.CondEdgeCount} produces/consumes/observes edges");
+                objects.AddRange(phase2Bridge.Objects);
+                references.AddRange(phase2Bridge.References);
             }
             else
             {
@@ -155,23 +170,25 @@ internal static class Program
     /// literal as a strName (so a literal "Coughing" resolves to both
     /// conditions/Coughing and condowners/Coughing if both exist).
     /// </summary>
-    private static (
-        List<DataObject> Objects,
-        List<Reference> References,
-        int FilesParsed,
-        int FilesSkipped) RunDecompIndex(
-        string decompRoot,
-        Dictionary<string, List<string>> foldersByName,
-        Action<string> onWarning)
+    private static (List<DataObject> Objects, List<Reference> References) BridgePhase1(
+        DecompIndexResult raw,
+        Dictionary<string, List<string>> foldersByName)
     {
-        // Anchor decomp paths against the current working directory — that's
-        // the same convention the rest of the Builder uses for relative paths.
-        var repoRoot = Directory.GetCurrentDirectory();
-        var raw = DecompIndexer.Index(decompRoot, repoRoot, onWarning);
-
         var dataObjects = new List<DataObject>(raw.Nodes.Count);
         foreach (var n in raw.Nodes)
-            dataObjects.Add(BuildCodeDataObject(n));
+        {
+            var fields = JsonSerializer.SerializeToElement(new
+            {
+                qualifiedName = n.QualifiedName,
+                lineStart = n.LineStart,
+                lineEnd = n.LineEnd,
+            }).Clone();
+            dataObjects.Add(new DataObject(
+                Folder: n.Folder,
+                FilePath: n.File,
+                StrName: n.QualifiedName,
+                Fields: fields));
+        }
 
         var refs = new List<Reference>();
         foreach (var e in raw.Edges)
@@ -198,24 +215,162 @@ internal static class Program
                     Metadata: metadata));
             }
         }
-        return (dataObjects, refs, raw.FilesParsed, raw.FilesSkipped);
+        return (dataObjects, refs);
     }
 
-    private static DataObject BuildCodeDataObject(CodeNode n)
+    /// <summary>
+    /// Bridges <see cref="ComponentIndexer"/>'s output into the graph:
+    /// <list type="bullet">
+    ///   <item>One <c>code-component:&lt;CommandName&gt;</c> DataObject per dispatcher branch.</item>
+    ///   <item>For each condowner with non-empty <c>aUpdateCommands</c>: one
+    ///         <see cref="RefKind.WiresTo"/> edge to the matching code-component
+    ///         (always), plus one per typed positional arg (when the arg position
+    ///         resolves to a folder via <see cref="ComponentIndexer.KnownGetters"/>
+    ///         AND the named entry exists in that folder).</item>
+    ///   <item>One <see cref="RefKind.ProducesCondition"/> /
+    ///         <see cref="RefKind.ConsumesCondition"/> /
+    ///         <see cref="RefKind.ObservesCondition"/> edge per literal-string
+    ///         AddCond / RemCond / HasCond call inside each component class.</item>
+    /// </list>
+    /// </summary>
+    private static (List<DataObject> Objects, List<Reference> References, int WiresToCount, int CondEdgeCount) BridgePhase2(
+        IReadOnlyList<CodeComponent> components,
+        IReadOnlyList<DataObject> currentObjects,
+        HashSet<(string folder, string name)> dataExistenceSet)
     {
-        // Pack the code-node-specific metadata into a JsonElement so it shows
-        // up on properties.js the same way regular data scalar fields do.
-        var fields = JsonSerializer.SerializeToElement(new
+        var dataObjects = new List<DataObject>();
+        var componentByName = new Dictionary<string, CodeComponent>(StringComparer.Ordinal);
+        foreach (var c in components)
         {
-            qualifiedName = n.QualifiedName,
-            lineStart = n.LineStart,
-            lineEnd = n.LineEnd,
-        }).Clone();
-        return new DataObject(
-            Folder: n.Folder,
-            FilePath: n.File,
-            StrName: n.QualifiedName,
-            Fields: fields);
+            componentByName[c.CommandName] = c;
+            var inPortsJson = c.InPorts.Select(p => new { index = p.Index, targetFolder = p.TargetFolder, source = p.Source }).ToArray();
+            var producesJson = c.Produces.Select(p => new { name = p.ConditionName, verb = p.Verb, role = p.Role, method = p.MethodName, file = p.File, line = p.Line }).ToArray();
+            var fields = JsonSerializer.SerializeToElement(new
+            {
+                commandName = c.CommandName,
+                implementingType = c.ImplementingType,
+                arityMin = c.ArityMin,
+                dispatcherFile = c.DispatcherFile,
+                dispatcherLine = c.DispatcherLine,
+                inPorts = inPortsJson,
+                produces = producesJson,
+            }).Clone();
+
+            // FilePath: prefer the component's class file when known so the
+            // detail page can deep-link. Fall back to dispatcher file.
+            var classFile = $"decomp/Assembly-CSharp/{c.ImplementingType}.cs";
+            dataObjects.Add(new DataObject(
+                Folder: "code-component",
+                FilePath: !string.IsNullOrEmpty(c.ImplementingType) ? classFile : c.DispatcherFile,
+                StrName: c.CommandName,
+                Fields: fields));
+        }
+
+        var refs = new List<Reference>();
+        var wiresToCount = 0;
+        var condEdgeCount = 0;
+
+        // -- Outgoing produces/consumes/observes edges per component class.
+        foreach (var c in components)
+        {
+            foreach (var p in c.Produces)
+            {
+                // Only emit if there's a real conditions/<name> entry to point
+                // at — produces-edges to non-existent conditions would noise
+                // the data-health page without helping anyone.
+                if (!dataExistenceSet.Contains(("conditions", p.ConditionName))) continue;
+                var kind = p.Role switch
+                {
+                    "produces" => RefKind.ProducesCondition,
+                    "consumes" => RefKind.ConsumesCondition,
+                    "observes" => RefKind.ObservesCondition,
+                    _ => RefKind.ObservesCondition,
+                };
+                var meta = new Dictionary<string, object>
+                {
+                    ["verb"] = p.Verb,
+                    ["method"] = p.MethodName,
+                    ["line"] = p.Line,
+                };
+                refs.Add(new Reference(
+                    SourceFolder: "code-component",
+                    SourceName: c.CommandName,
+                    SourceField: p.Verb,
+                    TargetFolder: "conditions",
+                    TargetName: p.ConditionName,
+                    Kind: kind,
+                    Metadata: meta));
+                condEdgeCount++;
+            }
+        }
+
+        // -- Per-condowner wires-to edges driven by aUpdateCommands strings.
+        foreach (var co in currentObjects)
+        {
+            if (co.Folder != "condowners") continue;
+            if (co.Fields.ValueKind != JsonValueKind.Object) continue;
+            if (!co.Fields.TryGetProperty("aUpdateCommands", out var arr)) continue;
+            if (arr.ValueKind != JsonValueKind.Array) continue;
+
+            foreach (var item in arr.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.String) continue;
+                var raw = item.GetString();
+                if (string.IsNullOrWhiteSpace(raw)) continue;
+                var tokens = raw.Split(',');
+                if (tokens.Length == 0) continue;
+                var commandName = tokens[0].Trim();
+                if (!componentByName.TryGetValue(commandName, out var comp)) continue;
+
+                // Edge 1: condowner → code-component (always).
+                var headMeta = new Dictionary<string, object>
+                {
+                    ["commandName"] = commandName,
+                    ["position"] = 0,
+                    ["raw"] = raw,
+                };
+                refs.Add(new Reference(
+                    SourceFolder: "condowners",
+                    SourceName: co.StrName,
+                    SourceField: "aUpdateCommands",
+                    TargetFolder: "code-component",
+                    TargetName: commandName,
+                    Kind: RefKind.WiresTo,
+                    Metadata: headMeta));
+                wiresToCount++;
+
+                // Edges 2+: typed positional args. Only emit when the inferred
+                // folder actually contains the referenced strName — keeps the
+                // graph honest and lets the dangling-edges health page focus
+                // on real data bugs.
+                foreach (var port in comp.InPorts)
+                {
+                    if (string.IsNullOrEmpty(port.TargetFolder)) continue;
+                    if (port.Index >= tokens.Length) continue;
+                    var argValue = tokens[port.Index].Trim();
+                    if (string.IsNullOrEmpty(argValue)) continue;
+                    if (!dataExistenceSet.Contains((port.TargetFolder, argValue))) continue;
+                    var argMeta = new Dictionary<string, object>
+                    {
+                        ["commandName"] = commandName,
+                        ["position"] = port.Index,
+                        ["raw"] = raw,
+                        ["resolvedBy"] = port.Source,
+                    };
+                    refs.Add(new Reference(
+                        SourceFolder: "condowners",
+                        SourceName: co.StrName,
+                        SourceField: "aUpdateCommands",
+                        TargetFolder: port.TargetFolder,
+                        TargetName: argValue,
+                        Kind: RefKind.WiresTo,
+                        Metadata: argMeta));
+                    wiresToCount++;
+                }
+            }
+        }
+
+        return (dataObjects, refs, wiresToCount, condEdgeCount);
     }
 
     private static void PrintUsage()

@@ -28,6 +28,38 @@ public enum RefKind
     /// target is any data node whose strName matches the literal. Metadata: { line, text }.
     /// </summary>
     LiteralInClass,
+    /// <summary>
+    /// PLAN-AST Phase 2 — a <c>condowners.aUpdateCommands[i]</c> string wires
+    /// a condowner to a <c>code-component</c> dispatcher entry, OR to one of
+    /// that entry's typed in-port targets. Source is a data condowner;
+    /// target is either <c>code-component:&lt;Cmd&gt;</c> or the resolved
+    /// data-folder/strName for a typed positional arg.
+    /// Metadata: { commandName, position, raw } (raw = full aUpdateCommands string).
+    /// </summary>
+    WiresTo,
+    /// <summary>
+    /// PLAN-AST Phase 2 — code-component → conditions/X edge. Recovered from
+    /// literal-string <c>AddCond("X")</c> / <c>AddCondAmount("X", ...)</c>
+    /// inside the component's class body. Distinguishes from the Phase 1
+    /// LiteralInMethod edge by classifying the call's role.
+    /// Metadata: { verb, method, line }.
+    /// </summary>
+    ProducesCondition,
+    /// <summary>
+    /// PLAN-AST Phase 2 — code-component → conditions/X edge. Mirror of
+    /// <see cref="ProducesCondition"/> for <c>RemoveCond("X")</c> /
+    /// <c>RemCond("X")</c> / <c>ZeroCondAmount("X", ...)</c>.
+    /// Metadata: { verb, method, line }.
+    /// </summary>
+    ConsumesCondition,
+    /// <summary>
+    /// PLAN-AST Phase 2 — code-component → conditions/X edge. Read-only
+    /// observation of a condition (<c>HasCond("X")</c>, <c>GetCondAmount("X")</c>),
+    /// distinguished from produces/consumes so detail pages can rank
+    /// "actively maintained" producers above "merely consulted" observers.
+    /// Metadata: { verb, method, line }.
+    /// </summary>
+    ObservesCondition,
 }
 
 /// <summary>

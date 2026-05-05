@@ -28,6 +28,19 @@ public enum RefKind
                       //   Metadata: { line: int, text: string }
     LiteralInClass,   // PLAN-AST Phase 1 — quoted literal in a class-level initializer
                       //   Metadata: { line: int, text: string }
+    WiresTo,          // PLAN-AST Phase 2 — condowner.aUpdateCommands → code-component
+                      // OR a typed positional arg target. Source is condowners/<X>;
+                      // target is code-component/<Cmd> OR a data folder.
+                      //   Metadata: { commandName, position, raw, resolvedBy? }
+    ProducesCondition,  // PLAN-AST Phase 2 — code-component → conditions/X via literal
+                        // AddCond / AddCondAmount call.
+                        //   Metadata: { verb, method, line }
+    ConsumesCondition,  // PLAN-AST Phase 2 — code-component → conditions/X via literal
+                        // RemoveCond / RemCond / ZeroCondAmount call.
+                        //   Metadata: { verb, method, line }
+    ObservesCondition,  // PLAN-AST Phase 2 — code-component → conditions/X via literal
+                        // HasCond / GetCondAmount read.
+                        //   Metadata: { verb, method, line }
 }
 
 public sealed record Reference(

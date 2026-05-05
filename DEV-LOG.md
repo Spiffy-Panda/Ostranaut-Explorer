@@ -4,6 +4,53 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-04 — PLAN-AST Phase 2: code-component nodes + aUpdateCommands wiring + condition role classification
+
+Followup slice on top of Phase 1, shipped same day. Phase 1 made *every* method/class with literal strings a graph node. Phase 2 picks out the structurally-meaningful ones — the entries in `CondOwner.AddCommand`'s dispatcher, which are what `condowners.aUpdateCommands` strings actually invoke at runtime — and surfaces them as their own kind: `code-component`. A condowner now has a navigable path *through code* to the conditions it produces, instead of just "this strName appears as a quoted literal somewhere."
+
+What Phase 2 recovers per dispatcher branch:
+
+- **Command name** (the `array[0] == "X"` literal) → becomes the synthetic `code-component:<X>` node's strName.
+- **Implementing C# class** (`AddComponent<T>()`) → e.g. `GasPump`, `GasPressureSense`, `Heater`. Used as the file-pointer on the node and as the scan target for cond-touch edges.
+- **Min arity** (`if (array.Length < N) return;`).
+- **Typed in-ports**: every `array[i]` whose immediately-enclosing call is `DataHandler.GetXxx(array[i])` resolves to the data folder for that getter via a static `KnownGetters` map. Other positions become untyped ports (still recorded so the modder knows the slot is consumed).
+- **Cond-touches**: scan the implementing class's methods for invocations of `AddCond` / `AddCondAmount` / `RemoveCond` / `RemCond` / `ZeroCondAmount` / `HasCond` / `GetCondAmount` with a literal first arg. Each becomes a `produces` / `consumes` / `observes`-classified edge to `conditions/<name>` (only when that condition actually exists; dynamic-name calls like `co.AddCondAmount(this.strSignalCond, ...)` are silently skipped).
+
+Builder-side bridging emits two new edge families:
+
+- **`WiresTo` (1,367 edges)** — one per `condowners.aUpdateCommands` entry, with both a head edge to the matching `code-component` and per-typed-arg edges to resolved data folders. So a condowner with `"GasPump,AirPump02,Panel A"` lights up `code-component:GasPump`, `gasrespires:AirPump02`, and three positional metadata blobs.
+- **`ProducesCondition` / `ConsumesCondition` / `ObservesCondition` (118 edges)** — `code-component → conditions/`, role-classified per the verb so a condition's "Referenced by" page can rank "actively maintained" producers above "merely consulted" observers.
+
+Pieces:
+
+- **`src/Ostranauts.Decomp/ComponentIndexer.cs`** — new. Locates `CondOwner.AddCommand`, walks each `array[0] == "X"` branch with the analysis above. The full Roslyn `SemanticModel` rung wasn't needed in practice — the dispatcher's syntactic shape plus a one-time static `KnownGetters` table sourced from `DataHandler.cs` covers what PLAN-AST framed as a binding/CFG problem. If a future dispatcher gets harder, promoting to `SemanticModel` is a localized change.
+- **`DecompIndexer` refactor** — added `ParseTrees` and an `Index(ParsedDecompTreeSet)` overload so Phase 1 and Phase 2 share parse work. Each `.cs` file in `decomp/` is parsed exactly once.
+- **`Reference.cs`** — added `WiresTo`, `ProducesCondition`, `ConsumesCondition`, `ObservesCondition` (still v6 schema, additive).
+- **`GraphExporter.WritePropertiesFile`** — opt-in array/object serialization for `code-*` folders so `inPorts[]` and `produces[]` reach `properties.js`. Data-side nodes still skip arrays/objects (those are graph edges, not viewable scalars).
+- **`Program.cs`** — split the bridge step into `BridgePhase1` and `BridgePhase2`. The Phase 2 bridge walks every condowner's `aUpdateCommands` and emits the wires-to + typed-arg edges; both bridges share the data-side `existenceSet` / `foldersByName` indexes built earlier in main.
+- **Site (`app.js`, `style.css`)** — new `renderCodeComponentDetail` shows in-ports (with typed/untyped split + the `DataHandler.Get*` source string), conditions touched (grouped by produces/consumes/observes), and the wired-by condowner listing. `renderMetadata` now inlines `pos=N` for `WiresTo` edges and the verb name for cond-edges so the data-side `Referenced by` block reads cleanly.
+
+Numbers from the current real-data run:
+
+```
+decomp phase 1: parsed 1,299 files (0 skipped), 2,002 code nodes, 5,304 resolved literal edges
+decomp phase 2: 14 code-component nodes, 1,367 wires-to + 118 produces/consumes/observes edges
+
+graph.js:      ~26.5 MB (Phase 2 added ~1,500 edges; ~1% increase)
+properties.js: ~10.3 MB (now carries inPorts/produces arrays for code-component nodes)
+total objects:    34,558  (+14 from v1.5)
+total references: 84,655  (+1,485 from v1.5)
+```
+
+Acceptance smoke against the site:
+- `#/o/code-component/GasPump` renders with 2 in-ports (`[1] → gasrespires (DataHandler.GetGasRespire)`, `[2] → untyped`), 23 conditions touched (4 produces + 1 consumes + 18 observes), and 4 wired-by condowners with their raw aUpdateCommands strings.
+- `#/o/condowners/ItmAirPump02OnG` shows an `aUpdateCommands · 4` group in References out, with both head edges to `code-component:GasPump` (`pos=0`) and the typed-arg edge to `gasrespires:AirPump02` (`pos=1`).
+- `#/o/conditions/IsOverrideOn` shows `Referenced by (17)` with verb-grouped sub-blocks (`AddCondAmount · 7`, `GetCondAmount · 3`, `HasCond · 6`, `ZeroCondAmount · 1`), each row tagged with the source `code-component:<X>` and the verb in metadata.
+
+All 79 existing tests still pass.
+
+Phase 3 (runtime-wired `strInput01` ports — alarm → pump panel wiring rendered as dashed edges) remains on the plan.
+
 ## 2026-05-04 — PLAN-AST Phase 1: Roslyn-AST decomp indexer + first-class code-side graph nodes
 
 First slice of [PLAN-AST.md](PLAN-AST.md) shipped. The regex pipeline in `utils/python/emit_code_refs.py` answered "where does this strName appear in a quoted literal in decomp?"; this lifts the same question one rung up the Chomsky hierarchy — Roslyn parses each `decomp/Assembly-CSharp/*.cs` file, walks `MethodDeclarationSyntax`/`ConstructorDeclarationSyntax`/`OperatorDeclarationSyntax`/`DestructorDeclarationSyntax` bodies and class-level `FieldDeclarationSyntax`/`PropertyDeclarationSyntax`/`EventFieldDeclarationSyntax` initializers, and emits one synthetic graph node per literal-bearing method/class plus one edge per identifier-shaped string literal.

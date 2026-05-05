@@ -70,7 +70,8 @@ The Builder CLI (`Program.cs`) is the orchestrator — it runs that whole pipeli
 
 - **v0** ✓ — shipped. Repo scaffolding, baseline data snapshot, build chain.
 - **v1** — *largely shipped.* Schema-driven extraction, full site (search, detail, schema inspector, health/coverage, health/data, LLM candidates, template engine), code-references panel, multi-strName-source surfacing. Newcomer-onboarding UX components are the active in-progress slice. See [PLAN.md](../PLAN.md).
-- **v1.5 / PLAN-AST Phase 1** ✓ — Roslyn-AST decomp indexer promotes methods/classes into the graph as `code-method`/`code-class` nodes with `LiteralIn{Method,Class}` edges. See [PLAN-AST.md](../PLAN-AST.md). Phase 2 (`SemanticModel`-driven `aUpdateCommands` / port resolution) and Phase 3 (runtime-wired ports) are next.
+- **v1.5 / PLAN-AST Phase 1** ✓ — Roslyn-AST decomp indexer promotes methods/classes into the graph as `code-method`/`code-class` nodes with `LiteralIn{Method,Class}` edges. See [PLAN-AST.md](../PLAN-AST.md).
+- **v1.6 / PLAN-AST Phase 2** ✓ — `CondOwner.AddCommand` dispatcher recovered as `code-component` nodes with typed in-ports + produces/consumes/observes condition classification. `condowners.aUpdateCommands` strings emit `WiresTo` edges to the right component + resolved positional-arg targets. Phase 3 (runtime-wired `strInput01` ports) is next.
 - **v2** — mod-overlay loader, VS Code language server (LSP), save inspector/editor, map explorer.
 
 Detail in `PROJECT-PITCH.md`. Active work in `PLAN.md`.
@@ -87,17 +88,18 @@ Detail in `PROJECT-PITCH.md`. Active work in `PLAN.md`.
 
 ## Status (current truth)
 
-All `Ostranauts.DataModel` types are real implementations. Latest real-data smoke test (Comment Mod overlay + `conditions_simple` synthesized + PLAN-AST Phase 1 decomp indexer over 1,299 `.cs` files):
+All `Ostranauts.DataModel` types are real implementations. Latest real-data smoke test (Comment Mod overlay + `conditions_simple` synthesized + PLAN-AST Phase 1 + Phase 2 decomp indexers over 1,299 `.cs` files):
 
 ```
-objects:     34,544   (31,152 data + 1,390 conditions_simple synthetics + 2,002 code-side)
-references:  83,170   (~91 schema-derived rules + 5,304 AST-literal edges)
-candidates:     241   (auto-detected by RefCandidateDetector, 185 uncovered)
+objects:     34,558   (31,152 data + 1,390 conditions_simple + 2,002 Phase 1 code + 14 Phase 2 components)
+references:  84,655   (~91 schema-derived rules + 5,304 Phase 1 literal edges
+                       + 1,367 Phase 2 wires-to + 118 Phase 2 produces/consumes/observes)
+candidates:     243   (auto-detected by RefCandidateDetector, 187 uncovered)
 warnings:        15
 ```
 
-Of the 2,002 code-side nodes: 1,942 `code-method` + 60 `code-class`. Of the 5,304 AST edges: 5,208 `LiteralInMethod` + 96 `LiteralInClass`.
+Of the 2,002 Phase 1 nodes: 1,942 `code-method` + 60 `code-class`. Of the 5,304 Phase 1 edges: 5,208 `LiteralInMethod` + 96 `LiteralInClass`. The 14 Phase 2 `code-component` nodes are the entries in `CondOwner.AddCommand`'s dispatcher (`GasPump`, `GasPressureSense`, `Destructable`, `Heater`, `Electrical`, ...); 5 of them have at least one typed in-port via `DataHandler.Get*` resolution.
 
-Vanilla `data/` only (no Comment Mod overlay, no decomp): ~7,900 references. Almost all the graph richness comes from the overlay; PLAN-AST adds another ~5k on top once decomp is present.
+Vanilla `data/` only (no Comment Mod overlay, no decomp): ~7,900 references. Almost all the graph richness comes from the overlay; PLAN-AST adds another ~6.7k on top once decomp is present.
 
 For the slice-by-slice history of how the numbers got here, read [DEV-LOG.md](../DEV-LOG.md). For what's next, read [PLAN.md](../PLAN.md).

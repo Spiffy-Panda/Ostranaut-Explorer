@@ -38,6 +38,22 @@ public sealed record DecompIndexResult(
     int FilesSkipped);
 
 /// <summary>
+/// One parsed decomp file plus its repo-relative path. Reused across passes
+/// (Phase 1 literal extraction + Phase 2 component-wiring analysis) so that
+/// each <c>.cs</c> file is parsed exactly once.
+/// </summary>
+public sealed record ParsedDecompTree(SyntaxTree Tree, string RelativePath);
+
+/// <summary>
+/// All parsed trees from a decomp root, plus parse counters. Shared input to
+/// all decomp-indexing passes.
+/// </summary>
+public sealed record ParsedDecompTreeSet(
+    IReadOnlyList<ParsedDecompTree> Trees,
+    int FilesParsed,
+    int FilesSkipped);
+
+/// <summary>
 /// Phase 1 indexer — walks a decompiled C# tree, parses each file with Roslyn,
 /// emits one <see cref="CodeNode"/> per method/constructor that contains at
 /// least one identifier-shaped string literal in its body, plus one
@@ -63,21 +79,47 @@ public static class DecompIndexer
         string repoRoot,
         Action<string>? onWarning = null)
     {
+        var parsed = ParseTrees(decompRoot, repoRoot, onWarning);
+        return Index(parsed);
+    }
+
+    /// <summary>
+    /// Phase 1 pass over an already-parsed tree set. Lets callers run multiple
+    /// passes (Phase 1 literal extraction + Phase 2 component analysis) over
+    /// the same parsed trees without re-reading files from disk.
+    /// </summary>
+    public static DecompIndexResult Index(ParsedDecompTreeSet parsed)
+    {
         var nodes = new List<CodeNode>();
         var edges = new List<CodeLiteralEdge>();
+        var qnameCounts = new Dictionary<string, int>();
+
+        foreach (var pt in parsed.Trees)
+            ProcessTree(pt.Tree, pt.RelativePath, nodes, edges, qnameCounts);
+
+        return new DecompIndexResult(nodes, edges, parsed.FilesParsed, parsed.FilesSkipped);
+    }
+
+    /// <summary>
+    /// Reads + parses every <c>*.cs</c> under <paramref name="decompRoot"/>.
+    /// Files that fail to read or parse are counted as
+    /// <see cref="ParsedDecompTreeSet.FilesSkipped"/> and reported via
+    /// <paramref name="onWarning"/> (no recovery heuristics).
+    /// </summary>
+    public static ParsedDecompTreeSet ParseTrees(
+        string decompRoot,
+        string repoRoot,
+        Action<string>? onWarning = null)
+    {
+        var trees = new List<ParsedDecompTree>();
         var filesParsed = 0;
         var filesSkipped = 0;
 
         if (!Directory.Exists(decompRoot))
         {
             onWarning?.Invoke($"decomp root not found: {decompRoot}");
-            return new DecompIndexResult(nodes, edges, 0, 0);
+            return new ParsedDecompTreeSet(trees, 0, 0);
         }
-
-        // Per-file qualified-name counts so that overloads / shadowed names
-        // get distinct ids (#2, #3, ...). PLAN: "default to per-method;
-        // revisit at Phase 2."
-        var qnameCounts = new Dictionary<string, int>();
 
         var files = Directory.EnumerateFiles(decompRoot, "*.cs", SearchOption.AllDirectories)
             .OrderBy(f => f, StringComparer.Ordinal)
@@ -115,10 +157,10 @@ public static class DecompIndexer
 
             filesParsed++;
             var rel = NormalizePath(Path.GetRelativePath(repoRoot, path));
-            ProcessTree(tree, rel, nodes, edges, qnameCounts);
+            trees.Add(new ParsedDecompTree(tree, rel));
         }
 
-        return new DecompIndexResult(nodes, edges, filesParsed, filesSkipped);
+        return new ParsedDecompTreeSet(trees, filesParsed, filesSkipped);
     }
 
     private static void ProcessTree(

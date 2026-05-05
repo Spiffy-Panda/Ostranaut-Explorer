@@ -38,16 +38,32 @@ public sealed record DecompIndexResult(
     int FilesParsed,
     int FilesSkipped);
 
+public sealed record ParsedDecompTree(SyntaxTree Tree, string RelativePath);
+
+public sealed record ParsedDecompTreeSet(
+    IReadOnlyList<ParsedDecompTree> Trees,
+    int FilesParsed,
+    int FilesSkipped);
+
 public static class DecompIndexer
 {
     public static DecompIndexResult Index(
         string decompRoot,
         string repoRoot,
         Action<string>? onWarning = null);
+
+    // Phase 1 over a pre-parsed tree set. Lets Phase 2's ComponentIndexer
+    // share parse work without re-reading files from disk.
+    public static DecompIndexResult Index(ParsedDecompTreeSet parsed);
+
+    public static ParsedDecompTreeSet ParseTrees(
+        string decompRoot,
+        string repoRoot,
+        Action<string>? onWarning = null);
 }
 ```
 
-`Index` walks `decompRoot` recursively for `*.cs`, parses each via `CSharpSyntaxTree.ParseText`, and runs both passes (class-level then method-level) in a single tree traversal. Files that throw on read or parse are counted in `FilesSkipped` and reported via `onWarning` — no recovery heuristics.
+`Index` (string overload) walks `decompRoot` recursively for `*.cs`, parses each via `CSharpSyntaxTree.ParseText`, and runs both passes (class-level then method-level) in a single tree traversal. The tree-set overload + `ParseTrees` exist so PLAN-AST Phase 2 (`ComponentIndexer`) can share the parse work instead of reading the decomp tree twice. Files that throw on read or parse are counted in `FilesSkipped` and reported via `onWarning` — no recovery heuristics.
 
 Caller resolves `CodeLiteralEdge.Literal` against the data graph's strName index (one edge per matching folder).
 

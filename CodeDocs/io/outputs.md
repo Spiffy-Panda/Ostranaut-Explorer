@@ -19,13 +19,19 @@ Browsers (Firefox, Chrome) block `fetch()` against `file://` URLs by default for
 
 The bytes between `window.GRAPH_DATA = ` and `;` are still valid JSON, so non-browser consumers (a future LSP, mod editor, or CI script) can extract the payload by skipping the prefix and trimming the trailing `;\n`.
 
-### Schema version 6 (current) — code-side nodes (PLAN-AST Phase 1)
+### Schema version 6 (current) — code-side nodes (PLAN-AST Phase 1 + 2)
 
-Adds first-class **code-side graph nodes** to v5's split-payload layout. The Builder now optionally invokes `Ostranauts.Decomp.DecompIndexer` over `decomp/Assembly-CSharp/` (auto-detected; `--no-decomp` opts out) and merges its output into the same `graph.js` payload as data:
+Adds first-class **code-side graph nodes** to v5's split-payload layout. The Builder optionally invokes `Ostranauts.Decomp.DecompIndexer` (Phase 1) and `Ostranauts.Decomp.ComponentIndexer` (Phase 2) over `decomp/Assembly-CSharp/` (auto-detected; `--no-decomp` opts out) and merges the output into the same `graph.js` payload as data:
 
-- New synthetic node folders: `code-method` (one per method/constructor that contains an identifier-shaped literal) and `code-class` (one per type whose field/property/event-field initializers contain one). `node.strName` is the qualified C# name (e.g. `GasPump.Pump`), `node.file` is the decomp source path. Per-node `lineStart` / `lineEnd` / `qualifiedName` flow through the existing per-node properties pipeline into `properties.js`.
-- New edge `kind` values: `LiteralInMethod` and `LiteralInClass`. Source is a code-side node, target is any data node whose strName matches the literal (one edge per matching folder, so multi-folder strNames like `Itm*` surface in every applicable folder). `metadata = { line: int, text: string }` carries the 1-based source line and the trimmed source line text (≤200 chars).
-- The site's `Code references` block on data detail pages reads these edges directly; the legacy `window.CODE_REFS` from `utils/python/emit_code_refs.py` remains as a fallback when no AST edges are present.
+- New synthetic node folders:
+  - `code-method` / `code-class` (Phase 1) — one per method/constructor or initializer-bearing type that contains an identifier-shaped literal. `node.strName` is the qualified C# name; `node.file` is the decomp source path. Properties carry `lineStart` / `lineEnd` / `qualifiedName`.
+  - `code-component` (Phase 2) — one per branch of `CondOwner.AddCommand`'s dispatcher (e.g. `GasPump`, `GasPressureSense`, `Heater`, `Destructable`). `node.strName` is the command name. Properties carry `commandName`, `implementingType`, `arityMin`, `dispatcherFile`, `dispatcherLine`, `inPorts[]` (each `{ index, targetFolder, source }`), `produces[]` (each `{ name, verb, role, method, file, line }`).
+- New edge `kind` values:
+  - `LiteralInMethod`, `LiteralInClass` (Phase 1) — code-side → data, `metadata = { line, text }`.
+  - `WiresTo` (Phase 2) — `condowners` → `code-component` (head) or `condowners` → resolved data folder for a typed positional arg. `metadata = { commandName, position, raw, resolvedBy? }`.
+  - `ProducesCondition` / `ConsumesCondition` / `ObservesCondition` (Phase 2) — `code-component` → `conditions/`, classified per the verb (`AddCond` / `RemoveCond` / `HasCond`-family). `metadata = { verb, method, line }`.
+- `properties.js` opts in to array/object values for code-side nodes only — Phase 2's `inPorts` and `produces` flow through that opt-in. Data-side nodes still skip arrays/objects.
+- The site's `Code references` block on data detail pages still reads Phase 1 edges; new `code-component` detail pages render in-port specs, role-classified condition tables, and the wired-by condowner listing. Modders can navigate condowner → code-component → conditions in three clicks.
 
 Site checks `$schema_version === 6` and refuses to render on mismatch.
 
