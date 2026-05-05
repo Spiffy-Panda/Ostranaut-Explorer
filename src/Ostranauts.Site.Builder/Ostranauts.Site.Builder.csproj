@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ostranauts.DataModel\Ostranauts.DataModel.csproj" />
+    <ProjectReference Include="..\Ostranauts.Decomp\Ostranauts.Decomp.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

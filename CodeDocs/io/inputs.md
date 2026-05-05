@@ -81,13 +81,14 @@ LLM-assist extraction passes also consume the cache and emit per-page provenance
 
 Output of dnSpy decompilation of `Assembly-CSharp.dll` (see README setup steps). 126 `Json*.cs` deserialization classes are the **authoritative ground truth** for which fields the game actually reads — schemas should match these.
 
-Consumed by tracked utilities:
+Consumed by:
+- **`Ostranauts.Decomp.DecompIndexer`** (PLAN-AST Phase 1) — the Builder's primary consumer. Roslyn-AST walk over every `*.cs` file emits `code-method` / `code-class` nodes plus `LiteralIn{Method,Class}` edges into `graph.js`. Auto-detected by the Builder when present; opt out with `--no-decomp`. ~1,300 files parsed in a few seconds.
 - `utils/python/decomp_schema_crosscheck.py` / `decomp_schema_table.py` — diffs schemas against `Json*.cs` field lists; surfaces ghost rules and coverage gaps.
 - `utils/python/decomp_extract_verifiables.py` — extracts `IVerifiable.GetVerifiables()` outputs, the canonical map of what data objects are checked against what folders.
 - `utils/python/decomp_string_search.py` — regex-greps for `"<key>"` quoted-literal occurrences in code that the schema layer can't see.
-- `utils/python/emit_code_refs.py` — generates `build/data/code_refs.js` (an output, but driven by this input).
+- `utils/python/emit_code_refs.py` — **legacy fallback**, kept as a smoke-test path. Generates `build/data/code_refs.js` (regex grep). PLAN-AST Phase 1 supersedes its role for the site; the script is retained per PLAN.
 
-The whole project works without `decomp/`; those scripts and the site's code-references panel just stay empty.
+The whole project works without `decomp/`; the site's code-references panel just stays empty when no AST edges are present.
 
 ## Future inputs (not yet consumed)
 

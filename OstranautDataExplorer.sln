@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ostranauts.Site.Builder", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ostranauts.DataModel.Tests", "tests\Ostranauts.DataModel.Tests\Ostranauts.DataModel.Tests.csproj", "{092F769B-51EE-4FBD-BA20-53238D5A8CA6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ostranauts.Decomp", "src\Ostranauts.Decomp\Ostranauts.Decomp.csproj", "{E6DD9113-F3ED-4EEA-B6F6-BD78F569545C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +59,18 @@ Global
 		{092F769B-51EE-4FBD-BA20-53238D5A8CA6}.Release|x64.Build.0 = Release|Any CPU
 		{092F769B-51EE-4FBD-BA20-53238D5A8CA6}.Release|x86.ActiveCfg = Release|Any CPU
 		{092F769B-51EE-4FBD-BA20-53238D5A8CA6}.Release|x86.Build.0 = Release|Any CPU
+		{E6DD9113-F3ED-4EEA-B6F6-BD78F569545C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6DD9113-F3ED-4EEA-B6F6-BD78F569545C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6DD9113-F3ED-4EEA-B6F6-BD78F569545C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E6DD9113-F3ED-4EEA-B6F6-BD78F569545C}.Debug|x64.Build.0 = Debug|Any CPU
+		{E6DD9113-F3ED-4EEA-B6F6-BD78F569545C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E6DD9113-F3ED-4EEA-B6F6-BD78F569545C}.Debug|x86.Build.0 = Debug|Any CPU
+		{E6DD9113-F3ED-4EEA-B6F6-BD78F569545C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6DD9113-F3ED-4EEA-B6F6-BD78F569545C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E6DD9113-F3ED-4EEA-B6F6-BD78F569545C}.Release|x64.ActiveCfg = Release|Any CPU
+		{E6DD9113-F3ED-4EEA-B6F6-BD78F569545C}.Release|x64.Build.0 = Release|Any CPU
+		{E6DD9113-F3ED-4EEA-B6F6-BD78F569545C}.Release|x86.ActiveCfg = Release|Any CPU
+		{E6DD9113-F3ED-4EEA-B6F6-BD78F569545C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -65,5 +79,6 @@ Global
 		{51A8705F-438A-4A6B-A084-20981EFCDA9A} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{B926472E-6A75-49EF-877C-3583124EA795} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{092F769B-51EE-4FBD-BA20-53238D5A8CA6} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{E6DD9113-F3ED-4EEA-B6F6-BD78F569545C} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

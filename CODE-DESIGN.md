@@ -19,6 +19,7 @@ CodeDocs/
 ├── iverifiable-ref-map.md         decompiled IVerifiable.GetVerifiables() map — ground truth for ref fields
 ├── sources/                       one .md per .cs source file, mirrors src/ tree
 │   ├── Ostranauts.DataModel/      C# library — parsing, indexing, graph
+│   ├── Ostranauts.Decomp/         Roslyn-AST decomp indexer (PLAN-AST Phase 1)
 │   └── Ostranauts.Site.Builder/   CLI driver
 └── io/                            file format specs the schemas don't cover
     ├── inputs.md                  files this project READS

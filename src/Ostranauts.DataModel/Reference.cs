@@ -16,6 +16,18 @@ public enum RefKind
     CondRuleAttach,
     /// <summary>aInverse entry "InteractionName,..." — extra tokens on Metadata.args.</summary>
     Inverse,
+    /// <summary>
+    /// Quoted-string literal inside a method body in decompiled C# (PLAN-AST Phase 1).
+    /// Source is a synthetic <c>code-method</c> node; target is any data node whose
+    /// strName matches the literal. Metadata: { line: int, text: string }.
+    /// </summary>
+    LiteralInMethod,
+    /// <summary>
+    /// Quoted-string literal inside a class-level field/property initializer
+    /// (PLAN-AST Phase 1). Source is a synthetic <c>code-class</c> node;
+    /// target is any data node whose strName matches the literal. Metadata: { line, text }.
+    /// </summary>
+    LiteralInClass,
 }
 
 /// <summary>

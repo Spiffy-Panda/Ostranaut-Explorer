@@ -12,12 +12,22 @@ One typed edge in the reference graph: source object → target object, plus the
 ```csharp
 public enum RefKind
 {
-    Direct,         // plain string field, e.g. strItemDef
-    DirectInArray,  // element of a string-array field, e.g. aInteractions[i]
-    Condition,      // embedded condition string e.g. "IsSystem=1.0x1"
-                    //   Metadata: { value: double, duration: int }
-    Loot,           // embedded loot-entry string e.g. "Coughing=1.0x1" (or "-X=0.5x1-3")
-                    //   Metadata: { chance: double, min: double, max: double, positive: bool }
+    Direct,           // plain string field, e.g. strItemDef
+    DirectInArray,    // element of a string-array field, e.g. aInteractions[i]
+    Condition,        // embedded condition string e.g. "IsSystem=1.0x1"
+                      //   Metadata: { value: double, duration: int }
+    Loot,             // embedded loot-entry string e.g. "Coughing=1.0x1" (or "-X=0.5x1-3")
+                      //   Metadata: { chance, min, max, positive }
+    LootItm,          // aLootItms verb-encoded entry, e.g. "addus,ItmFoo01,true"
+                      //   Metadata: { verb, args[] }
+    CondRuleAttach,   // aStartingCondRules entry "RuleName=fModifier"
+                      //   Metadata: { fModifier }
+    Inverse,          // aInverse entry "InteractionName,..."
+                      //   Metadata: { args[] }
+    LiteralInMethod,  // PLAN-AST Phase 1 — quoted literal in a decomp method body
+                      //   Metadata: { line: int, text: string }
+    LiteralInClass,   // PLAN-AST Phase 1 — quoted literal in a class-level initializer
+                      //   Metadata: { line: int, text: string }
 }
 
 public sealed record Reference(
@@ -31,6 +41,8 @@ public sealed record Reference(
 ```
 
 For `RefKind.Condition`, `Metadata` is expected to contain `"value"` (double) and `"duration"` (int) keys.
+
+For `RefKind.LiteralInMethod` / `RefKind.LiteralInClass`, the source `(SourceFolder, SourceName)` is a synthetic code-side node (folder = `code-method` or `code-class`, name = qualified C# name). `SourceField` is `"body"` or `"initializer"`; `Metadata` carries `"line"` (int) and `"text"` (≤200-char trimmed source line).
 
 ## Depends on
 

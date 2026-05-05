@@ -40,7 +40,13 @@ Effectively, the pressure-sensor → pump chain that motivated the previous turn
 
 Each phase ships a self-contained slice with a DEV-LOG entry. The graph data model is extended additively at every phase — old consumers keep working with new node kinds present.
 
-### Phase 1 — AST scope: `code:method` nodes, literal edges within method bodies · *next*
+### Phase 1 — AST scope: `code:method` nodes, literal edges within method bodies · *shipped 2026-05-04*
+
+Implementation notes (post-merge):
+- Folder names landed as `code-method` / `code-class` (kebab-case, not `code:method`) because the site's `${folder}:${strName}` ID splits on the first colon. The kind discriminator is the folder string itself.
+- Bridging from `CodeNode`/`CodeLiteralEdge` to `DataObject`/`Reference` lives in `Site.Builder.Program.cs`, not in `Ostranauts.Decomp`, so the indexer stays free of `Ostranauts.DataModel` coupling.
+- `code-method` nodes are emitted only when at least one identifier-shaped literal is present in the body (PLAN's "every method gets a node" framing relaxed to "every literal gets a node attached to its enclosing method"). Same effect for the existing-data-page "Incoming code refs" block; revisit when Phase 2 wants outgoing-literal-free methods to participate.
+- See [DEV-LOG 2026-05-04](DEV-LOG.md) for the live build numbers and acceptance smoke.
 
 **Complexity rung:** AST only (PDA / brace-matching, no symbol resolution).
 
@@ -121,7 +127,7 @@ Once `code:class` / `code:method` / `code:component` nodes exist, an inheritance
 
 ## Build wiring
 
-The current Makefile `site` target (line 29) does **not** invoke `emit_code_refs.py` — `code_refs.js` is missing from `build/data/` on every fresh build. The site's graceful-degradation log message (`app.js:53-59`) silently became the default. Phase 1 fixes this by integrating into the Builder, so `code_graph.js` (or merged `graph.js`) emits unconditionally. (The runtime log message itself was corrected to point at the promoted `utils/python/emit_code_refs.py` path in a separate audit pass; the Makefile wiring is still missing.)
+Phase 1 integrated the AST indexer directly into `Ostranauts.Site.Builder.Program.Main`, so `graph.js` carries the code-side nodes/edges unconditionally whenever `decomp/Assembly-CSharp/` is present. No Makefile change needed — the Builder auto-detects, and `--no-decomp` opts out. `utils/python/emit_code_refs.py` remains as a smoke-test fallback (its output, `code_refs.js`, is still consumed by the site's `renderLegacyCodeRefsBlock` path when no AST edges exist).
 
 ---
 
@@ -137,11 +143,11 @@ The current Makefile `site` target (line 29) does **not** invoke `emit_code_refs
 
 The grep extractor in `emit_code_refs.py` operates at finite-state complexity — it can recognize `"<identifier>"` but knows nothing about scope, paren matching, or symbol identity. To connect two names within the same method body (or to gate a write on a read) you need at least pushdown automaton (CFG) capability, which an AST gives you. Going further (control-flow gating, "this write only fires if this read returned truthy") requires the symbol-resolution / flow layer that Roslyn calls `SemanticModel`. Going further still (proving `foo` flows to `dict[key2]`) is abstract interpretation and is out of scope for this plan.
 
-| Phase | Pipeline stage | Roslyn surface |
-|-------|----------------|----------------|
-| 1 | AST | `SyntaxTree`, `SyntaxWalker` |
-| 2 | Semantic analysis (binding + CFG) | `SemanticModel`, `SymbolFinder` |
-| 3 | Same as 2, plus a small data-schema flag | `SemanticModel` |
-| 4 (deferred) | Same as 2 | `SemanticModel`, type hierarchy walks |
+| Phase | Pipeline stage | Roslyn surface | Status |
+|-------|----------------|----------------|--------|
+| 1 | AST | `SyntaxTree`, `SyntaxWalker` | shipped 2026-05-04 |
+| 2 | Semantic analysis (binding + CFG) | `SemanticModel`, `SymbolFinder` | proposed |
+| 3 | Same as 2, plus a small data-schema flag | `SemanticModel` | proposed |
+| 4 (deferred) | Same as 2 | `SemanticModel`, type hierarchy walks | deferred |
 
 The "stop at the AST" rung (Phase 1) is the high-leverage one — it gives every method a node and every literal an edge, which subsumes the entire current grep pipeline plus enough structure to make Phase 2 tractable.

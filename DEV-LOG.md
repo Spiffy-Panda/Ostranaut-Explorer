@@ -4,6 +4,37 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-04 — PLAN-AST Phase 1: Roslyn-AST decomp indexer + first-class code-side graph nodes
+
+First slice of [PLAN-AST.md](PLAN-AST.md) shipped. The regex pipeline in `utils/python/emit_code_refs.py` answered "where does this strName appear in a quoted literal in decomp?"; this lifts the same question one rung up the Chomsky hierarchy — Roslyn parses each `decomp/Assembly-CSharp/*.cs` file, walks `MethodDeclarationSyntax`/`ConstructorDeclarationSyntax`/`OperatorDeclarationSyntax`/`DestructorDeclarationSyntax` bodies and class-level `FieldDeclarationSyntax`/`PropertyDeclarationSyntax`/`EventFieldDeclarationSyntax` initializers, and emits one synthetic graph node per literal-bearing method/class plus one edge per identifier-shaped string literal.
+
+Pieces:
+
+- **`src/Ostranauts.Decomp/`** (new project, `net8.0`, references `Microsoft.CodeAnalysis.CSharp` 4.11). Self-contained `DecompIndexer.Index(decompRoot, repoRoot, onWarning)` returning raw `CodeNode[]` + `CodeLiteralEdge[]`. Roslyn lives here and never crosses into `Ostranauts.DataModel` (which stays `netstandard2.1` for future BepInEx loadability). 1,299 decomp files parse in a few seconds with zero failures on the current tree.
+- **Builder bridge** — `Program.cs` wires the indexer behind a `--decomp <dir>` flag (default: auto-detect `decomp/Assembly-CSharp/`; `--no-decomp` opts out). Each `CodeNode` becomes a synthetic `DataObject` with folder `code-method` or `code-class` (kebab-case so `${folder}:${strName}` IDs split cleanly on the site's first-colon convention). Each `CodeLiteralEdge` whose value matches a known data strName becomes one `Reference` per matching folder — so multi-folder names like `Itm*` surface in every applicable folder, matching the "(also: ...)" pattern.
+- **`Reference.cs`** — added `RefKind.LiteralInMethod` / `RefKind.LiteralInClass`. Metadata = `{ line, text }`. `SourceField` is `"body"` or `"initializer"`.
+- **`GraphExporter.cs`** — `$schema_version` bumped to 6 (was 5). Code-node extras (`qualifiedName`, `lineStart`, `lineEnd`) ride through the existing `properties.js` pipeline because `BuildCodeDataObject` packs them into the `Fields` JsonElement.
+- **Site** (`app.js`, `style.css`) — `SCHEMA_VERSION = 6`, `code-` folders filtered out of the sidebar, `nameToFolders` (the `(also: ...)` index) and the health/data orphans+cross-dups tallies. New `renderCodeNodeDetail` for `code-*` nodes shows the file:line range and lists outgoing literal edges in source order with the trimmed source line. `renderCodeRefsBlock` rewritten to source from incoming `LiteralIn{Method,Class}` edges, grouped by source code node; legacy `window.CODE_REFS` retained as a fallback only.
+- **Tests** — all 79 existing tests still pass; no new tests for the indexer yet (Phase 1 acceptance is the live build numbers, the UI smoke, and not breaking any existing assertion).
+
+Numbers from the current real-data run:
+
+```
+1,299 .cs files parsed (0 skipped)
+2,002 code nodes (1,942 code-method + 60 code-class)
+5,304 resolved literal edges (5,208 LiteralInMethod + 96 LiteralInClass)
+
+graph.js:      26 MB (was ~23 MB; +3 MB)
+properties.js: 9.9 MB
+```
+
+Acceptance smoke against the site (loaded over `python -m http.server`):
+- `#/o/code-method/GasPump.Pump` renders a code-side detail page with 11 outgoing literals (e.g. line 187 `bool flag3 = this.co.HasCond("IsOverrideOn");`).
+- `#/o/conditions/StatPower` shows a *Code references (58)* block with 58 method/class sources, each with file:line and the trimmed source line.
+- Folder sidebar correctly excludes `code-method` / `code-class`. Search picks up qualified names (`GasPump.` returns four code-methods).
+
+Phase 2 (`SemanticModel`-driven `aUpdateCommands` resolution + `code-component` ports) and Phase 3 (runtime-wired `strInput01` ports) remain on the plan.
+
 ## 2026-05-04 — User-stories renderer: output to source folder so file:// preview works
 
 Reported by direct preview: clicking the new *User Stories* tab card from `src/Ostranauts.Site/index.html` (file:// URL, no build run) hit a 404 because the rendered HTML lived only in `build/user-stories/` and the source folder didn't have it. The previous flow rendered to `build/user-stories/` (and `build-public/user-stories/`), so source-folder preview broke even though the built site worked.

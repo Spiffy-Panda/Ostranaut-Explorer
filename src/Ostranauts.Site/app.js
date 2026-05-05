@@ -7,7 +7,11 @@
 //   #/f/<folder>             — folder index
 //   (anything else)           — empty hint
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
+// Synthetic node folders for code-side graph nodes (PLAN-AST Phase 1).
+// Code nodes are searchable + linkable but NOT shown in the folder sidebar.
+const CODE_FOLDER_PREFIX = 'code-';
+const isCodeFolder = (folder) => typeof folder === 'string' && folder.startsWith(CODE_FOLDER_PREFIX);
 const SEARCH_LIMIT = 50;
 const FOLDER_LIMIT = 500; // cap per-folder list to keep render snappy
 
@@ -77,8 +81,12 @@ function buildIndexes() {
     nodesById.set(node.id, node);
     if (!nodesByFolder.has(node.folder)) nodesByFolder.set(node.folder, []);
     nodesByFolder.get(node.folder).push(node);
-    if (!nameToFolders.has(node.strName)) nameToFolders.set(node.strName, new Set());
-    nameToFolders.get(node.strName).add(node.folder);
+    // The "(also: <folder>, ...)" suffix is for data-side cross-folder dups;
+    // code-* folders are synthetic and shouldn't appear there.
+    if (!isCodeFolder(node.folder)) {
+      if (!nameToFolders.has(node.strName)) nameToFolders.set(node.strName, new Set());
+      nameToFolders.get(node.strName).add(node.folder);
+    }
   }
   for (const arr of nodesByFolder.values()) arr.sort((a, b) => a.strName.localeCompare(b.strName));
 
@@ -107,6 +115,7 @@ function buildIndexes() {
   }
 
   folderCounts = [...nodesByFolder.entries()]
+    .filter(([folder]) => !isCodeFolder(folder))
     .map(([folder, list]) => ({ folder, count: list.length }))
     .sort((a, b) => a.folder.localeCompare(b.folder));
 
@@ -314,8 +323,18 @@ function renderObjectDetail(folder, strName) {
     return;
   }
 
-  const out = outgoing.get(id) || [];
-  const inc = incoming.get(id) || [];
+  if (isCodeFolder(folder)) {
+    renderCodeNodeDetail(folder, strName, id, node);
+    return;
+  }
+
+  const allOut = outgoing.get(id) || [];
+  const allInc = incoming.get(id) || [];
+  // PLAN-AST Phase 1: code-side incoming edges (literal hits in decomp) are
+  // surfaced separately in renderCodeRefsBlock so the data-side "Referenced by"
+  // block stays focused on data-to-data wiring.
+  const out = allOut;
+  const inc = allInc.filter(e => !isCodeRefEdge(e));
 
   const chatRef = `${folder}\\${strName}`;
   const html = `
@@ -328,7 +347,7 @@ function renderObjectDetail(folder, strName) {
 
     ${renderTemplateBlock(folder, strName, id)}
     ${renderFieldsBlock(folder, (window.NODE_PROPS ?? {})[id])}
-    ${renderCodeRefsBlock(strName)}
+    ${renderCodeRefsBlock(id)}
 
     <div class="refs-block">
       <h3>References out (${out.length})</h3>
@@ -369,6 +388,79 @@ function renderObjectDetail(folder, strName) {
   }
   // Wire template editor.
   wireTemplateBlock(folder, strName, id);
+}
+
+/* ─── code-side detail (PLAN-AST Phase 1) ──────────────────── */
+
+const CODE_REF_KINDS = new Set(['LiteralInMethod', 'LiteralInClass']);
+function isCodeRefEdge(edge) { return CODE_REF_KINDS.has(edge.kind); }
+
+// Detail page for synthetic code-method / code-class nodes. Simpler shape than
+// data nodes: no template / notes block, no incoming-data refs (a method is
+// only ever the SOURCE of a literal-in-* edge). Outgoing edges list the data
+// strNames the method body / class initializer mentions, with file:line pulled
+// from the edge metadata so a modder can jump straight at the decomp source.
+function renderCodeNodeDetail(folder, strName, id, node) {
+  const out = outgoing.get(id) || [];
+  const fields = (window.NODE_PROPS ?? {})[id] ?? {};
+  const lineRange = (fields.lineStart && fields.lineEnd)
+    ? `${fields.lineStart}-${fields.lineEnd}` : '';
+  const fileLine = lineRange
+    ? `${node.file} : ${lineRange}`
+    : node.file;
+  const kindLabel = folder === 'code-class' ? 'class (initializer literals)' : 'method (body literals)';
+
+  detailEl.innerHTML = `
+    <div class="detail-head">
+      <div class="crumbs">${escapeHtml(folder)}</div>
+      <h2>${escapeHtml(strName)}</h2>
+      <div class="file">${escapeHtml(fileLine)} · ${escapeHtml(kindLabel)}</div>
+    </div>
+    <p class="page-blurb">
+      Synthetic node from <strong>PLAN-AST Phase 1</strong>: a Roslyn AST walk over <code>decomp/Assembly-CSharp/</code>
+      promotes every method (and class with literal-bearing initializers) carrying at least one identifier-shaped
+      string literal into the graph. Each outgoing edge below is one literal whose value matches a known data <code>strName</code>.
+    </p>
+    <div class="refs-block">
+      <h3>String literals in body (${out.length})</h3>
+      ${renderCodeOutgoing(out)}
+    </div>
+  `;
+
+  detailEl.querySelectorAll('a[data-id]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = a.getAttribute('data-id');
+      const [tf, tn] = splitId(target);
+      window.location.hash = `#/o/${encodeURIComponent(tf)}/${encodeURIComponent(tn)}`;
+    });
+  });
+}
+
+function renderCodeOutgoing(edges) {
+  if (edges.length === 0) return '<p class="empty">none</p>';
+  // Sort by line so the listing matches reading order in the decomp file.
+  const sorted = [...edges].sort((a, b) => {
+    const la = (a.metadata && a.metadata.line) ?? 0;
+    const lb = (b.metadata && b.metadata.line) ?? 0;
+    return la - lb;
+  });
+  const rows = sorted.map(e => {
+    const [tf, tn] = splitId(e.target);
+    const known = nodesById.has(e.target);
+    const link = known
+      ? `<a href="#/o/${encodeURIComponent(tf)}/${encodeURIComponent(tn)}" data-id="${escapeAttr(e.target)}">${escapeHtml(tn)}</a>`
+      : `<span class="dangling" title="not in index">${escapeHtml(tn)}</span>`;
+    const altSuffix = known ? renderAltFolderSuffix(tf, tn) : '';
+    const line = (e.metadata && e.metadata.line) ?? '?';
+    const text = (e.metadata && e.metadata.text) ?? '';
+    return `<li>
+      <div><span class="arrow">→</span><span class="field">${escapeHtml(tf)}</span>:${link}${altSuffix}
+        <span class="meta">[line ${escapeHtml(String(line))}]</span></div>
+      <pre class="code-line">${escapeHtml(text)}</pre>
+    </li>`;
+  }).join('');
+  return `<ul class="code-out">${rows}</ul>`;
 }
 
 /* ─── template engine ──────────────────────────────────────── */
@@ -623,9 +715,58 @@ function renderEdgeGroups(edges, perspective, viewFolder) {
   }).join('');
 }
 
-function renderCodeRefsBlock(strName) {
-  // window.CODE_REFS keys by strName (decomp doesn't know our folder
-  // namespacing). Hits look like { file, line, text }.
+// PLAN-AST Phase 1: code refs are now real graph edges (LiteralInMethod /
+// LiteralInClass), not a sidecar dict. Read the incoming edges, group by the
+// source code-method/code-class node, render with file:line pulled from each
+// edge's metadata. Falls back to legacy window.CODE_REFS only if no edges
+// exist (lets pre-Phase-1 generated graphs still display refs).
+function renderCodeRefsBlock(id) {
+  const inc = incoming.get(id) ?? [];
+  const codeEdges = inc.filter(isCodeRefEdge);
+  if (codeEdges.length === 0) return renderLegacyCodeRefsBlock(id);
+
+  const bySource = new Map();
+  for (const e of codeEdges) {
+    if (!bySource.has(e.source)) bySource.set(e.source, []);
+    bySource.get(e.source).push(e);
+  }
+  const sortedSourceIds = [...bySource.keys()].sort();
+  const items = sortedSourceIds.map(sourceId => {
+    const sourceNode = nodesById.get(sourceId);
+    const [sFolder, sName] = splitId(sourceId);
+    const file = sourceNode?.file ?? '';
+    const kindLabel = sFolder === 'code-class' ? 'class' : 'method';
+    const link = `<a href="#/o/${encodeURIComponent(sFolder)}/${encodeURIComponent(sName)}" data-id="${escapeAttr(sourceId)}">${escapeHtml(sName)}</a>`;
+    const occurrences = bySource.get(sourceId)
+      .sort((a, b) => ((a.metadata?.line ?? 0) - (b.metadata?.line ?? 0)))
+      .map(e => {
+        const line = e.metadata?.line ?? '?';
+        const text = e.metadata?.text ?? '';
+        return `<div class="code-loc">${escapeHtml(file)}:${escapeHtml(String(line))}</div>
+                <pre class="code-line">${escapeHtml(text)}</pre>`;
+      }).join('');
+    return `<li>
+      <div class="code-source">${link} <span class="muted">(${kindLabel})</span></div>
+      ${occurrences}
+    </li>`;
+  }).join('');
+
+  return `
+    <div class="code-refs-block">
+      <h3>Code references (${codeEdges.length})
+        <span class="muted-note">— this strName appears as a hardcoded literal in decompiled C# (PLAN-AST Phase 1)</span>
+      </h3>
+      <ul>${items}</ul>
+    </div>
+  `;
+}
+
+// Legacy path: window.CODE_REFS produced by utils/python/emit_code_refs.py.
+// Kept so a graph.js generated by an older Builder still shows code references
+// if the Python script has run. Phase 1 makes the AST-derived edges
+// authoritative; this is only used when the new edges aren't present.
+function renderLegacyCodeRefsBlock(id) {
+  const [, strName] = splitId(id);
   const refs = (window.CODE_REFS ?? {})[strName];
   if (!refs || refs.length === 0) return '';
   const rows = refs.map(r => `<li>
@@ -635,7 +776,7 @@ function renderCodeRefsBlock(strName) {
   return `
     <div class="code-refs-block">
       <h3>Code references (${refs.length})
-        <span class="muted-note">— ${escapeHtml(strName)}<wbr> appears as a hardcoded string literal in decomp</span>
+        <span class="muted-note">— legacy code_refs.js (regex-grep); upgrade by running the Builder against ./decomp/</span>
       </h3>
       <ul>${rows}</ul>
     </div>
@@ -1044,9 +1185,12 @@ function renderHealthData() {
     .slice(0, 30);
 
   // Orphans: nodes with zero in + zero out edges.
+  // Skip synthetic code-* nodes — they always have outgoing literals by construction
+  // so they'd never qualify, and their folders would clutter the per-folder breakdown.
   let orphanCount = 0;
   const orphansByFolder = new Map();
   for (const node of graph.nodes) {
+    if (isCodeFolder(node.folder)) continue;
     const inN = incoming.get(node.id)?.length ?? 0;
     const outN = outgoing.get(node.id)?.length ?? 0;
     if (inN + outN === 0) {
@@ -1057,8 +1201,11 @@ function renderHealthData() {
   const orphanTopFolders = [...orphansByFolder.entries()].sort((a, b) => b[1] - a[1]).slice(0, 30);
 
   // Cross-folder duplicate strNames: same strName in 2+ different folders.
+  // Skip code-* nodes — qualified names (Type.Method) wouldn't collide with
+  // regular strNames anyway, and excluding them keeps the tally honest.
   const nameToFolders = new Map();
   for (const node of graph.nodes) {
+    if (isCodeFolder(node.folder)) continue;
     if (!nameToFolders.has(node.strName)) nameToFolders.set(node.strName, new Set());
     nameToFolders.get(node.strName).add(node.folder);
   }

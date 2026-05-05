@@ -5,15 +5,17 @@
 
 ## Purpose
 
-CLI entry point for the Builder. Parses arguments, runs the parser pipeline, writes `graph.js` (script-tag-loadable; see `GraphExporter`). Designed to be the only consumer of `Ostranauts.DataModel`'s top-level static methods so the orchestration is in one place.
+CLI entry point for the Builder. Parses arguments, runs the parser pipeline, runs the optional decomp/AST pipeline (PLAN-AST Phase 1), writes `graph.js` (script-tag-loadable; see `GraphExporter`). Designed to be the only consumer of `Ostranauts.DataModel`'s top-level static methods so the orchestration is in one place.
 
 ## Public API (CLI)
 
 ```
-Ostranauts.Site.Builder [--root <dir>]... [--out <dir>] [-h | --help]
+Ostranauts.Site.Builder [--root <dir>]... [--out <dir>] [--decomp <dir>] [--no-decomp] [-h | --help]
 ```
 
 `--root` is **repeatable** and order-significant: later roots override earlier ones for collisions on `(folder, strName)` (objects) and `(folder, fieldName)` (schema rules). When no `--root` is given, the Builder uses whichever of the standard pair `["data", "comment_mod/data"]` actually exists on disk — so the default invocation Just Works against a freshly-set-up repo with the Comment Mod overlay applied automatically.
+
+`--decomp <dir>` points at a decompiled C# tree (the `Ostranauts.Decomp` indexer's input). When omitted, the Builder auto-detects `decomp/Assembly-CSharp` and runs the indexer if present, skipping it silently otherwise. `--no-decomp` disables the indexer even when a tree is on disk.
 
 Default output: `--out build/data`.
 
@@ -36,10 +38,24 @@ var objects = DataLoader.Load(roots, w => { ... }).ToList();
 // conditions_simple/ — array-of-tuples folder. Synthesize one DataObject per 7-tuple.
 objects.AddRange(ConditionsSimpleExpander.Expand(objects, w => { ... }));
 
+// strName -> [folder,...] map (data-side only) — used to resolve code-literal edges
+// against every folder that contains a matching name.
+var foldersByName = ...;
+
 var existenceSet = new HashSet<(string, string)>(objects.Select(o => (o.Folder, o.StrName)));
 bool Exists(string f, string n) => existenceSet.Contains((f, n));
 
 var references = objects.SelectMany(o => ReferenceExtractor.Extract(o, catalog, Exists)).ToList();
+
+// PLAN-AST Phase 1: parse decomp/, promote methods/classes carrying string
+// literals to code-side DataObjects + emit one Reference per literal whose
+// value matches a known data strName (one edge per matching folder).
+if (decomp/Assembly-CSharp exists or --decomp passed) {
+    var (codeObjs, codeRefs, parsed, skipped) = RunDecompIndex(decompRoot, foldersByName, ...);
+    objects.AddRange(codeObjs);
+    references.AddRange(codeRefs);
+}
+
 var index = new ObjectIndex(objects, references, w => { ... });
 
 GraphExporter.WriteJson(index, Path.Combine(outDir, "graph.js"), catalog);
@@ -49,13 +65,16 @@ var candidates = RefCandidateDetector.Detect(objects, catalog);
 CandidateExporter.WriteJs(candidates, Path.Combine(outDir, "ref_candidates.js"));
 ```
 
-Stdout: lists each loaded root, then the written-path plus `objects`, `references`, `rules`, and `candidates` counts; if any warnings fired, the count is reported pointing at stderr.
+`RunDecompIndex` is a private helper that calls `DecompIndexer.Index`, then synthesizes one `DataObject` per `CodeNode` (with `qualifiedName` / `lineStart` / `lineEnd` packed into `Fields` so they flow through to `properties.js`) and one `Reference` per `(CodeLiteralEdge, matching data folder)` pair.
 
-Real-data run (vanilla `data/` + `comment_mod/data/` overlay): ~32.5k objects (incl. ~1.4k conditions_simple synthetics), ~77.9k references, 91 rules, ~240 detector candidates (~184 uncovered).
+Stdout: lists each loaded root, decomp-pipeline summary if it ran (`parsed N files, K code nodes, M resolved literal edges`), then the written-path plus `objects`, `references`, `rules`, and `candidates` counts; if any warnings fired, the count is reported pointing at stderr.
+
+Real-data run (vanilla `data/` + `comment_mod/data/` overlay + `decomp/Assembly-CSharp/`): ~34.5k objects (incl. ~1.4k conditions_simple synthetics + ~2.0k code nodes), ~83.2k references (incl. ~5.3k AST literal edges), 91 rules, ~241 detector candidates (~185 uncovered).
 
 ## Depends on
 
 - All of `Ostranauts.DataModel`.
+- `Ostranauts.Decomp` (Roslyn-AST indexer).
 
 ## Used by
 

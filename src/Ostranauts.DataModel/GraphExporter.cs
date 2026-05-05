@@ -9,7 +9,7 @@ namespace Ostranauts.DataModel;
 /// </summary>
 public static class GraphExporter
 {
-    private const int SchemaVersion = 5;
+    private const int SchemaVersion = 6;
 
     private static readonly JsonWriterOptions WriterOptions = new()
     {

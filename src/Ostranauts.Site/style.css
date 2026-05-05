@@ -383,7 +383,8 @@ section#detail {
   font-size: 0.75rem;
   margin-bottom: 0.15rem;
 }
-.code-refs-block .code-line {
+.code-refs-block .code-line,
+.code-out .code-line {
   margin: 0;
   padding: 0.4rem 0.65rem;
   background: var(--bg-elev);
@@ -394,6 +395,16 @@ section#detail {
   white-space: pre-wrap;
   word-break: break-all;
 }
+.code-refs-block .code-source {
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+.code-refs-block .code-source .muted { color: var(--muted); font-size: 0.75rem; }
+/* code-method / code-class detail page — outgoing literal listing */
+.code-out { list-style: none; padding: 0; margin: 0; }
+.code-out > li { margin-bottom: 0.5rem; }
+.code-out .arrow { margin-right: 0.4rem; color: var(--muted); }
+.code-out .meta { color: var(--muted); font-size: 0.75rem; }
 
 /* dotted underline + help cursor on field-group headers when they have a tooltip */
 .refs-block .group-head[title] {
