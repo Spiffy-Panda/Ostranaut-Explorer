@@ -4,6 +4,28 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-04 — Three AST-bound user stories + on-site rendered user-story library
+
+Filled out the three forward-looking user stories that the prior planning split flagged as "would end up in PLAN-AST," and stood up a build path that renders every `notes/user-stories/*.md` file as a styled HTML page on the site.
+
+New user stories (acceptance specs for PLAN-AST phases, not current-explorer traversals):
+
+- `rewire-co2-alarm-to-remote-pump.md` — Phase 3. The alarm→pump connection is established at runtime via `strInput01` panel wiring; modder needs the explorer to render the runtime-wired in-port as a dashed edge with an explainer banner.
+- `trace-engine-emitted-condition.md` — Phase 2. `DcGasPpO2` and similar engine-emitted conditions get populated detail pages with `code:component` producers, gate-expression snippets, and a "data-side overrides" status section.
+- `debug-broken-aupdatecommands-line.md` — Phase 2. `aUpdateCommands` entries render as structured positional arguments resolved against their target folders, with red ✗ markers + did-you-mean suggestions on resolution failure.
+
+Each story follows the existing format (story → solution path → "what the site needs to support this" → acceptance criterion). PLAN.md routing table updated to include all three under the AST group.
+
+Renderer + build wiring:
+
+- `utils/python/render_user_stories.py` — stdlib-only Markdown→HTML for the subset our user-story files actually use (headers, paragraphs, fenced code, inline code, bold/italic, links, blockquotes, lists, HRs, GFM-style tables). Sibling `.md` links rewritten to `.html`. Each rendered page wraps in a template that reuses `style.css` tokens for the dark theme. An index page groups stories by routing tag (EXPLORER / EXPLORER + AST partial / AST / DANGLING) using a hardcoded mapping that mirrors PLAN.md.
+- `Makefile` `site` and `site-public` targets both invoke the renderer (output to `$(BUILD_DIR)/user-stories/` and `$(PUBLIC_BUILD_DIR)/user-stories/` respectively). The renderer is conditional on `notes/user-stories/` existing so the build doesn't break if it's missing.
+- `src/Ostranauts.Site/index.html` gains a sixth tab card — *User Stories* — linking to the rendered library.
+
+Four-factor check (per CLAUDE.md, since this surface ships in `build-public/`): the user stories are our own writing about hypothetical modder workflows; no in-game prose, NPC dialog, or substantial data dumps; the few `decomp:*.cs:NN` placeholder citations are line-number references, not reproduced source. Clears all four factors.
+
+Smoke-tested: rendered 11 stories + index, link rewriting verified, inline backticks in titles render as `<code>` spans, the Tabs section on the cover page now lists User Stories alongside Explorer/Schemas/Coverage/Data Health/LLM Candidates.
+
 ## 2026-05-04 — Audit pass: fix stale `scrap_scripts/python/<NN>_*.py` references after the promotion commit
 
 Eight scripts were promoted from `scrap_scripts/python/` to `utils/python/` (with their `<NN>_` prefix dropped) in commit `bbcb9cf`, but several call-sites still pointed at the old paths. Found via a `scrap_scripts/python/[0-9]+_` grep across the tree.

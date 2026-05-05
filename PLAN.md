@@ -46,6 +46,9 @@ plan addresses it:
 | [mod-hygiene-station](notes/user-stories/mod-hygiene-station.md) | EXPLORER | Template-hub pages (UX 3.2) — modder needs to clone the Sink pattern across multiple folders. The fan-in heuristic + "editing this affects N instances" callout is the centerpiece. |
 | [mod-starter-ship](notes/user-stories/mod-starter-ship.md) | EXPLORER | Folder index + cross-folder ref traversal from character-creation entries to `ships/`. No specific UX item is dedicated; falls out of basic search + ref blocks. |
 | [mod-suppress-needs](notes/user-stories/mod-suppress-needs.md) | EXPLORER | Already partly served by the shipped needs-suppression handoff page. Remaining gaps are schema descriptions on `addcond` / `traitscores.ageCost` and the `nDisplaySelf` item. |
+| [rewire-co2-alarm-to-remote-pump](notes/user-stories/rewire-co2-alarm-to-remote-pump.md) | AST | Phase 3 territory. The alarm→pump connection is established at runtime via `strInput01` panel wiring; the dashed runtime-edge banner is the unblock. |
+| [trace-engine-emitted-condition](notes/user-stories/trace-engine-emitted-condition.md) | AST | Phase 2 territory. `DcGasPpO2` and similar engine-emitted conditions get populated detail pages with `code:component` producers + gate-expression snippets + data-side override status. |
+| [debug-broken-aupdatecommands-line](notes/user-stories/debug-broken-aupdatecommands-line.md) | AST | Phase 2 territory. Each `aUpdateCommands` entry is rendered as structured positional arguments, each resolved against its target folder, with red markers + did-you-mean suggestions on resolution failure. |
 
 ---
 

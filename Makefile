@@ -4,6 +4,7 @@ BUILD_DIR        ?= build
 PUBLIC_BUILD_DIR ?= build-public
 SITE_SRC         := src/Ostranauts.Site
 HANDOFF_SRC      := notes/handoff
+USER_STORIES_SRC := notes/user-stories
 BUILDER_PROJ     := src/Ostranauts.Site.Builder/Ostranauts.Site.Builder.csproj
 LIB_PROJ         := src/Ostranauts.DataModel/Ostranauts.DataModel.csproj
 TEST_PROJ        := tests/Ostranauts.DataModel.Tests/Ostranauts.DataModel.Tests.csproj
@@ -38,6 +39,9 @@ endif
 		mkdir -p $(BUILD_DIR)/handoff; \
 		cp -r $(HANDOFF_SRC)/. $(BUILD_DIR)/handoff/; \
 	fi
+	@if [ -d "$(USER_STORIES_SRC)" ]; then \
+		python utils/python/render_user_stories.py --in $(USER_STORIES_SRC) --out $(BUILD_DIR)/user-stories; \
+	fi
 
 build: site
 
@@ -57,6 +61,9 @@ site-public:
 	@if [ -d "$(HANDOFF_SRC)" ]; then \
 		mkdir -p $(PUBLIC_BUILD_DIR)/handoff; \
 		cp -r $(HANDOFF_SRC)/. $(PUBLIC_BUILD_DIR)/handoff/; \
+	fi
+	@if [ -d "$(USER_STORIES_SRC)" ]; then \
+		python utils/python/render_user_stories.py --in $(USER_STORIES_SRC) --out $(PUBLIC_BUILD_DIR)/user-stories; \
 	fi
 
 # Convenience: open the built site in the default browser (Windows / Git Bash).
