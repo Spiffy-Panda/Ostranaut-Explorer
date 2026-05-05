@@ -1,199 +1,107 @@
 # PLAN
 
-Active work tracker. **Items live here until they're done; then they're
-deleted from this file** and the DEV-LOG entry + git history become the
-record. This file is *not* a changelog — for "what shipped when," read
-[DEV-LOG.md](DEV-LOG.md).
+Top-level routing file. Active work tracking has split along two axes;
+this file points at both and routes the user-story scoring scenarios so
+it's clear which plan each one drives.
 
-> **One file, two audiences.** Humans skim section headers to know what's
-> next. LLMs reading the repo cold use this as the index of "what is worth
-> picking up." Keep entries terse — one paragraph max, link out for detail.
+If you're picking up work cold, read this file first, then the plan that
+matches the axis you're touching.
+
+---
+
+## The two plans
+
+- **[PLAN-EXPLORER.md](PLAN-EXPLORER.md)** — modder-facing JSON browser.
+  Schema overlay coverage (parser/library), site UX (newcomer onboarding,
+  glossary, prefix banners, inline schema, ref-row badges, filter pills),
+  wiki / LLM-assisted content extraction. Captures the *hopping around +
+  learning the modding space* the explorer is built for.
+- **[PLAN-AST.md](PLAN-AST.md)** — code-side graph extension. Promotes
+  decomp classes/methods/components to first-class graph objects via
+  Roslyn AST + semantic model. Replaces the regex-based code-references
+  pipeline with one that recovers `aUpdateCommands` wiring,
+  code-emitted condition producers, and runtime-wired ports as real
+  graph edges.
+
+The two are independent and ship on their own schedules. PLAN-AST Phase 2
+may obsolete a couple of items in PLAN-EXPLORER (notably the recent
+`comment_mod/data/conditions/` overlay shims), but neither blocks the
+other.
+
+---
+
+## User-story routing
+
+Every file in [`notes/user-stories/`](notes/user-stories/) is a scoring
+scenario the explorer is meant to satisfy. Each story is "passed" when a
+modder (or designer) can walk it end-to-end smoothly. Mapped to which
+plan addresses it:
+
+| User story | Plan | What carries it |
+|---|---|---|
+| [anti-g-loc-leggings](notes/user-stories/anti-g-loc-leggings.md) | EXPLORER | Search + folder index + `aCOs` / cond-string schema descriptions; `Thresh<X>` derived sidebar (UX 1.4) for the `ThreshStatGrav` jump. |
+| [anti-g-loc-newcomer](notes/user-stories/anti-g-loc-newcomer.md) | EXPLORER | Glossary card (UX 1.1, blocking), prefix banners (UX 1.2), inline schema (UX 1.3) — same destination as the skilled story but the explorer has to teach the rungs. |
+| [crew-exercise-invisible-need](notes/user-stories/crew-exercise-invisible-need.md) | EXPLORER (primary) + AST (partial) | Tick-effect tracing through `aTickers` → loot → conditions is data-side. The "why does the AI prefer leisure when needs look green?" piece is C# scoring code — Phase 2 of PLAN-AST surfaces it. |
+| [mod-free-traits](notes/user-stories/mod-free-traits.md) | EXPLORER | `traitscores/` schema + folder navigation. The `nDisplaySelf` description item in PLAN-EXPLORER is from the related crew-exercise scenario, not this one. |
+| [mod-hygiene-station](notes/user-stories/mod-hygiene-station.md) | EXPLORER | Template-hub pages (UX 3.2) — modder needs to clone the Sink pattern across multiple folders. The fan-in heuristic + "editing this affects N instances" callout is the centerpiece. |
+| [mod-starter-ship](notes/user-stories/mod-starter-ship.md) | EXPLORER | Folder index + cross-folder ref traversal from character-creation entries to `ships/`. No specific UX item is dedicated; falls out of basic search + ref blocks. |
+| [mod-suppress-needs](notes/user-stories/mod-suppress-needs.md) | EXPLORER | Already partly served by the shipped needs-suppression handoff page. Remaining gaps are schema descriptions on `addcond` / `traitscores.ageCost` and the `nDisplaySelf` item. |
+
+---
+
+## Dangling user stories
+
+Stories where neither plan, as written, fully addresses what the story
+asks. These are the honest gaps in the active plan set.
+
+### [explore-needs-loop](notes/user-stories/explore-needs-loop.md) — *fully dangling*
+
+The only **designer exploration** story in the set, not a modding story.
+The asker wants to use the explorer as a diagnostic to understand *why*
+the needs loop feels like a treadmill — conversational agency gap,
+need-timer-reset frustration. The story spans:
+
+- Data-side traversal (which interactions touch needs, what tick-effects
+  reset them) — covered well enough by EXPLORER.
+- Code-side traversal (what makes the AI pick "exercise" over
+  "converse," whether a conversation interaction even exists that
+  resolves a need rather than nudging it) — partly covered by PLAN-AST
+  Phase 2.
+- A **framing gap** that neither plan touches: the explorer is built and
+  copywritten for modders. A designer using it as a "why does this game
+  feel like X" diagnostic has no UI affordances pointing them at root
+  causes — the closest thing is the glossary, which is reference, not
+  diagnostic.
+
+What would address it: a small UX component for *"why is this stat
+behaving this way?"* style questions — likely a banner on stat detail
+pages that lists the loops touching it (production, decay, suppression,
+threshold modifiers) with a one-sentence framing for each. Roughly half
+EXPLORER, half AST. Not on either plan today; track here until promoted.
+
+### [crew-exercise-invisible-need](notes/user-stories/crew-exercise-invisible-need.md) — *partially dangling*
+
+Listed in the routing table because EXPLORER carries most of it, but the
+load-bearing observation the modder makes — *"crew exercise even when
+needs panel is fully green"* — is fundamentally a question about AI
+action selection, which lives in C#. PLAN-AST Phase 2 brings code-side
+nodes into the graph; whether that's *enough* to answer the question
+("which scoring function picks 'exercise' and what data drives it?")
+depends on how cleanly the AI scoring methods bind in Roslyn. Flag it
+here so when AST Phase 2 is picked up, this story is part of the
+acceptance check.
 
 ---
 
 ## How to use this file
 
-- **Add** an item when it becomes a real next step, not before.
-- **Tag** each item with a state: **proposed** / **next** / **in-progress** /
-  **blocked** / **deferred**. *Proposed* means "we've decided it's a good
-  idea but haven't committed to a slice." *Next* means "this is the actual
-  next piece of work."
-- **Group** by area, not by chronology — the order within a section reflects
-  rough dependency, not commit order.
-- **Reference** the design doc rather than restating it. "Build component
-  1.6 from notes/ux/newcomer-onboarding.md" beats re-explaining the
-  component here.
-- **Delete** when done. Add a DEV-LOG entry the same commit. The plan
-  shrinks; the changelog grows.
-
----
-
-## Parser / library
-
-### Slice E phase 6 — promote auto-detected candidates → `comment_mod/data/schemas/` overlays · *deferred*
-
-The detector found 184 uncovered candidates across the data tree
-(`build/data/ref_candidates.js`). Many are obvious schema gaps — installables,
-the `aThresholds[*].strLootNew` family for non-`DcFood` condrules, etc. Phase
-6 commits them into `comment_mod/data/schemas/` so they become real edges.
-
-Deferred because the diff is large and bundling commits to one slice was
-the right choice; no current consumer is blocked. Pick this up next time
-schema coverage feels like the bottleneck. See DEV-LOG 2026-05-03 entry on
-phases 1-5 for context.
-
-### Stat bars → `Stat*` strName cross-validation audit · *next*
-
-Wiki's User_Interface page names eleven visible stat bars (Gas Pressure,
-Body Temperature, Pain, Satiety, Hydration, Encumbrance, Bowels, Fatigue,
-Sleep, Hygiene). Confirmed mapping so far: Encumbrance → `StatGrav`. The
-rest are TBD. The audit:
-
-1. List every `Stat*` strName in `data/conditions/`.
-2. Match each to a UI bar label (where one exists) or flag as
-   internal-only.
-3. Surface unmapped stats and unmatched bars on `/health/coverage`.
-
-Output is a curated map that feeds (a) glossary cards, (b) per-page
-sprinkles ("UI bar: Encumbrance"), and (c) confidence that we've covered
-every player-visible stat. Tracked in
-[notes/wiki-onboarding.md](notes/wiki-onboarding.md) under *User Interface
-→ Cross-validation*.
-
-### `nDisplaySelf` schema description in Comment Mod · *next, small*
-
-Add a description for the `nDisplaySelf` field on `conditions/` schema in
-`comment_mod/data/schemas/conditions-schema.json` that names the 0/1/2/3
-semantics — *"0 = invisible in the needs panel even when active; 2 =
-always visible; 3 = pinned"*. Gates the lucky path of the
-[crew-exercise user story](notes/user-stories/crew-exercise-invisible-need.md).
-
----
-
-## Site / UX
-
-The full design lives in
-[notes/ux/newcomer-onboarding.md](notes/ux/newcomer-onboarding.md) (12
-core components plus 2 stretch). PLAN tracks build order, not design.
-
-### Glossary card + concept search (UX 1.1) · *next, blocking*
-
-Gates both newcomer user stories
-([anti-g-loc-newcomer](notes/user-stories/anti-g-loc-newcomer.md),
-[crew-exercise](notes/user-stories/crew-exercise-invisible-need.md)).
-Hand-seeded alias map (`comment_mod/data/glossary/*.json`), search-bar
-fallback when strName matches return zero, glossary-card UI in the result
-list. Initial seed: ~30 entries pulled from wiki page titles + section
-headings (anti-G-LOC, atrophy, encumbrance, fatigue, etc.).
-
-### Per-prefix contextual explainer banners (UX 1.2) · *proposed*
-
-Banners keyed on naming convention (`Stat*`, `Thresh*`, `COND*`, `Itm*`,
-`ACT*`, `DRUG*`). Short banner library
-(`src/Ostranauts.Site/explainers/*.json`), dismissible per-class via
-localStorage. The single most-leveraged newcomer-onboarding component
-after the glossary card.
-
-### Inline schema field descriptions (UX 1.3) · *proposed*
-
-Hover-only descriptions today. Render inline by default on the Fields
-block, collapsible. Newcomers don't know to hover.
-
-### Folder + `strType` ref-row badges (UX 1.5) · *partial*
-
-Folder is implicit in the link target today. `strType` is not surfaced.
-Promote both to badges with stable site-wide colors.
-
-### Filter pills on incoming refs (UX 1.6) · *proposed*
-
-Plain-language pill set above any ref list >5 rows. Auto-suggested per
-page from the source folders + `strType`s present.
-
-### Other UX components (1.4 / 1.7-1.12) · *proposed*
-
-See [notes/ux/newcomer-onboarding.md](notes/ux/newcomer-onboarding.md)
-sections 1.4 (derived `Thresh<X>` sidebar), 1.7 (DSL primer popover), 1.8
-(`strType` dispatch tooltip), 1.9 (*"Why is this in `X/`?"* note), 1.10
-(*"Edit this"* callout), 1.11 (live-build diff), 1.12 (plain-language
-wiki links).
-
-### Stretch — cluster pages (UX 3.1) · *proposed*
-
-Per-folder prefix-cluster pages with curation overlay + auto-detected
-candidates. Three-tier detection. Cluster's *"compared with the
-neighborhood"* table is the centerpiece.
-
-### Stretch — template-hub pages (UX 3.2) · *proposed*
-
-For one-object-as-type-definition cases like `items/ItmBodyPart01` (used
-as `strItemDef` by 20 `condowners/Wound*` entries). Fan-in heuristic +
-field-uniformity confirmation. Includes blast-radius callout (*"editing
-this affects all 20 instances"*).
-
-### Migrate `/help/debug` site route from wiki Debug page · *proposed*
-
-The Debug commands table is uniformly modder-relevant (`addcond`,
-`getcond`, `spawn`, `verify`, `unlockdebug`). Migrate as a static
-`/help/debug` route. Notes in
-[notes/wiki-onboarding.md](notes/wiki-onboarding.md) Debug section.
-
----
-
-## Content / wiki extraction
-
-### LLM-assist extraction pass on the 5 flagged Modding pages · *next*
-
-Page priority + assigned model already chosen (was in PROJECT-PITCH;
-moved here):
-
-| Page                  | Cached size | Review-queue items | Model  |
-|-----------------------|-------------|--------------------|--------|
-| Conditions            | 3.7 KB      | 16                 | haiku  |
-| Modding/Pledges       | 22.2 KB    | 9                  | opus   |
-| Modding/CondOwners    | 41.1 KB    | 5                  | opus   |
-| Modding/Interactions  | 10.9 KB    | 2                  | sonnet |
-| Modding/Loot          | 8.7 KB     | 2                  | sonnet |
-
-Each pass produces a `prose-extraction/<slug>-<model>.md` provenance file
-([prose-extraction/README.md](prose-extraction/README.md)), then a
-downstream LLM step proposes schema diffs into
-`comment_mod/data/schemas/`. The review queue lives at
-[comment_mod/wiki_review_queue.md](comment_mod/wiki_review_queue.md).
-
-### Out-of-scope wiki page sweep harvest · *opportunistic*
-
-A previous session crawled ~24 player-facing pages (Basic_Controls,
-User_Interface, Debug, Main Mechanics) — out of scope per the
-`Modding/*`-only crawl rule, but several yielded modder-relevant
-material. Harvest tracked in
-[notes/wiki-onboarding.md](notes/wiki-onboarding.md). Specific actionable
-items already broken out into the Site / UX and Parser sections above.
-
----
-
-## Stretch / v2 territory
-
-Big v2 items live in [PROJECT-PITCH.md § Roadmap §
-v2](PROJECT-PITCH.md#v2--mod-aware-tooling-ide-integration-save-tools).
-Once one of those becomes the active next step, lift it into PLAN.md
-proper as its own section. Until then, leave it in the pitch.
-
-The named v2 items, ordered by the pitch's dependency chain:
-
-1. Mod partial loader (overlay) — prerequisite for everything else in v2.
-2. VS Code language server (LSP) — biggest v2 chunk; subsumes mod editor.
-3. Comment Mod migration (extract `comment_mod/` schemas as a real
-   loaded mod once the overlay loader exists).
-4. Save inspector / editor (start with `aCrew01`).
-5. Map explorer + save map explorer.
-
----
-
-## How this stays honest
-
-Every entry above should either move to *in-progress*, ship and get
-deleted, or get explicitly *deferred* with a reason. Stale items that
-sit at *proposed* for too long without context drift toward fiction.
-Periodically (when re-reading the file feels like reading marketing
-copy) prune ruthlessly: if no one knows what blocks an item, it's not a
-plan, it's a wishlist.
+- **Add** a routing entry when a new user story lands in
+  `notes/user-stories/`. Decide which plan carries it; if neither does,
+  list it under *Dangling*.
+- **Move** a dangling entry into the routing table once a plan picks it
+  up — and add the corresponding section to that plan in the same
+  commit.
+- **Don't put work items here.** Work items live in their respective
+  plan. This file routes only.
+- **Keep it short.** If routing entries grow paragraphs, the detail
+  belongs in the user-story file or the plan.

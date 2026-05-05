@@ -4,6 +4,16 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-04 — Split PLAN.md into EXPLORER + AST axes; add code-side roadmap
+
+Two planning axes had been bleeding into one file. Split them:
+
+- `PLAN.md` → `PLAN-EXPLORER.md` via `git mv` (history preserved). Header rewritten to scope it to the modder-facing JSON browser axis (schema overlay coverage, site UX, content/wiki extraction). Self-reference at the v2 stretch section now reads "this file" instead of the moved name.
+- New `PLAN-AST.md` lays out the code-side graph extension: replace the regex-based `code_refs.js` pipeline with a Roslyn AST + semantic-model extractor, promoting decomp classes/methods/components to first-class graph nodes with typed in/out ports. Four phases mapped to complexity-class rungs (AST / SemanticModel / runtime-wired / hierarchy). Phase 2 recovers `aUpdateCommands` config-key resolution, code-emitted condition producers (e.g. `IsReadyPumpAir` set by `GasPressureSense.Run`), and runtime-wired panel ports as graph edges instead of prose-in-schema-descriptions. The current Makefile regression that stops `code_refs.js` from being generated on local builds (`Makefile:29` doesn't invoke `utils/python/emit_code_refs.py`; only `site-public` writes a stub at line 55) is folded into Phase 1's deliverable.
+- New `PLAN.md` is a top-level routing brief — no work items, just (1) one paragraph each on the two plans, (2) a routing table for the eight files in `notes/user-stories/`, and (3) a *Dangling* section. Six stories carry on EXPLORER; `crew-exercise-invisible-need` is EXPLORER-primary with an AST-Phase-2 partial; `explore-needs-loop` is fully dangling because it's the only designer-exploration story and neither plan has UX affordances for *"why does this stat behave this way"* diagnostic framing.
+
+Triggering context: an earlier in-session attempt to follow the pressure-sensor → pump → pressure-restore chain through the data ended up patching the symptom (one large prose description on `aUpdateCommands` in `comment_mod/data/schemas/condowners-schema.json`, plus a from-scratch `gasrespires-schema.json`, plus two overlay-data shims for code-emitted conditions in a new `comment_mod/data/conditions/conditions.json`). That diff was reverted in this same commit — the structural fix lives in PLAN-AST instead. CLAUDE.md churn from the same session also reverted; the existing inline-Python rule was already sufficient.
+
 ## 2026-05-03 — Reframe needs-suppression handoff around `addcond`, demote chargen-trait to optional
 
 The handoff previously led with "register a selectable trait at character creation" and treated `addcond IsNeedsReduced` as a fallback for existing saves. Empirically, the chargen-trait path conflicts with at least one other mod that touches the same global "Trait Scores,1" bucket (FreeTraits in particular ships a full replacement of the base list with score-zeroed entries; load-order interactions are unpredictable). Reframed the handoff to recommend the `addcond` path as primary, with the traitscores file marked as optional and gated behind a `.callout warn` block that names the conflict and the chargen-UI gotchas.
