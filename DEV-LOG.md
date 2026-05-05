@@ -4,6 +4,21 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-04 — User-stories renderer: output to source folder so file:// preview works
+
+Reported by direct preview: clicking the new *User Stories* tab card from `src/Ostranauts.Site/index.html` (file:// URL, no build run) hit a 404 because the rendered HTML lived only in `build/user-stories/` and the source folder didn't have it. The previous flow rendered to `build/user-stories/` (and `build-public/user-stories/`), so source-folder preview broke even though the built site worked.
+
+Refactored to single source of truth:
+
+- Added a `user-stories` Makefile target that renders into `$(SITE_SRC)/user-stories/` (i.e. `src/Ostranauts.Site/user-stories/`).
+- The `site` and `site-public` targets depend on `user-stories` and the existing `cp -r $(SITE_SRC)/. $(BUILD_DIR)/` step picks the rendered HTML up automatically. Removed the per-target render invocations in `site` and `site-public`.
+- `.gitignore` excludes `/src/Ostranauts.Site/user-stories/` so the rendered artifacts don't get tracked. Comment in the gitignore explains the rationale.
+- Renderer's default `--out` updated to match (`src/Ostranauts.Site/user-stories/`); docstring rewritten to explain the source-folder layout.
+
+Net effect: clicking *User Stories* from the cover page works whether you're previewing `src/Ostranauts.Site/index.html`, `build/index.html`, or the GitHub Pages bundle. Same rendered files in all three places.
+
+Known follow-up: cross-repo `.md` links inside story bodies (e.g. `[PLAN-AST.md](../../PLAN-AST.md)`) resolve from `build/user-stories/` (relative depth 1 from repo root) but not from `src/Ostranauts.Site/user-stories/` (depth 2). Fix would be rewriting cross-repo `.md` targets to GitHub blob URLs in the link rewriter — punted pending decision.
+
 ## 2026-05-04 — Three AST-bound user stories + on-site rendered user-story library
 
 Filled out the three forward-looking user stories that the prior planning split flagged as "would end up in PLAN-AST," and stood up a build path that renders every `notes/user-stories/*.md` file as a styled HTML page on the site.

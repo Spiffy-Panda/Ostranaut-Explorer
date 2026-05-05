@@ -1,8 +1,14 @@
 """render_user_stories.py
 
 Renders every notes/user-stories/*.md file to a styled HTML page in
-build/user-stories/, plus an index.html that lists them with their
-PLAN.md routing classification (EXPLORER / AST / partial / dangling).
+src/Ostranauts.Site/user-stories/ (gitignored — generated artifact),
+plus an index.html that lists them with their PLAN.md routing
+classification (EXPLORER / AST / partial / dangling).
+
+Output lives alongside the site source so direct file:// preview of
+src/Ostranauts.Site/index.html resolves the User Stories tab card.
+The Makefile's site / site-public targets cp -r SITE_SRC/. into the
+build output, picking the rendered HTML up automatically.
 
 Stdlib only. The markdown subset supported is whatever the existing
 user-story files actually use:
@@ -23,7 +29,7 @@ adds something fancier, extend this file.
 
 Usage:
     python utils/python/render_user_stories.py
-    python utils/python/render_user_stories.py --in notes/user-stories --out build/user-stories
+    python utils/python/render_user_stories.py --in notes/user-stories --out path/to/output
 """
 
 from __future__ import annotations
@@ -36,7 +42,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_IN = REPO_ROOT / "notes" / "user-stories"
-DEFAULT_OUT = REPO_ROOT / "build" / "user-stories"
+DEFAULT_OUT = REPO_ROOT / "src" / "Ostranauts.Site" / "user-stories"
 
 
 # Routing classification, mirrors PLAN.md's user-story table. Update both

@@ -27,7 +27,7 @@ test:
 # so they deploy with the site (directly linkable; not navigable from the UI).
 # The Builder auto-detects ./data and ./comment_mod/data when no --root
 # flag is passed; override DATA_ROOT to point at a single specific root.
-site: cli
+site: cli user-stories
 	@mkdir -p $(BUILD_DIR)
 ifdef DATA_ROOT
 	dotnet run --project $(BUILDER_PROJ) -c $(CONFIG) --no-build -- --root $(DATA_ROOT) --out $(BUILD_DIR)/data
@@ -39,9 +39,16 @@ endif
 		mkdir -p $(BUILD_DIR)/handoff; \
 		cp -r $(HANDOFF_SRC)/. $(BUILD_DIR)/handoff/; \
 	fi
+
+# Render notes/user-stories/*.md into $(SITE_SRC)/user-stories/ (gitignored)
+# so direct file:// preview of src/Ostranauts.Site/index.html resolves the
+# User Stories tab card. The site/site-public targets' cp -r SITE_SRC/. step
+# then picks the rendered HTML up automatically — single source of truth.
+user-stories:
 	@if [ -d "$(USER_STORIES_SRC)" ]; then \
-		python utils/python/render_user_stories.py --in $(USER_STORIES_SRC) --out $(BUILD_DIR)/user-stories; \
+		python utils/python/render_user_stories.py --in $(USER_STORIES_SRC) --out $(SITE_SRC)/user-stories; \
 	fi
+.PHONY: user-stories
 
 build: site
 
@@ -50,7 +57,7 @@ build: site
 # parser never runs here — the runner doesn't need .NET or the game tree.
 # See CLAUDE.md "Pre-push check — four-factor fair use review" before
 # adding anything new to this surface.
-site-public:
+site-public: user-stories
 	rm -rf $(PUBLIC_BUILD_DIR)
 	mkdir -p $(PUBLIC_BUILD_DIR)/data
 	cp -r $(SITE_SRC)/. $(PUBLIC_BUILD_DIR)/
@@ -61,9 +68,6 @@ site-public:
 	@if [ -d "$(HANDOFF_SRC)" ]; then \
 		mkdir -p $(PUBLIC_BUILD_DIR)/handoff; \
 		cp -r $(HANDOFF_SRC)/. $(PUBLIC_BUILD_DIR)/handoff/; \
-	fi
-	@if [ -d "$(USER_STORIES_SRC)" ]; then \
-		python utils/python/render_user_stories.py --in $(USER_STORIES_SRC) --out $(PUBLIC_BUILD_DIR)/user-stories; \
 	fi
 
 # Convenience: open the built site in the default browser (Windows / Git Bash).
