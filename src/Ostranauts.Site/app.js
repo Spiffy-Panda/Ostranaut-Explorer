@@ -351,6 +351,8 @@ function renderSearchResults(nodes, glossary) {
 function navigateToObject(node) {
   searchResultsEl.hidden = true;
   searchEl.blur();
+  // UX 1.6 — drop any active filter state so pills don't bleed across object pages.
+  activeFilters.clear();
   window.location.hash = `#/o/${encodeURIComponent(node.folder)}/${encodeURIComponent(node.strName)}`;
 }
 
@@ -449,12 +451,21 @@ function highlightActiveTab(hash) {
 
 /* ─── object detail ────────────────────────────────────────── */
 
+// Tracks the last object detail page rendered so UX 1.6 filter state can be
+// cleared when the user navigates to a *different* object (but preserved
+// across renders triggered by clicking a pill on the same page).
+let lastDetailId = null;
+
 function renderObjectDetail(folder, strName) {
   const id = `${folder}:${strName}`;
   const node = nodesById.get(id);
   if (!node) {
     detailEl.innerHTML = `<p class="hint">No object known at <code>${escapeHtml(id)}</code>.</p>`;
     return;
+  }
+  if (id !== lastDetailId) {
+    activeFilters.clear();
+    lastDetailId = id;
   }
 
   if (isCodeFolder(folder)) {
@@ -488,12 +499,12 @@ function renderObjectDetail(folder, strName) {
 
     <div class="refs-block">
       <h3>References out (${out.length})</h3>
-      ${renderEdgeGroups(out, 'source-perspective', folder)}
+      ${renderEdgeGroups(out, 'source-perspective', folder, `out/${id}`)}
     </div>
 
     <div class="refs-block">
       <h3>Referenced by (${inc.length})</h3>
-      ${renderEdgeGroups(inc, 'target-perspective', folder)}
+      ${renderEdgeGroups(inc, 'target-perspective', folder, `in/${id}`)}
     </div>
   `;
   detailEl.innerHTML = html;
@@ -518,6 +529,29 @@ function renderObjectDetail(folder, strName) {
       renderRoute();
     });
   });
+  // UX 1.6 — filter pills on incoming/outgoing ref panels. Click toggles a
+  // pill in the active filter set; rerender the route to reapply.
+  detailEl.querySelectorAll('.filter-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const panel = btn.dataset.panel;
+      const dim = btn.dataset.dim;
+      const value = btn.dataset.value;
+      let state = activeFilters.get(panel);
+      if (!state) { state = { folders: new Set(), strTypes: new Set() }; activeFilters.set(panel, state); }
+      if (dim === 'clear') {
+        state.folders.clear();
+        state.strTypes.clear();
+      } else if (dim === 'folder') {
+        if (state.folders.has(value)) state.folders.delete(value); else state.folders.add(value);
+      } else if (dim === 'strType') {
+        if (state.strTypes.has(value)) state.strTypes.delete(value); else state.strTypes.add(value);
+      }
+      renderRoute();
+    });
+  });
+  // UX 1.7 — DSL primer popovers on cond-string / loot-string / verb /
+  // commandPos / portKey chips. Click to pin; click outside or × to dismiss.
+  wireDslPrimers(detailEl);
   // Wire copy-ref button — copies "<folder>\<strName>" for chat-paste.
   const copyBtn = detailEl.querySelector('.detail-head .copy-ref');
   if (copyBtn) {
@@ -1063,19 +1097,85 @@ async function exportToClipboard(btn, text, hintPath) {
   }
 }
 
-function renderEdgeGroups(edges, perspective, viewFolder) {
+// In-memory filter state. Keyed by a panel id (e.g. "in/conditions:StatGrav"
+// or "out/loot:CONDApatheticPer"). Reset on every renderObjectDetail since
+// pills are session/page-scoped, not persistent.
+let activeFilters = new Map();
+
+function renderEdgeGroups(edges, perspective, viewFolder, panelId) {
   if (edges.length === 0) return '<p class="empty">none</p>';
+
+  // UX 1.6 — auto-suggest filter pills when the panel has more than ~5 rows.
+  // For target-perspective (incoming refs), pills filter on SOURCE folder +
+  // SOURCE strType. For source-perspective (outgoing), they filter on TARGET.
+  const PILL_THRESHOLD = 5;
+  let pillsHtml = '';
+  let visibleEdges = edges;
+  const filterState = activeFilters.get(panelId) || { folders: new Set(), strTypes: new Set() };
+  if (edges.length > PILL_THRESHOLD) {
+    const folderCounts = new Map();
+    const strTypeCounts = new Map();
+    for (const e of edges) {
+      const otherId = perspective === 'source-perspective' ? e.target : e.source;
+      const [otherFolder] = splitId(otherId);
+      folderCounts.set(otherFolder, (folderCounts.get(otherFolder) || 0) + 1);
+      const otherProps = (window.NODE_PROPS ?? {})[otherId];
+      const t = otherProps && typeof otherProps.strType === 'string' ? otherProps.strType : null;
+      if (t) strTypeCounts.set(t, (strTypeCounts.get(t) || 0) + 1);
+    }
+    if (folderCounts.size > 1 || strTypeCounts.size > 0) {
+      const matches = (e) => {
+        const otherId = perspective === 'source-perspective' ? e.target : e.source;
+        const [f] = splitId(otherId);
+        const props = (window.NODE_PROPS ?? {})[otherId];
+        const t = props && typeof props.strType === 'string' ? props.strType : null;
+        if (filterState.folders.size > 0 && !filterState.folders.has(f)) return false;
+        if (filterState.strTypes.size > 0 && (!t || !filterState.strTypes.has(t))) return false;
+        return true;
+      };
+      visibleEdges = edges.filter(matches);
+
+      const folderPills = [...folderCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([f, n]) => {
+          const active = filterState.folders.has(f) ? ' active' : '';
+          return `<button type="button" class="filter-pill${active}" data-panel="${escapeAttr(panelId)}" data-dim="folder" data-value="${escapeAttr(f)}" title="Only ${escapeAttr(perspective === 'source-perspective' ? 'targets' : 'sources')} in ${escapeAttr(f)}/">${escapeHtml(f)} <span class="pill-count">${n}</span></button>`;
+        }).join('');
+      const strTypePills = [...strTypeCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([t, n]) => {
+          const active = filterState.strTypes.has(t) ? ' active' : '';
+          return `<button type="button" class="filter-pill strtype${active}" data-panel="${escapeAttr(panelId)}" data-dim="strType" data-value="${escapeAttr(t)}" title="Only entries with strType: ${escapeAttr(t)}">strType:${escapeHtml(t)} <span class="pill-count">${n}</span></button>`;
+        }).join('');
+      const hasActive = filterState.folders.size > 0 || filterState.strTypes.size > 0;
+      const clearBtn = hasActive
+        ? `<button type="button" class="filter-pill clear" data-panel="${escapeAttr(panelId)}" data-dim="clear">clear filters</button>`
+        : '';
+      const visibleHint = hasActive
+        ? `<span class="filter-status">${visibleEdges.length} of ${edges.length}</span>`
+        : '';
+      pillsHtml = `
+        <div class="filter-pills">
+          ${folderPills}${strTypePills}${clearBtn}${visibleHint}
+        </div>
+      `;
+    }
+  }
+
+  if (visibleEdges.length === 0) {
+    return `${pillsHtml}<p class="empty">no edges match the active filters</p>`;
+  }
 
   // Group by sourceField (perspective-source) or by sourceField as well — same key, different meaning.
   const groups = new Map();
-  for (const e of edges) {
+  for (const e of visibleEdges) {
     const key = e.sourceField;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(e);
   }
 
   const sortedGroupKeys = [...groups.keys()].sort();
-  return sortedGroupKeys.map(field => {
+  const groupsHtml = sortedGroupKeys.map(field => {
     const items = groups.get(field);
     // For source-perspective, the field is on the current folder.
     // For target-perspective, the field is on the source object (could be any folder).
@@ -1093,6 +1193,7 @@ function renderEdgeGroups(edges, perspective, viewFolder) {
       </div>
     `;
   }).join('');
+  return `${pillsHtml}${groupsHtml}`;
 }
 
 // PLAN-AST Phase 1: code refs are now real graph edges (LiteralInMethod /
@@ -1319,7 +1420,12 @@ function renderEdgeRow(edge, perspective) {
     ? `<a href="#/o/${encodeURIComponent(linkFolder)}/${encodeURIComponent(linkName)}" data-id="${escapeAttr(linkId)}">${escapeHtml(formatCodeName(linkFolder, linkName))}</a>`
     : `<span class="dangling" title="not in index">${escapeHtml(linkName)}</span>`;
 
-  const folderTag = `<span class="field">${escapeHtml(linkFolder)}</span>`;
+  // UX 1.5 — folder badge with stable per-folder color (picked via hash from a
+  // ~12-color palette). Replaces the prior plain `<span class="field">`. The
+  // strType badge appears alongside when the *other* node has a strType field
+  // (e.g. on Loot entries — strType: condition / item / interaction / ...).
+  const folderTag = renderFolderBadge(linkFolder);
+  const strTypeTag = renderStrTypeBadge(linkId);
   const altSuffix = known ? renderAltFolderSuffix(linkFolder, linkName) : '';
   const meta = edge.metadata ? renderMetadata(edge.metadata) : '';
   const arrow = perspective === 'source-perspective' ? '→' : '←';
@@ -1329,7 +1435,30 @@ function renderEdgeRow(edge, perspective) {
   const isRuntime = edge.kind === 'RuntimeWiresTo';
   const liClass = isRuntime ? ' class="runtime-edge"' : '';
 
-  return `<li${liClass}><span class="arrow">${arrow}</span>${folderTag}:${linkHtml}${altSuffix}${meta}</li>`;
+  return `<li${liClass}><span class="arrow">${arrow}</span>${folderTag}${strTypeTag} ${linkHtml}${altSuffix}${meta}</li>`;
+}
+
+// UX 1.5 — stable folder color vocabulary. Hash the folder name into a
+// 12-color palette so loot=X-color, condowners=Y-color across the whole site.
+const FOLDER_PALETTE = [
+  '#6cb4ff', '#ff8a65', '#9ccc65', '#ba68c8', '#ffd54f', '#4dd0e1',
+  '#f06292', '#aed581', '#7986cb', '#ffb74d', '#4db6ac', '#dce775',
+];
+function folderColor(folder) {
+  let h = 0;
+  for (let i = 0; i < folder.length; i++) h = ((h << 5) - h + folder.charCodeAt(i)) | 0;
+  return FOLDER_PALETTE[Math.abs(h) % FOLDER_PALETTE.length];
+}
+function renderFolderBadge(folder) {
+  return `<span class="folder-badge" style="--badge-color:${folderColor(folder)}" data-folder="${escapeAttr(folder)}" title="folder: ${escapeAttr(folder)}">${escapeHtml(folder)}</span>`;
+}
+// UX 1.5 — strType badge surfaces the engine's enum-tag dispatch on Loot,
+// Pledges, etc. Pulls from the node's properties; renders only when present.
+function renderStrTypeBadge(nodeId) {
+  const props = (window.NODE_PROPS ?? {})[nodeId];
+  const t = props && typeof props.strType === 'string' ? props.strType : null;
+  if (!t) return '';
+  return `<span class="strtype-badge" data-strtype="${escapeAttr(t)}" title="strType: ${escapeAttr(t)} — controls how this entry is dispatched at runtime">${escapeHtml(t)}</span>`;
 }
 
 // When a strName lives in multiple folders (Itm* names commonly hit loot/,
@@ -1349,23 +1478,146 @@ function renderAltFolderSuffix(primaryFolder, strName) {
 }
 
 function renderMetadata(metadata) {
-  const parts = [];
+  // UX 1.7 — DSL chips. Each labeled chip carries data attributes naming
+  // the surrounding DSL kind (cond-string / loot-string / port / verb)
+  // so a click handler can render a primer popover anchored to it.
+  const chips = [];
   // PLAN-AST Phase 2: WiresTo edges carry the full aUpdateCommands raw string
   // and the position of the resolved arg. Show position [N] inline so modders
   // can map "Referenced by aUpdateCommands" entries back to the right token.
   if ('commandName' in metadata && 'position' in metadata) {
-    parts.push(`pos=${metadata.position}`);
+    chips.push(`<span class="meta-chip" data-dsl="commandPos">pos=${escapeHtml(String(metadata.position))}</span>`);
   }
-  // PLAN-AST Phase 3: RuntimeWiresTo edges carry the dict key. Show it inline
-  // so the modder sees the binding that produced the edge.
-  if ('portKey' in metadata) parts.push(metadata.portKey);
-  // PLAN-AST Phase 2: ProducesCondition / ConsumesCondition / ObservesCondition
-  // edges carry the verb (AddCond / RemoveCond / HasCond / ...). Inline-tag so
-  // a conditions/* detail page distinguishes producers from observers at a glance.
-  if ('verb' in metadata) parts.push(metadata.verb);
-  if ('value' in metadata) parts.push(`value=${metadata.value}`);
-  if ('duration' in metadata) parts.push(`dur=${metadata.duration}`);
-  return parts.length ? ` <span class="meta">[${parts.join(' ')}]</span>` : '';
+  // PLAN-AST Phase 3: RuntimeWiresTo edges carry the dict key.
+  if ('portKey' in metadata) {
+    chips.push(`<span class="meta-chip" data-dsl="portKey">${escapeHtml(String(metadata.portKey))}</span>`);
+  }
+  // PLAN-AST Phase 2: ProducesCondition / ConsumesCondition / ObservesCondition.
+  if ('verb' in metadata) {
+    chips.push(`<span class="meta-chip meta-verb" data-dsl="verb">${escapeHtml(String(metadata.verb))}</span>`);
+  }
+  // Cond-string DSL: Name=value xduration → value, dur are the editable dials.
+  if ('value' in metadata) {
+    chips.push(`<span class="meta-chip dsl-condstring" data-dsl="condstring" data-key="value">value=${escapeHtml(String(metadata.value))}</span>`);
+  }
+  if ('duration' in metadata) {
+    chips.push(`<span class="meta-chip dsl-condstring" data-dsl="condstring" data-key="duration">dur=${escapeHtml(String(metadata.duration))}</span>`);
+  }
+  // Loot-string DSL: Name=chance x min[-max], with optional leading - for negative.
+  if ('chance' in metadata) {
+    chips.push(`<span class="meta-chip dsl-lootstring" data-dsl="lootstring" data-key="chance">chance=${escapeHtml(String(metadata.chance))}</span>`);
+  }
+  if ('min' in metadata) {
+    chips.push(`<span class="meta-chip dsl-lootstring" data-dsl="lootstring" data-key="min">min=${escapeHtml(String(metadata.min))}</span>`);
+  }
+  if ('max' in metadata) {
+    chips.push(`<span class="meta-chip dsl-lootstring" data-dsl="lootstring" data-key="max">max=${escapeHtml(String(metadata.max))}</span>`);
+  }
+  if ('positive' in metadata && metadata.positive === false) {
+    chips.push(`<span class="meta-chip dsl-lootstring" data-dsl="lootstring" data-key="positive">negative</span>`);
+  }
+  return chips.length ? ` <span class="meta">${chips.join(' ')}</span>` : '';
+}
+
+// UX 1.7 — DSL primer popover. One handler bound at detail-render time;
+// click on a labeled meta-chip renders a small explainer at the chip and
+// pins it until dismissed. Hover triggers a transient version too. Designed
+// to teach the cond-string / loot-string DSL in place: what each named part
+// means in game, no jargon.
+const DSL_PRIMERS = {
+  condstring: {
+    title: 'Cond-string format',
+    example: 'ThreshStatGrav=1.0x0.03125',
+    parts: [
+      ['name', 'ThreshStatGrav', 'the strName of the condition being applied'],
+      ['value', '1.0', 'magnitude of the effect — the editable dial for "more" or "less"'],
+      ['duration', '0.03125', 'per-game-tick persistence — how long each application lasts'],
+    ],
+    tip: 'A leading - on the name (e.g. "-StatHunger=1.0x0.05") makes the application subtractive — drains the stat instead of adding to it.',
+  },
+  lootstring: {
+    title: 'Loot-string format',
+    example: 'ItmFoo=0.5x1-3',
+    parts: [
+      ['name', 'ItmFoo', 'the strName of the entry being granted (folder routed by parent strType)'],
+      ['chance', '0.5', 'roll probability (0.0-1.0)'],
+      ['min', '1', 'minimum count when the roll succeeds'],
+      ['max', '3', 'maximum count when the roll succeeds'],
+    ],
+    tip: 'Leading - means a negative payout (subtract from the recipient). | within an aCOs slot defines a cumulative-probability sub-list — only one of the variants is chosen.',
+  },
+  verb: {
+    title: 'Condition verb',
+    example: 'AddCond / RemoveCond / HasCond',
+    parts: [
+      ['AddCond', '', 'this code-component WRITES this condition — produces the effect'],
+      ['RemoveCond', '', 'this code-component CLEARS the condition — removes the state'],
+      ['HasCond', '', 'this code-component READS the condition — gates a behavior on its presence'],
+    ],
+    tip: 'Producers and Observers of the same condition are typically different code-components; useful for tracing a runtime signal.',
+  },
+  commandPos: {
+    title: 'aUpdateCommands position',
+    example: '"GasPump,strInput01,strCondMonitor01,…"',
+    parts: [
+      ['pos=0', '', 'head — the command name itself (selects which code-component runs)'],
+      ['pos=1', '', 'first positional arg, often a strInput01 / source key'],
+      ['pos=2+', '', 'further args; each typed against a folder when the dispatcher resolves it'],
+    ],
+    tip: 'Edit the condowner\'s aUpdateCommands string to wire it to a different component or change positional args.',
+  },
+  portKey: {
+    title: 'guipropmap dict key',
+    example: 'strInput01 / strCondMonitor01',
+    parts: [
+      ['portKey', '', 'the dictionary key the code-component reads at runtime to find this binding'],
+    ],
+    tip: 'The actual value (a strName or instance id) is set in the guipropmap entry\'s dictGUIPropMap. Player wiring of panel UI typically writes here.',
+  },
+};
+function renderDslPrimer(kind, anchorRect) {
+  const primer = DSL_PRIMERS[kind];
+  if (!primer) return '';
+  const partsHtml = primer.parts.map(([k, v, d]) =>
+    `<li><code>${escapeHtml(k)}</code>${v ? ` = <code>${escapeHtml(v)}</code>` : ''} <span class="primer-desc">${escapeHtml(d)}</span></li>`
+  ).join('');
+  return `
+    <div class="dsl-primer" role="tooltip">
+      <button type="button" class="dsl-primer-close" aria-label="dismiss">×</button>
+      <div class="primer-title">${escapeHtml(primer.title)}</div>
+      <div class="primer-example"><code>${escapeHtml(primer.example)}</code></div>
+      <ul class="primer-parts">${partsHtml}</ul>
+      <div class="primer-tip">${escapeHtml(primer.tip)}</div>
+    </div>
+  `;
+}
+function wireDslPrimers(rootEl) {
+  let pinned = null; // currently-pinned popover element
+  const dismiss = () => {
+    if (pinned) { pinned.remove(); pinned = null; }
+  };
+  rootEl.querySelectorAll('.meta-chip[data-dsl]').forEach(chip => {
+    chip.addEventListener('click', e => {
+      e.stopPropagation();
+      const kind = chip.dataset.dsl;
+      const html = renderDslPrimer(kind);
+      if (!html) return;
+      dismiss();
+      const wrap = document.createElement('div');
+      wrap.innerHTML = html;
+      const popover = wrap.firstElementChild;
+      chip.parentElement.appendChild(popover);
+      pinned = popover;
+      popover.querySelector('.dsl-primer-close').addEventListener('click', ev => {
+        ev.stopPropagation();
+        dismiss();
+      });
+    });
+  });
+  // Click outside the popover dismisses it.
+  document.addEventListener('click', ev => {
+    if (pinned && !pinned.contains(ev.target)) dismiss();
+  });
 }
 
 /* ─── folder index ─────────────────────────────────────────── */

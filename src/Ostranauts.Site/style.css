@@ -365,6 +365,134 @@ section#detail {
 .refs-block .dangling { color: var(--bad); font-style: italic; }
 .refs-block .empty { color: var(--muted); font-style: italic; padding: 0.25rem 0; }
 
+/* UX 1.5 — folder badge: stable per-folder color via inline --badge-color
+   set in JS. Pill shape with a colored left bar so the visual works on its
+   own AND combines with text label for accessibility (color is never sole
+   carrier of meaning). */
+.refs-block .folder-badge,
+.detail-head .folder-badge {
+  display: inline-block;
+  border-left: 3px solid var(--badge-color, var(--muted));
+  background: rgba(255,255,255,0.04);
+  color: var(--fg);
+  padding: 0 0.4rem 0 0.35rem;
+  border-radius: 2px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-right: 0.05rem;
+}
+/* UX 1.5 — strType badge: shared visual treatment regardless of value (only
+   ~7 enum values; distinguishes by text), distinct from folder badges. */
+.refs-block .strtype-badge {
+  display: inline-block;
+  background: rgba(108,180,255,0.12);
+  color: var(--accent);
+  padding: 0 0.4rem;
+  border-radius: 2px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-right: 0.05rem;
+}
+
+/* UX 1.6 — filter pills row above ref panels. Pill = button. Active pill is
+   filled; inactive is outlined. */
+.refs-block .filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.25rem 0 0.6rem;
+  align-items: center;
+}
+.filter-pill {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+.filter-pill:hover { color: var(--fg); border-color: var(--accent); }
+.filter-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+.filter-pill .pill-count {
+  display: inline-block;
+  margin-left: 0.3rem;
+  opacity: 0.7;
+  font-size: 0.7rem;
+}
+.filter-pill.strtype { font-style: italic; }
+.filter-pill.clear { color: var(--bad); border-style: dashed; }
+.filter-status { color: var(--muted); font-size: 0.75rem; margin-left: 0.4rem; }
+
+/* UX 1.7 — labeled DSL meta-chips. Render as small clickable tags within
+   the per-edge metadata block; click pins a primer popover. */
+.refs-block .meta-chip {
+  display: inline-block;
+  padding: 0 0.35rem;
+  border-radius: 2px;
+  background: rgba(255,210,128,0.10);
+  color: var(--warn);
+  font-size: 0.7rem;
+  cursor: pointer;
+  user-select: none;
+}
+.refs-block .meta-chip:hover { background: rgba(255,210,128,0.20); }
+.refs-block .meta-chip.dsl-condstring { background: rgba(108,180,255,0.10); color: var(--accent); }
+.refs-block .meta-chip.dsl-condstring:hover { background: rgba(108,180,255,0.22); }
+.refs-block .meta-chip.dsl-lootstring { background: rgba(155,225,120,0.10); color: #9ccc65; }
+.refs-block .meta-chip.dsl-lootstring:hover { background: rgba(155,225,120,0.22); }
+.refs-block .meta-chip.meta-verb { font-weight: 500; }
+
+.dsl-primer {
+  display: block;
+  position: relative;
+  margin: 0.4rem 0;
+  padding: 0.6rem 0.85rem 0.7rem;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  max-width: 38rem;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+}
+.dsl-primer .primer-title {
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.25rem;
+}
+.dsl-primer .primer-example {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  margin-bottom: 0.4rem;
+  color: var(--fg);
+}
+.dsl-primer .primer-parts { list-style: none; padding: 0; margin: 0 0 0.5rem; }
+.dsl-primer .primer-parts li { padding: 0.1rem 0; line-height: 1.4; }
+.dsl-primer .primer-parts code { background: rgba(108,180,255,0.10); color: var(--accent); padding: 0 0.2rem; border-radius: 2px; }
+.dsl-primer .primer-desc { color: var(--muted); font-style: italic; }
+.dsl-primer .primer-tip { color: var(--muted); font-size: 0.75rem; line-height: 1.4; }
+.dsl-primer .dsl-primer-close {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.4rem;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.dsl-primer .dsl-primer-close:hover { color: var(--fg); }
+
 /* folder index */
 .folder-index .meta {
   color: var(--muted);

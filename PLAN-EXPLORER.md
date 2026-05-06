@@ -81,23 +81,12 @@ Banners keyed on naming convention (`Stat*`, `Thresh*`, `COND*`, `Itm*`,
 localStorage. The single most-leveraged newcomer-onboarding component
 after the glossary card.
 
-### Folder + `strType` ref-row badges (UX 1.5) · *partial*
-
-Folder is implicit in the link target today. `strType` is not surfaced.
-Promote both to badges with stable site-wide colors.
-
-### Filter pills on incoming refs (UX 1.6) · *proposed*
-
-Plain-language pill set above any ref list >5 rows. Auto-suggested per
-page from the source folders + `strType`s present.
-
-### Other UX components (1.4 / 1.7-1.12) · *proposed*
+### Other UX components (1.4 / 1.8-1.12) · *proposed*
 
 See [notes/ux/newcomer-onboarding.md](notes/ux/newcomer-onboarding.md)
-sections 1.4 (derived `Thresh<X>` sidebar), 1.7 (DSL primer popover), 1.8
-(`strType` dispatch tooltip), 1.9 (*"Why is this in `X/`?"* note), 1.10
-(*"Edit this"* callout), 1.11 (live-build diff), 1.12 (plain-language
-wiki links).
+sections 1.4 (derived `Thresh<X>` sidebar), 1.8 (`strType` dispatch
+tooltip), 1.9 (*"Why is this in `X/`?"* note), 1.10 (*"Edit this"*
+callout), 1.11 (live-build diff), 1.12 (plain-language wiki links).
 
 ### Stretch — cluster pages (UX 3.1) · *proposed*
 

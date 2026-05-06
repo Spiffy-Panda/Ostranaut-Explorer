@@ -4,6 +4,23 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-06 — PLAN-EXPLORER slice 5: ref-row v2 — folder/strType badges + filter pills + DSL primer (UX 1.5/1.6/1.7)
+
+Three UX components shipped together because they all touch the ref-row renderer; bundling avoids three sequential refactors of the same code path.
+
+**UX 1.5 — folder + strType badges.** `renderEdgeRow` swaps the prior plain `<span class="field">folder</span>` for a `.folder-badge` carrying a stable per-folder color (12-color palette, hashed by folder name) plus an optional `.strtype-badge` when the *other* node has a `strType` field. Color picked via a non-cryptographic char-sum hash → palette index, so loot stays the same color site-wide. Color is never the sole carrier — every badge has its text label and a `title=` tooltip.
+
+**UX 1.6 — filter pills.** When a ref panel has more than 5 rows, `renderEdgeGroups` emits a `.filter-pills` row above the groups: one pill per source/target folder (sorted by count) plus one `strType:` pill per distinct strType, plus a `clear filters` pill when any are active. Multi-pill semantics: AND across dimensions (folder ∧ strType), OR within each dimension. Active filters render with `.active` (filled). Per-page state lives in an `activeFilters` Map keyed by panel id (`in/<folder>:<strName>` or `out/...`); cleared on object navigation in two places — `navigateToObject` (via search + alt-folder click), and a `lastDetailId` check inside `renderObjectDetail` for direct-URL nav. State intentionally NOT in localStorage — pills are session/page-scoped per the spec.
+
+**UX 1.7 — DSL primer popover.** Each labeled metadata chip (value/dur, chance/min/max, verb, portKey, commandPos) renders as a clickable `.meta-chip[data-dsl=<kind>]`. Click pins a `.dsl-primer` popover with title, labeled live example, per-part definitions, and a `tip` line. Click outside or × dismisses. Five primers seeded: cond-string, loot-string, condition verb (Add/Remove/HasCond), `aUpdateCommands` position, guipropmap dict key. Hover-trigger deferred — not adding it until accessibility audit; click-pin works for keyboard + mouse equally.
+
+Verification (live preview, `conditions:StatDamage` — 967 incoming refs):
+- Folder badges render with palette colors (`condrules` purple, `loot` yellow, `condowners` distinct).
+- 7 pills auto-suggested: 5 folders (condowners 946, condtrigs 10, code-component 6, loot 4, chargeprofiles 1) + 2 strTypes (Item 946, condition 4). Click `loot` → 967 → 4 visible, status reads "4 of 967".
+- Click a `lootstring` chip on a `loot:CONDApatheticPer` outgoing → primer shows "Loot-string format" with `ItmFoo=0.5x1-3` example and labeled parts.
+
+Implementation surface: `renderEdgeRow` + `renderMetadata` rewritten; `renderEdgeGroups` gains a `panelId` parameter; new `renderFolderBadge` / `renderStrTypeBadge` / `renderDslPrimer` / `wireDslPrimers` helpers; CSS additions for `.folder-badge`, `.strtype-badge`, `.filter-pill[.active|.strtype|.clear]`, `.meta-chip[.dsl-condstring|.dsl-lootstring|.meta-verb]`, `.dsl-primer`. Numbers unchanged: 91 rules, 87,845 refs.
+
 ## 2026-05-06 — PLAN-EXPLORER slice 4: glossary cards + concept search (UX 1.1)
 
 Hand-seeded concept→strName cards bridging plain-English game vocab to data-tree terms — the single most-load-bearing newcomer-onboarding component. Gates the lucky path of [crew-exercise-invisible-need.md](notes/user-stories/crew-exercise-invisible-need.md) (`exercise` / `atrophy` → `conditions:StatAtrophy`), unblocks [mod-suppress-needs.md](notes/user-stories/mod-suppress-needs.md) (`hunger` → `StatSatiety`+`StatFood` split, since there is no `StatHunger` in the data), and is step 1 of the [anti-g-loc-newcomer.md](notes/user-stories/anti-g-loc-newcomer.md) path (`anti-g-loc` → `conditions:StatGrav`).
