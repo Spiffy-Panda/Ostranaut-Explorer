@@ -189,6 +189,10 @@ When you visit a populated explorer with real data, expect to encounter fields w
 
 Not open for outside contributions yet — the project is still pre-v1. If you stumbled on it and want to follow along, the pitch and CLAUDE.md will tell you most of what you need.
 
+## License
+
+The project's own code, schema overlays, and prose are released under the [MIT License](LICENSE). The base-game data files in `data/` and decompiled C# in `decomp/` are *not* covered by this license — they're proprietary to Blue Bottle Games and are not redistributed via this repo (both directories are gitignored; you supply them locally from your own Steam install). See [Setting up locally](#setting-up-locally) for the install steps.
+
 ## Acknowledgements
 
 - [Ostranauts](https://store.steampowered.com/app/1022980/Ostranauts/) by Blue Bottle Games.
