@@ -72,6 +72,10 @@ var index = new ObjectIndex(objects, references, w => { ... });
 
 GraphExporter.WriteJson(index, Path.Combine(outDir, "graph.js"), catalog);
 
+// Glossary cards (UX 1.1) — load <root>/glossary/*.json across roots,
+// dedup on display name (last-wins), emit window.GLOSSARY in glossary.js.
+WriteGlossary(roots, Path.Combine(outDir, "glossary.js"), w => { ... });
+
 // Auto-detect ref candidates for fields the schema doesn't yet describe.
 var candidates = RefCandidateDetector.Detect(objects, catalog);
 CandidateExporter.WriteJs(candidates, Path.Combine(outDir, "ref_candidates.js"));
@@ -81,7 +85,9 @@ CandidateExporter.WriteJs(candidates, Path.Combine(outDir, "ref_candidates.js"))
 
 PLAN-AST Phase 3.1A — for each `RuntimeWiresTo` edge that the runtime-port resolver typed to `conditions/`, the bridge re-checks data existence and either retargets to `conditions_simple/` (where the canonical name often lives) or, if absent from both, synthesizes a new `DataObject` in `conditions/` with `Fields = { kind: "code-emitted", producedBy: "<component>" }` so the modder lands on a populated detail page instead of *"No object known."* In the current real-data run all 17 originally-dangling targets retarget cleanly to `conditions_simple/`, so 0 nodes are synthesized; the synthesis branch remains for future truly-code-only conditions.
 
-Stdout: lists each loaded root, both decomp-pipeline summaries if they ran (`phase 1: parsed N files, K nodes, M edges` / `phase 2: K components, M wires-to + N produces/consumes/observes`), then the written-path plus `objects`, `references`, `rules`, and `candidates` counts; if any warnings fired, the count is reported pointing at stderr.
+Stdout: lists each loaded root, both decomp-pipeline summaries if they ran (`phase 1: parsed N files, K nodes, M edges` / `phase 2: K components, M wires-to + N produces/consumes/observes`), then the written-path plus `objects`, `references`, `rules`, `glossary`, and `candidates` counts; if any warnings fired, the count is reported pointing at stderr.
+
+`WriteGlossary` reads `<root>/glossary/*.json` from every data root in priority order and emits `<outDir>/glossary.js` as `window.GLOSSARY = [...]`. Each input file is a JSON array of cards: `{ aliases: [...], name: "...", summary: "...", wikiPage?: "...", wikiSlug?: "...", dataTerm: { folder, strName }, modderHint?: "..." }`. Dedup is keyed on the card's `name` (case-insensitive) — overlay wins last — so two cards may legitimately share the same `dataTerm` (e.g. "Morale" and "Achievement" both resolve to `conditions:StatAchievement` but are distinct entry points). Site-side, `app.js` indexes the loaded payload by lowercased alias and renders cards in the search dropdown when the user's query matches; cards visually distinct from strName matches via the `.glossary-card` class.
 
 Real-data run (vanilla `data/` + `comment_mod/data/` overlay + `decomp/Assembly-CSharp/`): 34,558 objects (1,390 conditions_simple synthetics + 2,002 Phase 1 code nodes + 14 Phase 2 code-component nodes), 87,845 references (5,304 Phase 1 literal edges + 4,519 Phase 2/3.1B wires-to + 118 Phase 2 cond-touch edges + 38 Phase 3 runtime-wires-to edges), 91 rules, 243 detector candidates (187 uncovered).
 

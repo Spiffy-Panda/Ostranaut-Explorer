@@ -145,6 +145,14 @@ internal static class Program
         var graphPath = Path.Combine(outDir, "graph.js");
         GraphExporter.WriteJson(index, graphPath, catalog);
 
+        // Slice 4 / UX 1.1 — glossary cards. Hand-seeded alias map living in
+        // <root>/glossary/*.json (typically comment_mod/data/glossary/), merged
+        // across roots with last-wins on duplicate dataTerm. Site loads via
+        // <script src> alongside graph.js.
+        var glossaryPath = Path.Combine(outDir, "glossary.js");
+        var glossaryEntries = WriteGlossary(roots, glossaryPath,
+            warning => { Console.Error.WriteLine(warning); warnings++; });
+
         // Auto-detected ref candidates — fields whose values look like cross-folder
         // refs but no schema rule covers them. Drives the site's "auto-detected"
         // links + the extractor-integrity health page.
@@ -157,6 +165,7 @@ internal static class Program
         Console.WriteLine($"  objects:    {index.Objects.Count}");
         Console.WriteLine($"  references: {index.References.Count}");
         Console.WriteLine($"  rules:      {catalog.Rules.Count}");
+        Console.WriteLine($"  glossary:   {glossaryEntries} cards");
         Console.WriteLine($"  candidates: {candidates.Count} ({candidates.Count(c => !c.CoveredBySchema)} uncovered)");
         if (warnings > 0)
             Console.WriteLine($"  warnings:   {warnings} (see stderr)");
@@ -520,5 +529,89 @@ internal static class Program
         Console.Error.WriteLine($"  --out <dir>    output directory                    (default: {DefaultOutDir})");
         Console.Error.WriteLine($"  --decomp <dir> decompiled C# tree to index        (default: {DefaultDecompRoot} if it exists)");
         Console.Error.WriteLine("  --no-decomp    skip decomp indexing entirely");
+    }
+
+    /// <summary>
+    /// Slice 4 / UX 1.1 — load glossary cards from <c>&lt;root&gt;/glossary/*.json</c>
+    /// across every data root, merge with last-wins on duplicate dataTerm
+    /// (folder + strName), and emit <c>build/data/glossary.js</c> as
+    /// <c>window.GLOSSARY = [...]</c>. Cards reach the site via a
+    /// <c>&lt;script src&gt;</c> tag the same way <c>graph.js</c> does, so the
+    /// payload works under <c>file://</c>. Returns the count of emitted entries.
+    /// </summary>
+    private static int WriteGlossary(IEnumerable<string> roots, string outPath, Action<string> onWarning)
+    {
+        // Display-name-keyed dedup. Multiple cards SHOULD be allowed to point at
+        // the same dataTerm — "Morale" and "Achievement" both resolve to
+        // conditions:StatAchievement but are different concepts a beginner
+        // searches for. We dedup on the human-facing display name (or, when
+        // missing, the dataTerm.strName as a fallback) so an overlay can
+        // override a base-game card by re-declaring the same name.
+        var byKey = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+        var orderedKeys = new List<string>();
+
+        foreach (var root in roots)
+        {
+            var dir = Path.Combine(root, "glossary");
+            if (!Directory.Exists(dir)) continue;
+
+            foreach (var path in Directory.EnumerateFiles(dir, "*.json"))
+            {
+                JsonDocument doc;
+                try
+                {
+                    using var stream = File.OpenRead(path);
+                    doc = JsonDocument.Parse(stream);
+                }
+                catch (JsonException ex)
+                {
+                    onWarning($"skip glossary (parse error): {path} — {ex.Message}");
+                    continue;
+                }
+                using (doc)
+                {
+                    if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                    {
+                        onWarning($"skip glossary (expected array): {path}");
+                        continue;
+                    }
+                    foreach (var entry in doc.RootElement.EnumerateArray())
+                    {
+                        if (entry.ValueKind != JsonValueKind.Object) continue;
+                        if (!entry.TryGetProperty("dataTerm", out var dtProp)
+                            || dtProp.ValueKind != JsonValueKind.Object) continue;
+                        if (!dtProp.TryGetProperty("folder", out var fProp)
+                            || !dtProp.TryGetProperty("strName", out var nProp)) continue;
+                        var folder = fProp.GetString();
+                        var name = nProp.GetString();
+                        if (string.IsNullOrEmpty(folder) || string.IsNullOrEmpty(name)) continue;
+
+                        var displayName = entry.TryGetProperty("name", out var nameProp)
+                                          && nameProp.ValueKind == JsonValueKind.String
+                            ? nameProp.GetString()
+                            : null;
+                        var key = !string.IsNullOrEmpty(displayName) ? displayName! : name!;
+                        if (!byKey.ContainsKey(key)) orderedKeys.Add(key);
+                        // Clone the JsonElement out — we're going to dispose the doc.
+                        byKey[key] = entry.Clone();
+                    }
+                }
+            }
+        }
+
+        Directory.CreateDirectory(Path.GetDirectoryName(outPath) ?? ".");
+        using var outStream = File.Create(outPath);
+        var prefix = System.Text.Encoding.UTF8.GetBytes("window.GLOSSARY = ");
+        outStream.Write(prefix, 0, prefix.Length);
+        using (var writer = new Utf8JsonWriter(outStream, new JsonWriterOptions { Indented = true }))
+        {
+            writer.WriteStartArray();
+            foreach (var key in orderedKeys)
+                byKey[key].WriteTo(writer);
+            writer.WriteEndArray();
+        }
+        var suffix = System.Text.Encoding.UTF8.GetBytes(";\n");
+        outStream.Write(suffix, 0, suffix.Length);
+        return byKey.Count;
     }
 }

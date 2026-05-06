@@ -4,6 +4,31 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-06 — PLAN-EXPLORER slice 4: glossary cards + concept search (UX 1.1)
+
+Hand-seeded concept→strName cards bridging plain-English game vocab to data-tree terms — the single most-load-bearing newcomer-onboarding component. Gates the lucky path of [crew-exercise-invisible-need.md](notes/user-stories/crew-exercise-invisible-need.md) (`exercise` / `atrophy` → `conditions:StatAtrophy`), unblocks [mod-suppress-needs.md](notes/user-stories/mod-suppress-needs.md) (`hunger` → `StatSatiety`+`StatFood` split, since there is no `StatHunger` in the data), and is step 1 of the [anti-g-loc-newcomer.md](notes/user-stories/anti-g-loc-newcomer.md) path (`anti-g-loc` → `conditions:StatGrav`).
+
+**Seeded content.** 31 cards across three files in `comment_mod/data/glossary/`:
+- `needs.json` (11 cards): anti-G-LOC, atrophy/exercise, satiety, food/malnutrition, hydration, sleep, fatigue, hygiene, defecate, pain, encumbrance.
+- `moods.json` (6 cards): morale (umbrella), achievement, esteem, meaning, work-tick mood drain, free-time-tick refill.
+- `concepts.json` (14 cards): threshold-shift, condowner, condition, condrule, condtrig, loot, interaction, pledge, installable, traitscores, starter ship, sink-as-template, apathetic, ossifex.
+
+**Builder side.** `Program.WriteGlossary` walks every `<root>/glossary/*.json` across all data roots, parses each as a JSON array of cards, dedupes on display `name` (case-insensitive, last-wins so a mod can override a base-game card), and emits `build/data/glossary.js` as `window.GLOSSARY = [...]`. Stdout reports `glossary: N cards`. Empty/missing dir = no glossary, no error.
+
+The dedup key is `name`, NOT `dataTerm`: two cards can legitimately point at the same dataTerm (e.g. *"Morale"* and *"Achievement"* both resolve to `conditions:StatAchievement` but are distinct entry points a beginner searches for). First implementation deduped on dataTerm, which silently dropped the *"Morale"* card; caught and fixed mid-slice.
+
+**Site side.** `explorer.html` loads `data/glossary.js` via a new `<script src>`. `app.js` builds a flat alias index at startup (`{ alias: lowercased, entry } * N`) and on every search input runs both `searchMatches` (strName) and `glossaryMatches` (top 4) against the query. Cards render above strName matches in the search dropdown with a distinct `.glossary-card` class — accent-tinted background, "concept" label, summary, "→ Game-data term: folder:strName" CTA, optional modder hint and wiki link. Click navigates to the dataTerm's detail page (same path as a strName match would have).
+
+Matcher ranking: exact alias match (0) > alias prefix-of-query (1) > query prefix-of-alias (2) > substring (3). Deduped per-query on dataTerm so an entry whose multiple aliases match doesn't render twice.
+
+**Verified live.** Tested 4 queries from the user-story bottlenecks:
+- `anti-g-loc` → 1 card (Anti-G-LOC tolerance).
+- `atrophy` → 2 cards (Atrophy + Ossifex anti-atrophy drug) alongside 15 strName matches.
+- `hunger` → 2 cards (Hunger short-term + Malnutrition cumulative) with 0 strName hits — exactly the dead-end-prevention case from mod-suppress-needs.
+- `morale` → 1 card (Morale / Mood); confirmed the dedup fix.
+
+Builder rerun: 31 cards, 91 rules, 87,845 references — graph numbers unchanged (glossary is an additive sibling payload). 79/79 tests still pass; no test surface for the glossary path yet (small, and the dedup logic is straightforward enough that a manual roundtrip catches regressions).
+
 ## 2026-05-06 — PLAN-EXPLORER slice 3: inline schema descriptions on the Fields block (UX 1.3)
 
 Schema descriptions now render inline beneath every Fields-block row that has one. Three changes:

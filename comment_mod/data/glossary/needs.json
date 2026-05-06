@@ -1,0 +1,92 @@
+[
+  {
+    "aliases": ["anti-g-loc", "anti g-loc", "g-loc", "standing-g tolerance", "standing g tolerance", "high-g", "g tolerance"],
+    "name": "Anti-G-LOC tolerance",
+    "summary": "How long a wearer resists G-induced loss-of-consciousness in high-acceleration environments. Tracked by the StatGrav stat.",
+    "wikiPage": "Health and Safety",
+    "wikiSlug": "Health_and_Safety",
+    "dataTerm": { "folder": "conditions", "strName": "StatGrav" },
+    "modderHint": "Modders adjusting this typically edit threshold-shifting conditions (Thresh<X>), not the stat itself."
+  },
+  {
+    "aliases": ["atrophy", "muscle loss", "microgravity muscle loss", "exercise need", "exercise"],
+    "name": "Atrophy / Microgravity Muscle Loss",
+    "summary": "Muscles atrophy in microgravity unless exercised ~2 hrs/day. Tracked by StatAtrophy. Hidden from the needs panel until it crosses into a Dc* discomfort tier (nDisplaySelf: 0).",
+    "wikiPage": "Health and Safety",
+    "wikiSlug": "Health_and_Safety",
+    "dataTerm": { "folder": "conditions", "strName": "StatAtrophy" },
+    "modderHint": "Tick effects driving the rate live in loot/CONDTick1HourPhysio (rise) and loot/CONDTick1HourWorkPhysio (work-time offset). Drug suppression: loot/CONDOssifexStimPer."
+  },
+  {
+    "aliases": ["hunger", "satiety", "fullness", "hungry"],
+    "name": "Hunger — short-term",
+    "summary": "Moment-to-moment fullness. Tracked by StatSatiety. Independent from StatFood, which tracks cumulative malnutrition. Most mods that 'suppress hunger' want both.",
+    "wikiPage": "Health and Safety",
+    "wikiSlug": "Health_and_Safety",
+    "dataTerm": { "folder": "conditions", "strName": "StatSatiety" },
+    "modderHint": "Suppress via ThreshStatSatiety on a granted condition; rate-suppress via -StatFoodRate on the malnutrition side."
+  },
+  {
+    "aliases": ["food", "malnutrition", "starvation", "long-term hunger"],
+    "name": "Malnutrition / cumulative hunger",
+    "summary": "Long-term nutrition tracker. StatFood has no Thresh<X> handle in the base game — suppression mods slow the rate via -StatFoodRate instead.",
+    "wikiPage": "Health and Safety",
+    "wikiSlug": "Health_and_Safety",
+    "dataTerm": { "folder": "conditions", "strName": "StatFood" },
+    "modderHint": "Pair with StatSatiety changes — players think of hunger as one need; the data splits it in two."
+  },
+  {
+    "aliases": ["thirst", "hydration", "water need"],
+    "name": "Thirst / Hydration",
+    "summary": "Crew dehydrate continuously and must drink to refill. Tracked by StatHydration; rate-modifiable via StatHydrationRate.",
+    "wikiPage": "Health and Safety",
+    "wikiSlug": "Health_and_Safety",
+    "dataTerm": { "folder": "conditions", "strName": "StatHydration" }
+  },
+  {
+    "aliases": ["sleep", "sleep need", "sleeping", "rest"],
+    "name": "Sleep",
+    "summary": "Sleep accumulates while awake; depletes while in a sleep interaction. Tracked by StatSleep. Comfort during sleep is a sibling stat (StatSleepComfort).",
+    "wikiPage": "Health and Safety",
+    "wikiSlug": "Health_and_Safety",
+    "dataTerm": { "folder": "conditions", "strName": "StatSleep" }
+  },
+  {
+    "aliases": ["fatigue", "tired", "tiredness", "exhaustion"],
+    "name": "Fatigue",
+    "summary": "Generic exhaustion stat — different from sleep need. Tracked by StatFatigue; healing rate via StatFatigueHealRate; multiplier via StatFatigueCoeff.",
+    "wikiPage": "Health and Safety",
+    "wikiSlug": "Health_and_Safety",
+    "dataTerm": { "folder": "conditions", "strName": "StatFatigue" }
+  },
+  {
+    "aliases": ["hygiene", "cleanliness", "wash", "shower", "dirty"],
+    "name": "Hygiene",
+    "summary": "Cleanliness need. Tracked by StatHygiene. Refilled by sink/hygiene-station interactions (CTTestThem: TIsHygieneWater).",
+    "wikiPage": "Health and Safety",
+    "wikiSlug": "Health_and_Safety",
+    "dataTerm": { "folder": "conditions", "strName": "StatHygiene" }
+  },
+  {
+    "aliases": ["bowels", "defecate", "toilet", "bathroom"],
+    "name": "Bowels / Defecate",
+    "summary": "Tracked by StatDefecate. Refilled by toilet interactions.",
+    "dataTerm": { "folder": "conditions", "strName": "StatDefecate" }
+  },
+  {
+    "aliases": ["pain", "injury pain"],
+    "name": "Pain",
+    "summary": "Pain stat — accumulates from injuries and damage. Tracked by StatPain.",
+    "wikiPage": "Health and Safety",
+    "wikiSlug": "Health_and_Safety",
+    "dataTerm": { "folder": "conditions", "strName": "StatPain" }
+  },
+  {
+    "aliases": ["encumbrance", "weight", "carrying capacity", "encumbered"],
+    "name": "Encumbrance",
+    "summary": "How much the crew is carrying relative to their capacity. Tracked by StatEncumbrance.",
+    "wikiPage": "User Interface",
+    "wikiSlug": "User_Interface",
+    "dataTerm": { "folder": "conditions", "strName": "StatEncumbrance" }
+  }
+]

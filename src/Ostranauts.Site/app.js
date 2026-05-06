@@ -42,6 +42,12 @@ let allCandidates = []; // candidate[]
 // condowners often share Itm* names). Drives the "(also: folder, ...)" suffix
 // on rendered ref values so a modder can navigate to the parallel entries.
 let nameToFolders = new Map();
+// Slice 4 / UX 1.1 — glossary cards. window.GLOSSARY (optional payload) is an
+// array of { aliases, name, summary, wikiPage?, wikiSlug?, dataTerm: {folder, strName}, modderHint? }.
+// Indexed at load time into a flat list of (alias, entry) pairs so substring
+// matching against the user's query is cheap. Aliases are case-folded once.
+let glossaryEntries = [];
+let glossaryAliasIndex = []; // [{ alias, entry }]
 
 function main() {
   graph = window.GRAPH_DATA;
@@ -66,8 +72,12 @@ function main() {
   if (typeof window.REF_CANDIDATES === 'undefined') {
     console.info('ref_candidates.js not loaded — auto-detected refs will be hidden. Re-run the Builder to generate it.');
   }
+  if (typeof window.GLOSSARY === 'undefined') {
+    console.info('glossary.js not loaded — concept-search cards (UX 1.1) will be hidden.');
+  }
 
   buildIndexes();
+  buildGlossaryIndex();
   renderFolderList();
   wireSearch();
   window.addEventListener('hashchange', renderRoute);
@@ -195,9 +205,11 @@ function wireSearch() {
     if (!q) { hide(); return; }
 
     const matches = searchMatches(q, SEARCH_LIMIT);
-    lastResults = matches;
+    const glossary = glossaryMatches(q, 4);
+    lastResults = matches;  // arrow nav still navigates strName matches only;
+                           // glossary cards are mouse-click destinations
     activeIndex = -1;
-    renderSearchResults(matches);
+    renderSearchResults(matches, glossary);
   }
 
   searchEl.addEventListener('input', debounce(update, 80));
@@ -231,6 +243,43 @@ function wireSearch() {
   function hide() { searchResultsEl.hidden = true; }
 }
 
+function buildGlossaryIndex() {
+  glossaryEntries = Array.isArray(window.GLOSSARY) ? window.GLOSSARY : [];
+  glossaryAliasIndex = [];
+  for (const entry of glossaryEntries) {
+    if (!entry || !Array.isArray(entry.aliases) || !entry.dataTerm) continue;
+    for (const alias of entry.aliases) {
+      if (typeof alias !== 'string' || !alias) continue;
+      glossaryAliasIndex.push({ alias: alias.toLowerCase(), entry });
+    }
+  }
+}
+
+// UX 1.1 — query against the alias index. A match is "strong" when the alias
+// is a prefix of the query OR the query is a prefix of the alias (so "atrophy"
+// finds the Atrophy card and "atro" finds it too). Substring matches are also
+// returned but ranked lower. Returns deduped entries (one per dataTerm).
+function glossaryMatches(q, limit) {
+  if (!q) return [];
+  const seen = new Set();
+  const out = [];
+  for (const { alias, entry } of glossaryAliasIndex) {
+    let score;
+    if (alias === q) score = 0;
+    else if (alias.startsWith(q)) score = 1;
+    else if (q.startsWith(alias)) score = 2;
+    else if (alias.includes(q) || q.includes(alias)) score = 3;
+    else continue;
+    const key = `${entry.dataTerm.folder}:${entry.dataTerm.strName}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ entry, score });
+    if (out.length >= limit * 2) break;
+  }
+  out.sort((a, b) => a.score - b.score);
+  return out.slice(0, limit).map(m => m.entry);
+}
+
 function searchMatches(q, limit) {
   // Simple ranking: prefix match on strName > infix match on strName > infix on folder.
   const matches = [];
@@ -249,10 +298,42 @@ function searchMatches(q, limit) {
   return matches.slice(0, limit).map(m => m.node);
 }
 
-function renderSearchResults(nodes) {
+function renderSearchResults(nodes, glossary) {
+  glossary = glossary || [];
   searchResultsEl.hidden = false;
   searchResultsEl.innerHTML = '';
-  if (nodes.length === 0) {
+
+  // UX 1.1 — glossary cards render above strName matches when the query
+  // resolved to a known concept. Distinct visual treatment so the modder
+  // registers "this is a concept, not an object."
+  for (const entry of glossary) {
+    const li = document.createElement('li');
+    li.className = 'glossary-card';
+    const dt = entry.dataTerm;
+    const wikiLine = entry.wikiPage
+      ? `<span class="wiki">📖 ${escapeHtml(entry.wikiPage)}</span>`
+      : '';
+    const hint = entry.modderHint
+      ? `<div class="hint-line">💡 ${escapeHtml(entry.modderHint)}</div>`
+      : '';
+    li.innerHTML = `
+      <div class="card-head">
+        <span class="card-label">concept</span>
+        <span class="card-name">${escapeHtml(entry.name || dt.strName)}</span>
+      </div>
+      <div class="card-summary">${escapeHtml(entry.summary || '')}</div>
+      <div class="card-cta">
+        <span class="cta-label">→ Game-data term:</span>
+        <span class="folder">${escapeHtml(dt.folder)}:</span><span class="name">${escapeHtml(dt.strName)}</span>
+      </div>
+      ${hint}
+      ${wikiLine}
+    `;
+    li.addEventListener('mousedown', () => navigateToObject({ folder: dt.folder, strName: dt.strName }));
+    searchResultsEl.appendChild(li);
+  }
+
+  if (nodes.length === 0 && glossary.length === 0) {
     const li = document.createElement('li');
     li.className = 'empty';
     li.textContent = 'no matches';

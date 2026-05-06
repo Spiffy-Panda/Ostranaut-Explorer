@@ -73,16 +73,6 @@ The full design lives in
 [notes/ux/newcomer-onboarding.md](notes/ux/newcomer-onboarding.md) (12
 core components plus 2 stretch). PLAN tracks build order, not design.
 
-### Glossary card + concept search (UX 1.1) · *next, blocking*
-
-Gates both newcomer user stories
-([anti-g-loc-newcomer](notes/user-stories/anti-g-loc-newcomer.md),
-[crew-exercise](notes/user-stories/crew-exercise-invisible-need.md)).
-Hand-seeded alias map (`comment_mod/data/glossary/*.json`), search-bar
-fallback when strName matches return zero, glossary-card UI in the result
-list. Initial seed: ~30 entries pulled from wiki page titles + section
-headings (anti-G-LOC, atrophy, encumbrance, fatigue, etc.).
-
 ### Per-prefix contextual explainer banners (UX 1.2) · *proposed*
 
 Banners keyed on naming convention (`Stat*`, `Thresh*`, `COND*`, `Itm*`,

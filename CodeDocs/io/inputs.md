@@ -62,6 +62,10 @@ Our schema improvements that significantly extend reference-rule coverage. **Tra
 
 Currently ships overlays for ~17 folders (and growing): `chargeprofiles`, `conditions`, `condowners`, `condrules`, `condtrigs`, `crime`, `homeworlds`, `interactions`, `jobs`, `lifeevents`, `loot`, `personspecs`, `pledges`, `plot`, `plot_manager`, `shipspecs`, `tickers`. The eventual v2 mod-overlay loader generalizes this minimal multi-root mechanism.
 
+## 3a. `comment_mod/data/glossary/*.json` — concept-search seed (UX 1.1)
+
+Hand-seeded glossary cards bridging plain-English game vocabulary to data-tree terms. Each `.json` file is a JSON array of cards: `{ aliases: [...], name, summary, wikiPage?, wikiSlug?, dataTerm: {folder, strName}, modderHint? }`. Builder (`Program.WriteGlossary`) loads every glossary dir under each data root, dedupes on `name` (last-wins, so a mod overlay can replace a base card), and emits `build/data/glossary.js`. Site loads via `<script src>` like the other data payloads.
+
 ## 4. `wiki_cache/` — local Ostranauts wiki snapshot (gitignored)
 
 Cache of pages fetched from `ostranauts.wiki.gg` via the MediaWiki `parse` API. Two layers:

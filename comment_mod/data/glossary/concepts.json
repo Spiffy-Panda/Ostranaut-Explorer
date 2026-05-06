@@ -1,0 +1,106 @@
+[
+  {
+    "aliases": ["thresh", "threshold shift", "threshold modifier", "thresh<x>", "threshstat"],
+    "name": "Threshold-shift conditions",
+    "summary": "Conditions named Thresh<StatName> dynamically shift the trigger thresholds of <StatName>. Higher value = more tolerance before consequences fire. The standard mod-friendly handle for need suppression.",
+    "wikiPage": "Conditions",
+    "wikiSlug": "Conditions",
+    "dataTerm": { "folder": "conditions", "strName": "ThreshStatGrav" },
+    "modderHint": "Edit the cond-string value on a Loot entry granting the threshold (strType: condition, aCOs entry like ThreshStatGrav=1.0x0.03125)."
+  },
+  {
+    "aliases": ["condowner", "cond owner", "condowners"],
+    "name": "CondOwner — what holds conditions",
+    "summary": "Anything in the game that can carry conditions: a character, a furniture item, the ship itself, even abstract anchors. CondOwners live in condowners/ (large folder).",
+    "wikiPage": "Modding/CondOwners",
+    "wikiSlug": "Modding__CondOwners",
+    "dataTerm": { "folder": "condowners", "strName": "CrewMember" }
+  },
+  {
+    "aliases": ["condition", "conditions"],
+    "name": "Conditions",
+    "summary": "Named state flags or stats held by CondOwners. Can be permanent (Is<X>), continuous (Stat<X>), or threshold-shift (Thresh<X>). Most modding work touches conditions either directly or via Loot grants.",
+    "wikiPage": "Conditions",
+    "wikiSlug": "Conditions",
+    "dataTerm": { "folder": "conditions", "strName": "IsSystem" }
+  },
+  {
+    "aliases": ["condrule", "condition rule", "condrules"],
+    "name": "Condition rules",
+    "summary": "Tier definitions that fire Dc<X> discomfort conditions when a stat crosses thresholds. The bridge between a numeric stat (StatHunger) and the human-readable consequence (DcHunger01 'Hungry').",
+    "wikiPage": "Condition Rules",
+    "wikiSlug": "Condition_Rules",
+    "dataTerm": { "folder": "condrules", "strName": "DcGasPpO2" }
+  },
+  {
+    "aliases": ["condtrig", "condition trigger", "condtrigs", "ct"],
+    "name": "Condition triggers",
+    "summary": "Boolean tests on a CondOwner's conditions. Used by interactions to gate availability (CTTestUs / CTTestThem) and by aNext to chain effects on a condition's expiry.",
+    "wikiPage": "CondTriggers",
+    "wikiSlug": "CondTriggers",
+    "dataTerm": { "folder": "condtrigs", "strName": "TIsAlive" }
+  },
+  {
+    "aliases": ["loot", "loot entry", "loot.acos"],
+    "name": "Loot entries",
+    "summary": "Grant payloads. Despite the name, Loot doesn't only spawn items — strType picks the dispatch: condition (apply conditions), item (drop items), interaction (run an interaction), trigger (fire a trigger), etc.",
+    "wikiPage": "Modding/Loot",
+    "wikiSlug": "Modding__Loot",
+    "dataTerm": { "folder": "loot", "strName": "CONDApatheticPer" }
+  },
+  {
+    "aliases": ["interaction", "interactions", "act", "action"],
+    "name": "Interactions",
+    "summary": "Things a CondOwner can do or have done to it. The behavior tree of Ostranauts. Live in interactions/. Chain via aInverse; gate via CTTestUs / CTTestThem; grant conditions via LootCTsUs / LootCTsThem.",
+    "wikiPage": "Modding/Interactions",
+    "wikiSlug": "Modding__Interactions",
+    "dataTerm": { "folder": "interactions", "strName": "ACTSeekHygieneWater" }
+  },
+  {
+    "aliases": ["pledge", "pledges", "ai pledge", "lifetime behavior"],
+    "name": "Pledges",
+    "summary": "Long-running behavioral commitments attached to characters: 'always seek food when hungry', 'attack if attacked', etc. Wired via interactions' strPledgeAdd / strPledgeRemove.",
+    "wikiPage": "Modding/Pledges",
+    "wikiSlug": "Modding__Pledges",
+    "dataTerm": { "folder": "pledges", "strName": "PledgeNutrition" }
+  },
+  {
+    "aliases": ["installable", "install", "installables", "construct", "build"],
+    "name": "Installables",
+    "summary": "Definitions for installing/uninstalling furniture and equipment. Each entry pairs a loose CondOwner with its installed counterpart and the construction interaction template.",
+    "dataTerm": { "folder": "installables", "strName": "SinkInstall" }
+  },
+  {
+    "aliases": ["trait", "traits", "trait score", "age cost", "skill cost"],
+    "name": "Trait Scores — character creation costs",
+    "summary": "Single entry in traitscores/ (literally Trait Scores,1) whose aValues array holds <CondName,nYears,nCost> triples for every selectable trait/skill at character creation.",
+    "wikiPage": "Traits",
+    "wikiSlug": "Traits",
+    "dataTerm": { "folder": "traitscores", "strName": "Trait Scores,1" },
+    "modderHint": "Edit position 2 of an aValues entry to change the age cost; position 1 of an aValues entry name to rename a trait at chargen (rare)."
+  },
+  {
+    "aliases": ["starter ship", "starting ship", "ship selection", "shipbreaker ship"],
+    "name": "Starter ship selection",
+    "summary": "The Loot entry the Shipbreaker career uses as its ship-encounter pool (aEventsShip). Override it to change which ships a new player can pick.",
+    "dataTerm": { "folder": "loot", "strName": "CGEncShipbreakerShipEvents" }
+  },
+  {
+    "aliases": ["sink", "wash basin", "kitchen sink"],
+    "name": "Sink — hygiene template",
+    "summary": "Reference implementation for an installable hygiene-restoring item. Has installed (ItmSink01) and loose (ItmSink01Loose) variants plus an installable entry, install/uninstall interactions, and the SeekHygieneWater interaction chain.",
+    "dataTerm": { "folder": "condowners", "strName": "ItmSink01" }
+  },
+  {
+    "aliases": ["apathetic", "trait apathetic"],
+    "name": "Apathetic — example mood-suppressing trait",
+    "summary": "Reference implementation: a player-selectable trait that raises the discomfort threshold of StatAchievement so the crew tolerates more 'no progress' before complaining. Pattern is condition + aPer + Loot[strType: condition].",
+    "dataTerm": { "folder": "conditions", "strName": "IsApathetic" }
+  },
+  {
+    "aliases": ["ossifex", "anti-atrophy drug", "atrophy drug"],
+    "name": "Ossifex — example anti-atrophy drug",
+    "summary": "Reference implementation: a drug that suppresses StatAtrophyRate for the dose duration. Useful template for any 'reduce a need's drain rate' mod.",
+    "dataTerm": { "folder": "loot", "strName": "CONDOssifexStimPer" }
+  }
+]

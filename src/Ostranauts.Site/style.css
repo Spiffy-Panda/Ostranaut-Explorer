@@ -122,6 +122,62 @@ header h1 {
   text-align: center;
 }
 
+/* UX 1.1 — glossary cards in the search dropdown. Distinct from strName-match
+   rows: full-width block instead of name|folder line, accent-tinted background
+   so a modder registers "this is a concept, not an object." */
+#search-results li.glossary-card {
+  display: block;
+  padding: 0.55rem 0.75rem;
+  border-left: 3px solid var(--accent);
+  background: rgba(108,180,255,0.04);
+  margin: 0.15rem 0;
+}
+#search-results li.glossary-card:hover { background: rgba(108,180,255,0.10); }
+#search-results .glossary-card .card-head {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  margin-bottom: 0.2rem;
+}
+#search-results .glossary-card .card-label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  padding: 0 0.25rem;
+}
+#search-results .glossary-card .card-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--fg);
+}
+#search-results .glossary-card .card-summary {
+  font-size: 0.8125rem;
+  color: var(--fg);
+  line-height: 1.4;
+  margin-bottom: 0.3rem;
+}
+#search-results .glossary-card .card-cta {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+}
+#search-results .glossary-card .cta-label {
+  color: var(--muted);
+  margin-right: 0.25rem;
+}
+#search-results .glossary-card .card-cta .folder { color: var(--muted); }
+#search-results .glossary-card .card-cta .name { color: var(--accent); font-weight: 500; }
+#search-results .glossary-card .hint-line,
+#search-results .glossary-card .wiki {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+  font-style: italic;
+}
+
 /* ─── tabs ─────────────────────────────────────────────────── */
 
 #tabs {

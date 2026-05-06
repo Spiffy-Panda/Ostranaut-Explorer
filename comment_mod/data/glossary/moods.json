@@ -1,0 +1,39 @@
+[
+  {
+    "aliases": ["morale", "mood", "moods", "mental state"],
+    "name": "Morale / Mood",
+    "summary": "Players see a single morale bar; the data splits it across psychological stats — Achievement, Esteem, Meaning, etc. Each is drained by work and refilled by free-time activities.",
+    "dataTerm": { "folder": "conditions", "strName": "StatAchievement" },
+    "modderHint": "Work drain lives in loot/CONDTick1HourWorkMoods (-StatAchievement -StatEsteem -StatMeaning); refill in loot/CONDTick1HourFreeMoods."
+  },
+  {
+    "aliases": ["achievement", "stat achievement", "sense of achievement"],
+    "name": "Achievement",
+    "summary": "Sense-of-personal-achievement stat. Drained 8.33/hr by work; refilled by free-time activities.",
+    "dataTerm": { "folder": "conditions", "strName": "StatAchievement" }
+  },
+  {
+    "aliases": ["esteem", "self-esteem", "self esteem"],
+    "name": "Self-esteem",
+    "summary": "Self-worth stat. Drained 8.33/hr by work; refilled by free-time activities.",
+    "dataTerm": { "folder": "conditions", "strName": "StatEsteem" }
+  },
+  {
+    "aliases": ["meaning", "purpose", "sense of purpose"],
+    "name": "Meaning / Purpose",
+    "summary": "Sense-of-purpose stat. Drained 4.17/hr by work; refilled by free-time activities.",
+    "dataTerm": { "folder": "conditions", "strName": "StatMeaning" }
+  },
+  {
+    "aliases": ["work mood drain", "work needs", "work tick"],
+    "name": "Work-tick mood drain",
+    "summary": "Tick-effect Loot entry that fires once per work-hour, draining StatAchievement / StatEsteem / StatMeaning.",
+    "dataTerm": { "folder": "loot", "strName": "CONDTick1HourWorkMoods" }
+  },
+  {
+    "aliases": ["free time mood", "leisure mood", "free time tick"],
+    "name": "Free-time-tick mood refill",
+    "summary": "Tick-effect Loot entry that refills the work-drained psychological stats during free time. Pairs with CONDTick1HourWorkMoods.",
+    "dataTerm": { "folder": "loot", "strName": "CONDTick1HourFreeMoods" }
+  }
+]
