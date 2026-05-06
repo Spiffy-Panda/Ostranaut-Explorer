@@ -48,7 +48,8 @@ public sealed record CodeComponent(
     string DispatcherFile,
     int DispatcherLine,
     IReadOnlyList<CodeComponentInPort> InPorts,
-    IReadOnlyList<CodeComponentLiteralProducer> Produces);
+    IReadOnlyList<CodeComponentLiteralProducer> Produces,
+    IReadOnlyList<CodeComponentRuntimePort> RuntimePorts);  // PLAN-AST Phase 3
 
 public sealed record CodeComponentInPort(
     int Index,            // 1-based; 0 is the command name token
@@ -63,6 +64,12 @@ public sealed record CodeComponentLiteralProducer(
     string File,
     int Line);
 
+public sealed record CodeComponentRuntimePort(
+    string Key,           // e.g. "strSignalCond", "strInput01", "bTurbo"
+    string TargetFolder,  // resolved data folder, "" if untyped
+    string Source,        // attribution chain
+    bool PlayerWired);    // true for strInput0\d+ (player-edits-in-game by convention)
+
 public static class ComponentIndexer
 {
     public static IReadOnlyList<CodeComponent> Index(
@@ -71,12 +78,43 @@ public static class ComponentIndexer
 }
 ```
 
+## Phase 3 — runtime ports
+
+Each `code-component` also exposes a `RuntimePorts` array recovering the
+dictionary-keyed config reads inside its implementing class. Two patterns:
+
+| Pattern | Shape | Examples |
+|---------|-------|---------|
+| **TryGetValue** | `dict.TryGetValue("KEY", out destVar)` where `destVar` is `this.field`, a bare field/local, or `out var local` | `Heater.UpdateRemote`, `GasPump.SetData` |
+| **Element-access** | `dict["KEY"]` directly inside an arg position (`co.HasCond(gpm["strSignalCond"])`) or as the RHS of `this.field = dict["KEY"]` | `GasPressureSense.SetData`, `Sensor.SetData`, `Electrical.InitGPMValues` |
+
+Receiver-name allow-list (`dictionary` / `gpm` / `*propmap*` / `*mapgpm*`)
+filters out unrelated dictionaries (`mapGasMols`, `mapInfo`, `mapGUIPropMaps`
+the outer one). The destination value's type is recovered via the Phase 2.1
+field-flow analysis, plus three new consumer shapes:
+
+- `co.HasCond(value)` / `AddCondAmount(value, ...)` / etc. → `conditions/`
+- `ship.GetCOByID(value)` → `condowners/`
+- (existing `DataHandler.GetX(value)` → known folder)
+
+For the local-variable case (`out string text`), the trace is bounded to the
+nearest enclosing `IfStatementSyntax` or `BlockSyntax` so multiple
+TryGetValue calls reusing the same `text` local don't cross-contaminate
+typing. (GasPump.SetData reads `strInput01`, `bTurbo`, `bReverse`,
+`bSlowMode`, `nKnobBus` all into `out text`; only `strInput01` flows into
+`GetCOByID(text)` — others go through `bool.Parse(text)` / `int.Parse(text)`
+and stay untyped.)
+
+A `PlayerWired` flag on the port is true for keys matching
+`strInput0\d+` (the convention for player-editable panel-input slots).
+
 ## Output volumes (current real-data run)
 
 ```
 14 code-component nodes (one per CondOwner.AddCommand branch)
 1,638 wires-to edges    (head + typed positional args from condowners' aUpdateCommands)
    118 produces/consumes/observes edges (from literal AddCond patterns)
+    38 runtime-wires-to edges (Phase 3 — guipropmap → resolved typed target via runtime port)
 ```
 
 The 14 commands are: `GasExchange`, `Pledge`, `OnAddCond`, `OnRemoveCond`, `GasRespire2`, `GasPump`, `GasPressureSense`, `Sensor`, `Destructable`, `Heater`, `Explosion`, `Wound`, `Electrical`, `Meat`, `Rotor`. Ten of them now have at least one typed in-port:

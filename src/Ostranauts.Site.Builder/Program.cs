@@ -127,7 +127,7 @@ internal static class Program
                 // conditions/* nodes that exist after Phase 1 too.
                 var components = ComponentIndexer.Index(parsedTrees, phaseWarn);
                 var phase2Bridge = BridgePhase2(components, objects, existenceSet);
-                Console.WriteLine($"decomp phase 2: {phase2Bridge.Objects.Count} code-component nodes, {phase2Bridge.WiresToCount} wires-to + {phase2Bridge.CondEdgeCount} produces/consumes/observes edges");
+                Console.WriteLine($"decomp phase 2: {phase2Bridge.Objects.Count} code-component nodes, {phase2Bridge.WiresToCount} wires-to + {phase2Bridge.CondEdgeCount} produces/consumes/observes edges + {phase2Bridge.RuntimeEdgeCount} runtime-wires-to edges");
                 objects.AddRange(phase2Bridge.Objects);
                 references.AddRange(phase2Bridge.References);
             }
@@ -244,7 +244,7 @@ internal static class Program
     ///         AddCond / RemCond / HasCond call inside each component class.</item>
     /// </list>
     /// </summary>
-    private static (List<DataObject> Objects, List<Reference> References, int WiresToCount, int CondEdgeCount) BridgePhase2(
+    private static (List<DataObject> Objects, List<Reference> References, int WiresToCount, int CondEdgeCount, int RuntimeEdgeCount) BridgePhase2(
         IReadOnlyList<CodeComponent> components,
         IReadOnlyList<DataObject> currentObjects,
         HashSet<(string folder, string name)> dataExistenceSet)
@@ -256,6 +256,7 @@ internal static class Program
             componentByName[c.CommandName] = c;
             var inPortsJson = c.InPorts.Select(p => new { index = p.Index, targetFolder = p.TargetFolder, source = p.Source }).ToArray();
             var producesJson = c.Produces.Select(p => new { name = p.ConditionName, verb = p.Verb, role = p.Role, method = p.MethodName, file = p.File, line = p.Line }).ToArray();
+            var runtimePortsJson = c.RuntimePorts.Select(p => new { key = p.Key, targetFolder = p.TargetFolder, source = p.Source, playerWired = p.PlayerWired }).ToArray();
             var fields = JsonSerializer.SerializeToElement(new
             {
                 commandName = c.CommandName,
@@ -265,6 +266,7 @@ internal static class Program
                 dispatcherLine = c.DispatcherLine,
                 inPorts = inPortsJson,
                 produces = producesJson,
+                runtimePorts = runtimePortsJson,
             }).Clone();
 
             // FilePath: prefer the component's class file when known so the
@@ -381,7 +383,71 @@ internal static class Program
             }
         }
 
-        return (dataObjects, refs, wiresToCount, condEdgeCount);
+        // -- Phase 3: RuntimeWiresTo edges from each guipropmaps entry whose
+        // dictGUIPropMap carries a populated value at a port-keyed slot we've
+        // typed via AST. Build a global key→(folder, components) lookup
+        // first; per-key typing is consistent across components in practice.
+        var runtimeKeyMap = new Dictionary<string, (string folder, List<string> components)>(StringComparer.Ordinal);
+        foreach (var c in components)
+        {
+            foreach (var rp in c.RuntimePorts)
+            {
+                if (string.IsNullOrEmpty(rp.TargetFolder)) continue;
+                if (!runtimeKeyMap.TryGetValue(rp.Key, out var entry))
+                {
+                    entry = (rp.TargetFolder, new List<string>());
+                    runtimeKeyMap[rp.Key] = entry;
+                }
+                if (!entry.components.Contains(c.CommandName)) entry.components.Add(c.CommandName);
+            }
+        }
+
+        var runtimeEdgeCount = 0;
+        foreach (var co in currentObjects)
+        {
+            if (co.Folder != "guipropmaps") continue;
+            if (co.Fields.ValueKind != JsonValueKind.Object) continue;
+            if (!co.Fields.TryGetProperty("dictGUIPropMap", out var dict)) continue;
+            if (dict.ValueKind != JsonValueKind.Array) continue;
+
+            // dictGUIPropMap is a flat [key, value, key, value, ...] array.
+            var arr = dict.EnumerateArray().ToArray();
+            for (var i = 0; i + 1 < arr.Length; i += 2)
+            {
+                if (arr[i].ValueKind != JsonValueKind.String) continue;
+                var key = arr[i].GetString();
+                if (string.IsNullOrEmpty(key)) continue;
+                if (!runtimeKeyMap.TryGetValue(key, out var typing)) continue;
+                if (arr[i + 1].ValueKind != JsonValueKind.String) continue;
+                var value = arr[i + 1].GetString();
+                if (string.IsNullOrEmpty(value)) continue;
+                // Don't filter on dataExistenceSet for runtime wiring — many
+                // condition names referenced through `strSignalCond` etc. are
+                // code-emitted (e.g. `IsReadyPressureSense` set by GasPressureSense
+                // at runtime, never materialized in data/conditions/). Letting
+                // the edge through is the whole point of PLAN-AST: surfacing
+                // the code-side ref the data layer can't see. The data-health
+                // page renders dangling targets as such.
+
+                var meta = new Dictionary<string, object>
+                {
+                    ["portKey"] = key,
+                    ["component"] = string.Join(",", typing.components),
+                    ["playerWired"] = false,
+                };
+                refs.Add(new Reference(
+                    SourceFolder: "guipropmaps",
+                    SourceName: co.StrName,
+                    SourceField: "dictGUIPropMap",
+                    TargetFolder: typing.folder,
+                    TargetName: value,
+                    Kind: RefKind.RuntimeWiresTo,
+                    Metadata: meta));
+                runtimeEdgeCount++;
+            }
+        }
+
+        return (dataObjects, refs, wiresToCount, condEdgeCount, runtimeEdgeCount);
     }
 
     private static void PrintUsage()

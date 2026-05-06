@@ -60,6 +60,15 @@ public enum RefKind
     /// Metadata: { verb, method, line }.
     /// </summary>
     ObservesCondition,
+    /// <summary>
+    /// PLAN-AST Phase 3 — guipropmap → resolved data target via a runtime
+    /// dictionary lookup (e.g. <c>strSignalCond → conditions/X</c>). Sourced
+    /// from the static-default value in a <c>guipropmaps.dictGUIPropMap</c>
+    /// entry; the consuming code-component is named in the metadata so the
+    /// modder can trace the binding back to the C# class.
+    /// Metadata: { portKey, component, playerWired }. Site renders dashed.
+    /// </summary>
+    RuntimeWiresTo,
 }
 
 /// <summary>

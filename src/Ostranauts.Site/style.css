@@ -473,6 +473,32 @@ section#detail {
 .wired-list li { margin: 0.15rem 0; }
 .wired-list .meta { color: var(--muted); font-size: 0.75rem; margin-left: 0.5rem; }
 
+/* PLAN-AST Phase 3 — runtime ports + runtime-wired edges */
+.runtime-ports-list .port-key {
+  display: inline-block; min-width: 11rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--fg);
+}
+.player-wired-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0 0.4rem;
+  background: rgba(217,167,58,0.15);
+  border: 1px solid var(--warn);
+  color: var(--warn);
+  border-radius: 2px;
+  font-size: 0.7rem;
+  cursor: help;
+}
+/* Dashed visual for runtime-wired graph edges (RuntimeWiresTo). The binding
+   is either a static default in the guipropmap or player-set at runtime. */
+.refs-block li.runtime-edge {
+  border-left: 2px dashed var(--accent-dim);
+  padding-left: 0.5rem;
+  margin-left: -0.5rem;
+}
+.refs-block li.runtime-edge .arrow { color: var(--accent-dim); }
+
 /* dotted underline + help cursor on field-group headers when they have a tooltip */
 .refs-block .group-head[title] {
   border-bottom: 1px dotted var(--border);

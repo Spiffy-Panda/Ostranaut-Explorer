@@ -16,7 +16,8 @@ public sealed record CodeComponent(
     string DispatcherFile,                               // relative path to CondOwner.cs
     int DispatcherLine,                                  // line of the matching `array[0] == "X"` literal
     IReadOnlyList<CodeComponentInPort> InPorts,          // typed positional args (when resolvable)
-    IReadOnlyList<CodeComponentLiteralProducer> Produces); // literal-string AddCond/RemCond/HasCond patterns
+    IReadOnlyList<CodeComponentLiteralProducer> Produces, // literal-string AddCond/RemCond/HasCond patterns
+    IReadOnlyList<CodeComponentRuntimePort> RuntimePorts); // PLAN-AST Phase 3: dict-keyed runtime config reads
 
 /// <summary>
 /// Positional argument of an <c>aUpdateCommands</c> string, resolved (when
@@ -28,6 +29,21 @@ public sealed record CodeComponentInPort(
     int Index,             // 1-based position in the comma-separated string (0 is the command name itself)
     string TargetFolder,   // e.g. "gasrespires", "guipropmaps", "" if untyped
     string Source);        // brief explanation of how the index was resolved (e.g. "DataHandler.GetGasRespire")
+
+/// <summary>
+/// PLAN-AST Phase 3 — one runtime-configurable port surfaced by a
+/// <c>dict.TryGetValue("KEY", out …)</c> or <c>dict["KEY"]</c> access inside
+/// the component's class. Most components read a handful of keys from their
+/// guipropmap dictionary at runtime; the value is either set in data
+/// (<c>strSignalCond: "IsReadyPumpAir"</c> in a guipropmap entry) or by the
+/// player at runtime (<c>strInput01</c>, which is universally empty in
+/// shipped data).
+/// </summary>
+public sealed record CodeComponentRuntimePort(
+    string Key,             // e.g. "strSignalCond", "strInput01", "bTurbo"
+    string TargetFolder,    // resolved data folder, "" if untyped
+    string Source,          // attribution chain
+    bool PlayerWired);      // true for strInput0\d+ pattern (player-edit-by-default)
 
 /// <summary>
 /// One literal-string condition reference inside a component class — a hint
@@ -227,12 +243,15 @@ public static class ComponentIndexer
                 DispatcherFile: dispatcherFile,
                 DispatcherLine: dispatcherSpan.StartLinePosition.Line + 1,
                 InPorts: inPorts,
-                Produces: Array.Empty<CodeComponentLiteralProducer>())); // filled in below per implementing-type
+                Produces: Array.Empty<CodeComponentLiteralProducer>(),     // filled in below per implementing-type
+                RuntimePorts: Array.Empty<CodeComponentRuntimePort>()));   // ditto
         }
 
         // For each unique implementing type, sweep its declaration for literal
-        // cond-touch calls and attribute them to all components that use it.
+        // cond-touch calls + dict-keyed runtime port reads, and attribute
+        // them to all components that share the type.
         var produceCache = new Dictionary<string, IReadOnlyList<CodeComponentLiteralProducer>>(StringComparer.Ordinal);
+        var runtimePortCache = new Dictionary<string, IReadOnlyList<CodeComponentRuntimePort>>(StringComparer.Ordinal);
 
         for (var i = 0; i < components.Count; i++)
         {
@@ -243,7 +262,12 @@ public static class ComponentIndexer
                 producers = ScanComponentClassForCondCalls(parsed, c.ImplementingType);
                 produceCache[c.ImplementingType] = producers;
             }
-            components[i] = c with { Produces = producers };
+            if (!runtimePortCache.TryGetValue(c.ImplementingType, out var rPorts))
+            {
+                rPorts = ScanComponentClassForRuntimePorts(c.ImplementingType, typesByName);
+                runtimePortCache[c.ImplementingType] = rPorts;
+            }
+            components[i] = c with { Produces = producers, RuntimePorts = rPorts };
         }
 
         return components;
@@ -656,5 +680,372 @@ public static class ComponentIndexer
             }
         }
         return producers;
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // PLAN-AST Phase 3 — runtime-wired port discovery.
+    // ──────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Methods on a CondOwner-like receiver whose first arg is a condition name.
+    /// </summary>
+    private static readonly HashSet<string> CondOwnerCondMethods = new(StringComparer.Ordinal)
+    {
+        "HasCond", "AddCond", "AddCondAmount", "RemoveCond", "RemCond",
+        "GetCondAmount", "GetCondMaxAmount", "SetCondAmount", "ZeroCondAmount",
+    };
+
+    /// <summary>
+    /// Methods on a Ship-like receiver whose first arg is a CondOwner instance id.
+    /// </summary>
+    private static readonly HashSet<string> ShipCOByIdMethods = new(StringComparer.Ordinal)
+    {
+        "GetCOByID",
+    };
+
+    /// <summary>
+    /// Walks the implementing class for <c>dict.TryGetValue("KEY", out X)</c>
+    /// and <c>dict["KEY"]</c> patterns, then traces each value's destination
+    /// to type the port. Ports are deduplicated by key (last-wins keeps the
+    /// most recent typed sighting).
+    ///
+    /// Patterns understood:
+    /// <list type="bullet">
+    ///   <item><c>dict.TryGetValue("K", out this.field)</c> + later use of
+    ///         <c>this.field</c> in any DataHandler / CondOwner / Ship method.</item>
+    ///   <item><c>dict.TryGetValue("K", out var local)</c> + immediate use of
+    ///         <c>local</c> in the same method body.</item>
+    ///   <item><c>this.field = dict["K"]</c> + later use of <c>this.field</c>.</item>
+    ///   <item><c>dict["K"]</c> directly inside an arg position to a typing
+    ///         method (e.g. <c>co.HasCond(dict["K"])</c>).</item>
+    /// </list>
+    /// </summary>
+    private static IReadOnlyList<CodeComponentRuntimePort> ScanComponentClassForRuntimePorts(
+        string typeName,
+        Dictionary<string, ClassDeclarationSyntax> typesByName)
+    {
+        if (!typesByName.TryGetValue(typeName, out var implType))
+            return Array.Empty<CodeComponentRuntimePort>();
+
+        var portsByKey = new Dictionary<string, CodeComponentRuntimePort>(StringComparer.Ordinal);
+
+        // Pattern 1: dict.TryGetValue("KEY", out X)
+        foreach (var inv in implType.DescendantNodes().OfType<InvocationExpressionSyntax>())
+        {
+            if (inv.Expression is not MemberAccessExpressionSyntax ma) continue;
+            if (ma.Name.Identifier.ValueText != "TryGetValue") continue;
+            if (!IsGuiPropMapReceiver(ma.Expression)) continue;
+            if (inv.ArgumentList.Arguments.Count != 2) continue;
+            var keyArg = inv.ArgumentList.Arguments[0].Expression;
+            if (keyArg is not LiteralExpressionSyntax keyLit) continue;
+            if (!keyLit.IsKind(SyntaxKind.StringLiteralExpression)) continue;
+            var key = keyLit.Token.ValueText;
+            if (!IsConfigKeyName(key)) continue;
+
+            var outArg = inv.ArgumentList.Arguments[1];
+            var (folder, source) = ResolveRuntimeOutDestination(outArg, inv, implType);
+            UpsertPort(portsByKey, key, folder, source);
+        }
+
+        // Pattern 2: dict["KEY"] direct access — could be standalone arg or
+        // assigned to a field/local.
+        foreach (var ea in implType.DescendantNodes().OfType<ElementAccessExpressionSyntax>())
+        {
+            if (ea.ArgumentList.Arguments.Count != 1) continue;
+            if (ea.ArgumentList.Arguments[0].Expression is not LiteralExpressionSyntax keyLit) continue;
+            if (!keyLit.IsKind(SyntaxKind.StringLiteralExpression)) continue;
+            var key = keyLit.Token.ValueText;
+            if (!IsConfigKeyName(key)) continue;
+            if (ea.Expression is not (IdentifierNameSyntax or MemberAccessExpressionSyntax)) continue;
+            // Filter: only guipropmap-shaped dictionaries. Excludes mapGasMols,
+            // mapInfo, mapGUIPropMaps (the OUTER lookup, before resolving to a
+            // single CO's gpm), and the like.
+            if (!IsGuiPropMapReceiver(ea.Expression)) continue;
+
+            var (folder, source) = ResolveDictAccessConsumer(ea, implType);
+            UpsertPort(portsByKey, key, folder, source);
+        }
+
+        return portsByKey.Values.OrderBy(p => p.Key, StringComparer.Ordinal).ToList();
+    }
+
+    private static void UpsertPort(
+        Dictionary<string, CodeComponentRuntimePort> portsByKey,
+        string key,
+        string folder,
+        string source)
+    {
+        var playerWired = IsPlayerWiredKey(key);
+        if (!portsByKey.TryGetValue(key, out var existing))
+        {
+            portsByKey[key] = new CodeComponentRuntimePort(key, folder, string.IsNullOrEmpty(folder) ? "untyped" : source, playerWired);
+            return;
+        }
+        // Prefer typed sightings over untyped.
+        if (string.IsNullOrEmpty(existing.TargetFolder) && !string.IsNullOrEmpty(folder))
+        {
+            portsByKey[key] = new CodeComponentRuntimePort(key, folder, source, playerWired);
+        }
+    }
+
+    /// <summary>
+    /// <c>dict.TryGetValue("K", out X)</c> — X may be <c>this.field</c>, a
+    /// bare field/local identifier, or <c>out var local</c> declaration.
+    /// </summary>
+    private static (string folder, string source) ResolveRuntimeOutDestination(
+        ArgumentSyntax outArg,
+        InvocationExpressionSyntax invocation,
+        ClassDeclarationSyntax implType)
+    {
+        // For local-variable destinations we need to bound the search scope —
+        // a pre-declared local like `string text` is REUSED across multiple
+        // TryGetValue calls in real code (GasPump.SetData reads strInput01,
+        // bTurbo, bReverse, bSlowMode, nKnobBus all into the same `text`).
+        // Each TryGetValue's value is only valid within its own enclosing
+        // if-statement / block, never carrying across reassignments.
+        var scope = NearestLocalScope(invocation);
+
+        // out var local — newly-declared local. Narrowed to the enclosing
+        // scope just like pre-declared, since the declaration's lifetime
+        // matches the surrounding block.
+        if (outArg.Expression is DeclarationExpressionSyntax decl
+            && decl.Designation is SingleVariableDesignationSyntax svd)
+        {
+            var localName = svd.Identifier.ValueText;
+            if (scope != null) return TraceVariableInScope(scope, localName, implType, invocation);
+            return ("", "untyped");
+        }
+
+        // out this.field
+        if (outArg.Expression is MemberAccessExpressionSyntax ma
+            && ma.Expression is ThisExpressionSyntax)
+        {
+            return TraceFieldInClass(implType, ma.Name.Identifier.ValueText);
+        }
+
+        // out fieldOrLocal — bare identifier
+        if (outArg.Expression is IdentifierNameSyntax id)
+        {
+            var name = id.Identifier.ValueText;
+            var fieldNames = implType.Members.OfType<FieldDeclarationSyntax>()
+                .SelectMany(f => f.Declaration.Variables)
+                .Select(v => v.Identifier.ValueText)
+                .ToHashSet(StringComparer.Ordinal);
+            if (fieldNames.Contains(name))
+                return TraceFieldInClass(implType, name);
+            if (scope != null) return TraceVariableInScope(scope, name, implType, invocation);
+        }
+
+        return ("", "untyped");
+    }
+
+    /// <summary>
+    /// Smallest syntactic scope where a variable's just-assigned value is
+    /// validly traceable: the nearest enclosing <c>IfStatementSyntax</c> (so
+    /// we can see uses both in its condition and in its then-body) or
+    /// <c>BlockSyntax</c>. Prevents cross-key contamination when a
+    /// <c>string text</c> local is reused across multiple TryGetValue calls.
+    /// </summary>
+    private static SyntaxNode? NearestLocalScope(SyntaxNode invocation)
+    {
+        foreach (var anc in invocation.Ancestors())
+        {
+            if (anc is IfStatementSyntax) return anc;
+            if (anc is BlockSyntax) return anc;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// <c>dict["K"]</c> — the access expression is in some context. If the
+    /// parent is an invocation arg with a known typing method, type accordingly.
+    /// If the parent is an assignment (<c>this.field = dict["K"]</c>), trace
+    /// the field's downstream usage.
+    /// </summary>
+    private static (string folder, string source) ResolveDictAccessConsumer(
+        ElementAccessExpressionSyntax ea,
+        ClassDeclarationSyntax implType)
+    {
+        // Pattern 2a: `this.field = dict["K"]`
+        if (ea.Parent is AssignmentExpressionSyntax assign && assign.Right == ea
+            && assign.IsKind(SyntaxKind.SimpleAssignmentExpression))
+        {
+            if (TryGetReceiverFieldName(assign.Left, out var fieldName))
+                return TraceFieldInClass(implType, fieldName);
+            return ("", "untyped (field-assign)");
+        }
+
+        // Pattern 2b: `someConsumer(dict["K"])`
+        if (ea.Parent is ArgumentSyntax arg
+            && arg.Parent is ArgumentListSyntax argList
+            && argList.Parent is InvocationExpressionSyntax inv2)
+        {
+            var (folder, src) = ClassifyConsumerCall(inv2, argPosition: argList.Arguments.IndexOf(arg));
+            if (!string.IsNullOrEmpty(folder)) return (folder, src);
+        }
+
+        return ("", "untyped");
+    }
+
+    /// <summary>
+    /// Walk forward from a local-variable declaration: any later use of
+    /// <paramref name="varName"/> as an arg to a known typing method types
+    /// the port. Bounded to <paramref name="scope"/> (typically the enclosing
+    /// if-statement or block) to avoid cross-key contamination when the same
+    /// <c>out text</c> local is reused across multiple TryGetValue calls.
+    /// </summary>
+    private static (string folder, string source) TraceVariableInScope(
+        SyntaxNode scope,
+        string varName,
+        ClassDeclarationSyntax implType,
+        InvocationExpressionSyntax originatingCall)
+    {
+        foreach (var inv in scope.DescendantNodes().OfType<InvocationExpressionSyntax>())
+        {
+            if (inv == originatingCall) continue; // skip the TryGetValue itself
+            for (var i = 0; i < inv.ArgumentList.Arguments.Count; i++)
+            {
+                var argExpr = inv.ArgumentList.Arguments[i].Expression;
+                if (argExpr is IdentifierNameSyntax id && id.Identifier.ValueText == varName)
+                {
+                    var (f, s) = ClassifyConsumerCall(inv, argPosition: i);
+                    if (!string.IsNullOrEmpty(f)) return (f, s);
+                }
+            }
+        }
+        // Fallback: assigned to a field for later use? this.field = local
+        foreach (var assign in scope.DescendantNodes().OfType<AssignmentExpressionSyntax>())
+        {
+            if (!assign.IsKind(SyntaxKind.SimpleAssignmentExpression)) continue;
+            if (assign.Right is IdentifierNameSyntax rhs && rhs.Identifier.ValueText == varName
+                && TryGetReceiverFieldName(assign.Left, out var fieldName))
+            {
+                var (f, s) = TraceFieldInClass(implType, fieldName);
+                if (!string.IsNullOrEmpty(f)) return (f, s);
+            }
+        }
+        return ("", "untyped");
+    }
+
+    /// <summary>
+    /// Walk every usage of <c>this.field</c> (or bare <c>field</c>) inside
+    /// the impl type, look for a known typing method that takes it as an arg.
+    /// </summary>
+    private static (string folder, string source) TraceFieldInClass(
+        ClassDeclarationSyntax implType,
+        string fieldName)
+    {
+        foreach (var inv in implType.DescendantNodes().OfType<InvocationExpressionSyntax>())
+        {
+            for (var i = 0; i < inv.ArgumentList.Arguments.Count; i++)
+            {
+                var argExpr = inv.ArgumentList.Arguments[i].Expression;
+                bool matches =
+                    (argExpr is MemberAccessExpressionSyntax ma
+                     && ma.Expression is ThisExpressionSyntax
+                     && ma.Name.Identifier.ValueText == fieldName) ||
+                    (argExpr is IdentifierNameSyntax id && id.Identifier.ValueText == fieldName);
+                if (!matches) continue;
+                var (f, s) = ClassifyConsumerCall(inv, argPosition: i);
+                if (!string.IsNullOrEmpty(f)) return (f, s);
+            }
+        }
+        return ("", "untyped");
+    }
+
+    /// <summary>
+    /// Maps <c>recv.method(args)</c> to a target folder when the call shape
+    /// names a typing endpoint. Receivers are matched syntactically (we don't
+    /// have the SemanticModel to confirm types) — but the method-name
+    /// vocabulary is distinctive enough that false positives are rare.
+    /// <paramref name="argPosition"/> — only some methods type their first arg
+    /// (HasCond etc.); for safety we only type position 0 unless explicitly
+    /// noted.
+    /// </summary>
+    private static (string folder, string source) ClassifyConsumerCall(
+        InvocationExpressionSyntax inv,
+        int argPosition)
+    {
+        if (argPosition != 0) return ("", "untyped"); // first-arg-only for now
+        if (inv.Expression is not MemberAccessExpressionSyntax ma) return ("", "untyped");
+        var name = ma.Name.Identifier.ValueText;
+
+        // CondOwner-like: HasCond / AddCondAmount / etc.
+        if (CondOwnerCondMethods.Contains(name))
+            return ("conditions", $".{name}(value)");
+
+        // Ship.GetCOByID (and friends)
+        if (ShipCOByIdMethods.Contains(name))
+            return ("condowners", $".{name}(value)");
+
+        // DataHandler.GetX
+        if (ma.Expression is IdentifierNameSyntax dh
+            && dh.Identifier.ValueText == "DataHandler"
+            && KnownGetters.TryGetValue(name, out var f))
+        {
+            return (f, $"DataHandler.{name}");
+        }
+
+        return ("", "untyped");
+    }
+
+    /// <summary>
+    /// Same identifier-shape filter used elsewhere — string literals that look
+    /// like config keys (camelCase / snake_case identifiers, length ≥ 2).
+    /// Avoids picking up format strings.
+    /// </summary>
+    private static bool IsConfigKeyName(string s)
+    {
+        if (string.IsNullOrEmpty(s) || s.Length < 2) return false;
+        var c0 = s[0];
+        if (!char.IsLetter(c0) && c0 != '_') return false;
+        for (var i = 1; i < s.Length; i++)
+        {
+            var c = s[i];
+            if (!char.IsLetterOrDigit(c) && c != '_') return false;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Heuristic: receiver looks like a guipropmap dictionary. Without a
+    /// SemanticModel we can't check the type, but the receiver names used in
+    /// the decomp are stable enough to allow-list them by substring match.
+    /// Real guipropmap-typed receivers seen in the decomp:
+    ///   <c>dictionary</c>, <c>gpm</c>, <c>mapGPM</c>, <c>dictPropMap</c>.
+    /// Excludes <c>mapGasMols</c>, <c>mapInfo</c>, <c>mapGUIPropMaps</c> (the
+    /// outer dict whose values ARE the per-CO guipropmap), etc.
+    /// </summary>
+    private static bool IsGuiPropMapReceiver(ExpressionSyntax receiver)
+    {
+        var name = receiver switch
+        {
+            IdentifierNameSyntax id => id.Identifier.ValueText,
+            MemberAccessExpressionSyntax ma => ma.Name.Identifier.ValueText,
+            _ => null,
+        };
+        if (name is null) return false;
+        // Outer mapGUIPropMaps lookup is itself a key→dict map; its keys are
+        // CO ids, not config-port keys. Reject explicitly.
+        if (name == "mapGUIPropMaps" || name == "mapPropMaps") return false;
+        // Lowercase compare for substring matches.
+        var lower = name.ToLowerInvariant();
+        return lower == "dictionary"
+            || lower == "gpm"
+            || lower.Contains("propmap")
+            || lower.Contains("mapgpm");
+    }
+
+    private static bool IsPlayerWiredKey(string s)
+    {
+        // strInput0\d+ is the canonical "player edits this in the panel UI"
+        // pattern — empty by default, value is a runtime CO id once wired.
+        if (!s.StartsWith("strInput", StringComparison.Ordinal)) return false;
+        var rest = s.Substring("strInput".Length);
+        if (rest.Length == 0) return false;
+        // Accept "01"/"02"/.. and trailing modifiers ("01Interaction").
+        var i = 0;
+        while (i < rest.Length && char.IsDigit(rest[i])) i++;
+        return i > 0;
     }
 }

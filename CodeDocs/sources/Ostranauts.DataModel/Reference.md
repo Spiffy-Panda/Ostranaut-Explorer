@@ -41,6 +41,10 @@ public enum RefKind
     ObservesCondition,  // PLAN-AST Phase 2 — code-component → conditions/X via literal
                         // HasCond / GetCondAmount read.
                         //   Metadata: { verb, method, line }
+    RuntimeWiresTo,     // PLAN-AST Phase 3 — guipropmap → resolved data target
+                        // via a runtime dict-key lookup (e.g. strSignalCond →
+                        // conditions/X). Site renders dashed.
+                        //   Metadata: { portKey, component, playerWired }
 }
 
 public sealed record Reference(

@@ -484,6 +484,7 @@ function renderCodeNodeDetail(folder, strName, id, node) {
 function renderCodeComponentDetail(folder, strName, id, node) {
   const fields = (window.NODE_PROPS ?? {})[id] ?? {};
   const inPorts = Array.isArray(fields.inPorts) ? fields.inPorts : [];
+  const runtimePorts = Array.isArray(fields.runtimePorts) ? fields.runtimePorts : [];
   const produces = Array.isArray(fields.produces) ? fields.produces : [];
   const arity = fields.arityMin ?? '?';
   const implType = fields.implementingType || '(none)';
@@ -527,6 +528,13 @@ function renderCodeComponentDetail(folder, strName, id, node) {
     </div>
 
     <div class="refs-block">
+      <h3>Runtime ports (${runtimePorts.length})
+        <span class="muted-note">— dict keys this component reads from its guipropmap at runtime (PLAN-AST Phase 3)</span>
+      </h3>
+      ${renderRuntimePorts(runtimePorts)}
+    </div>
+
+    <div class="refs-block">
       <h3>Conditions touched (${condEdges.length})</h3>
       ${renderConditionRoles(byRole)}
     </div>
@@ -545,6 +553,33 @@ function renderCodeComponentDetail(folder, strName, id, node) {
       window.location.hash = `#/o/${encodeURIComponent(tf)}/${encodeURIComponent(tn)}`;
     });
   });
+}
+
+function renderRuntimePorts(rports) {
+  if (rports.length === 0) return '<p class="empty">no dict-keyed runtime reads detected</p>';
+  // Sort: typed-and-player-wired first (they're the highest-leverage), then
+  // typed config keys, then untyped at the bottom.
+  const sorted = [...rports].sort((a, b) => {
+    const aw = a.playerWired ? 0 : (a.targetFolder ? 1 : 2);
+    const bw = b.playerWired ? 0 : (b.targetFolder ? 1 : 2);
+    return aw - bw || a.key.localeCompare(b.key);
+  });
+  const rows = sorted.map(p => {
+    const folder = p.targetFolder || '';
+    const folderHtml = folder
+      ? `<a href="#/f/${encodeURIComponent(folder)}">${escapeHtml(folder)}</a>`
+      : '<span class="muted">untyped</span>';
+    const sourceLabel = p.source && p.source !== 'untyped'
+      ? `<span class="muted">(${escapeHtml(p.source)})</span>` : '';
+    const playerBadge = p.playerWired
+      ? '<span class="player-wired-badge" title="strInput0N — player edits this in-game; default value is empty">player-wired</span>'
+      : '';
+    return `<li>
+      <span class="port-key">${escapeHtml(p.key)}</span>
+      → ${folderHtml} ${sourceLabel} ${playerBadge}
+    </li>`;
+  }).join('');
+  return `<ul class="ports-list runtime-ports-list">${rows}</ul>`;
 }
 
 function renderInPorts(inPorts) {
@@ -1051,15 +1086,20 @@ function renderEdgeRow(edge, perspective) {
   const [linkFolder, linkName] = splitId(linkId);
 
   const linkHtml = known
-    ? `<a href="#/o/${encodeURIComponent(linkFolder)}/${encodeURIComponent(linkName)}" data-id="${escapeAttr(linkId)}">${escapeHtml(linkName)}</a>`
+    ? `<a href="#/o/${encodeURIComponent(linkFolder)}/${encodeURIComponent(linkName)}" data-id="${escapeAttr(linkId)}">${escapeHtml(formatCodeName(linkFolder, linkName))}</a>`
     : `<span class="dangling" title="not in index">${escapeHtml(linkName)}</span>`;
 
   const folderTag = `<span class="field">${escapeHtml(linkFolder)}</span>`;
   const altSuffix = known ? renderAltFolderSuffix(linkFolder, linkName) : '';
   const meta = edge.metadata ? renderMetadata(edge.metadata) : '';
   const arrow = perspective === 'source-perspective' ? '→' : '←';
+  // PLAN-AST Phase 3 — runtime-wired edges render dashed; the binding is
+  // either set by data-author defaults in the guipropmap or established at
+  // game-runtime by the player.
+  const isRuntime = edge.kind === 'RuntimeWiresTo';
+  const liClass = isRuntime ? ' class="runtime-edge"' : '';
 
-  return `<li><span class="arrow">${arrow}</span>${folderTag}:${linkHtml}${altSuffix}${meta}</li>`;
+  return `<li${liClass}><span class="arrow">${arrow}</span>${folderTag}:${linkHtml}${altSuffix}${meta}</li>`;
 }
 
 // When a strName lives in multiple folders (Itm* names commonly hit loot/,
@@ -1086,6 +1126,9 @@ function renderMetadata(metadata) {
   if ('commandName' in metadata && 'position' in metadata) {
     parts.push(`pos=${metadata.position}`);
   }
+  // PLAN-AST Phase 3: RuntimeWiresTo edges carry the dict key. Show it inline
+  // so the modder sees the binding that produced the edge.
+  if ('portKey' in metadata) parts.push(metadata.portKey);
   // PLAN-AST Phase 2: ProducesCondition / ConsumesCondition / ObservesCondition
   // edges carry the verb (AddCond / RemoveCond / HasCond / ...). Inline-tag so
   // a conditions/* detail page distinguishes producers from observers at a glance.

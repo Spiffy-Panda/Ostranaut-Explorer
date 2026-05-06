@@ -4,6 +4,70 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-06 — PLAN-AST Phase 3: runtime ports + RuntimeWiresTo edges from guipropmaps to code-emitted destinations
+
+Phase 2 made `aUpdateCommands` legible — modders can see how a condowner wires to a code-component and what its positional args type to. Phase 3 closes the other half of the loop: what the code-component *reads at runtime* from its guipropmap dictionary, and where those values point. The high-impact deliverable: `IsReadyPressureSense`, `IsReadyPumpAir`, `IsReadyHeat` — code-emitted conditions that don't exist in `data/conditions/` and previously appeared nowhere in the graph — now show up as dashed edges from the 17 guipropmap entries that name them.
+
+Pieces:
+
+- **`ComponentIndexer.ScanComponentClassForRuntimePorts`** — new. For each impl type, scan for `dict.TryGetValue("KEY", out X)` and `dict["KEY"]` reads, filter to guipropmap-shaped receivers (allow-list: `dictionary`/`gpm`/`*propmap*`/`*mapgpm*`; rejects `mapGUIPropMaps`, `mapInfo`, `mapGasMols`), and trace each value's destination through three flow patterns:
+  - **`out this.field`** → walk impl-type for `someConsumer(this.field)` callsites.
+  - **`out var local`** / pre-declared local — walk forward inside the *enclosing if-statement / block only* (bounding scope is critical: GasPump.SetData reuses the same `string text` local across 5 TryGetValue calls; only `strInput01` flows into `GetCOByID(text)`, the rest go to `bool.Parse` / `int.Parse` and stay untyped).
+  - **`this.field = dict["KEY"]`** + later `someConsumer(this.field)` elsewhere in the type.
+- **Three new typing endpoints** on top of Phase 2's `DataHandler.Get*` map: `co.HasCond` / `AddCondAmount` / etc. → `conditions/`, `ship.GetCOByID` → `condowners/`.
+- **`RefKind.RuntimeWiresTo`** — `guipropmaps/` → resolved data target; `metadata = { portKey, component, playerWired }`. Builder walks every guipropmap's `dictGUIPropMap` flat key/value array and emits one edge per (key, non-empty value) where the consuming component has a typed runtime port for that key.
+- **No existence check on RuntimeWiresTo targets** — that's the whole point. Code-emitted conditions (`IsReadyPressureSense` set by GasPressureSense at runtime, `IsReadyPumpAir` set by GasPump, `IsReadyHeat` set by Heater) wouldn't otherwise appear anywhere in the graph; surfacing them as dangling edges is the visibility deliverable PLAN-AST framed in its motivation.
+- **Site** — `code-component` detail page gains a *Runtime ports* block; `RuntimeWiresTo` edges render with a dashed left-border on the row so a modder visually distinguishes "runtime config" from "static design-time wiring."
+
+Numbers:
+
+```
+decomp phase 1: 1,299 .cs parsed → 2,002 code-method/class nodes, 5,304 literal edges
+decomp phase 2: 14 code-component nodes
+                + 1,638 wires-to (head + typed positional args)
+                + 118 produces/consumes/observes
+                + 38 RuntimeWiresTo edges (Phase 3)
+total objects:    34,558
+total references: 84,964   (+309 from Phase 2 baseline; 271 from Phase 2.1, 38 from Phase 3)
+```
+
+Per-component runtime port summary (10 typed ports across 6 components, 30 untyped that still surface as visible slots):
+
+```
+GasPressureSense   strSignalCond → conditions     [.HasCond]
+                   strInteractionAlarm → interactions
+                   strInteractionClear → interactions
+                   strCTClear → condtrigs
+GasPump            strInput01 → condowners        [.GetCOByID]  player-wired
+GasRespire2        strInput01 → condowners        [.GetCOByID]  player-wired
+Heater             strInput01 → condowners        [.GetCOByID]  player-wired
+                   strCondMonitor01 → conditions  [.HasCond]
+```
+
+The 17 dangling RuntimeWiresTo targets are the load-bearing visibility win:
+
+```
+17 dangling edges to code-emitted conditions:
+  guipropmaps:AlarmPressureCO2     → conditions:IsReadyPressureSense
+  guipropmaps:AlarmPressureN2      → conditions:IsReadyPressureSense
+  guipropmaps:AlarmPressureO2      → conditions:IsReadyPressureSense
+  ... 4 more "AlarmPressure*" entries
+  guipropmaps:AirPump              → conditions:IsReadyPumpAir
+  guipropmaps:AtmoScrubber02       → conditions:IsReadyPumpAir
+  guipropmaps:Heater               → conditions:DcGasTemp01    (in data/conditions/)
+  guipropmaps:Cooler               → conditions:DcGasTemp03    (in data/conditions/)
+  guipropmaps:AtmoScrubber         → conditions:IsReadyHeat
+  ... etc.
+```
+
+Acceptance smoke:
+- `#/o/code-component/Heater` shows a *Runtime ports (4)* block with `strInput01 → condowners (player-wired)`, `strCondMonitor01 → conditions`, `strAddPoint → untyped`, `strSubPoint → untyped`.
+- `#/o/guipropmaps/AlarmPressureCO2` shows 4 dashed runtime edges in *References out*: `→ conditions:IsReadyPressureSense [strSignalCond]` (dangling — code-emitted!), `→ interactions:MSAlarmCO2SwitchRedAllow [strInteractionAlarm]`, `→ interactions:MSAlarmCO2SwitchGreenAllow [strInteractionClear]`, `→ condtrigs:TIsGasPressureSafeCO2 [strCTClear]`.
+
+PLAN-AST's "use the SemanticModel" framing for Phase 3 turned out unnecessary again — pure AST + the same depth-1 follow-into Phase 2 used was sufficient. The complexity table in PLAN-AST.md is updated.
+
+All 79 tests still pass.
+
 ## 2026-05-05 — PLAN-AST Phase 2.1: depth-1 follow-into for `aUpdateCommands` typed in-ports + Phase 3 plan refresh
 
 Phase 2 left 9 of 14 dispatcher commands with no typed in-ports because the `array[i]` flow went through `comp.SetData(...)` instead of straight into `DataHandler.GetX`. This slice extends the resolver to handle that hop, plus four other shapes that showed up once I read the components more carefully.
