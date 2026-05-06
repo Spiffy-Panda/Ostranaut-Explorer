@@ -165,6 +165,35 @@ strictly user-facing strings.
 Ship together with the next UX item that touches `app.js`; the diff is
 small enough to ride along.
 
+#### Companion: a code-* meta-folder mini-glossary the blurb rewrite can lean on
+
+The blurb rewrite above replaces "Synthetic node from PLAN-AST Phase 1"
+with modder-pov sentences. Once those land, the next logical concern is
+*"a modder lands on `code-method:GasPump.Pump` from a search hit and has
+no anchor for what `code-method` even is."* The sidebar already
+groups `code-method` / `code-class` / `code-component` under a divider —
+a small per-folder glossary card (one paragraph per folder) hovered or
+sticky-headered above the folder index would close that gap.
+
+Suggested copy (modder-pov, not architecture-pov):
+
+- **`code-method`** — *"One C# method in the game's source. The page lists
+  every `strName` mention inside the method body, with file:line. Useful
+  when you've changed a strName and want to find the code that consumes
+  the literal."*
+- **`code-class`** — *"One C# class with literal `strName` references in
+  its field initializers. Same shape as `code-method` but for class-level
+  references that aren't inside a method (rare but real)."*
+- **`code-component`** — *"One entry in the game's command table — what
+  the engine does when a condowner's `aUpdateCommands` line begins with
+  `<CommandName>`. The page lists which condowners wire to it, what
+  positional args it takes (with the data folder each one targets), and
+  which conditions it manipulates."*
+
+Ship as part of the same blurb-externalization PR or immediately after.
+The data lives entirely on `code-*` nodes the explorer already loads;
+this is just sticky-header / hover-card prose plus a small CSS rule.
+
 ### Other UX components (1.4 / 1.7-1.12) · *proposed*
 
 See [notes/ux/newcomer-onboarding.md](notes/ux/newcomer-onboarding.md)

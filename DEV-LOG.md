@@ -4,6 +4,36 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-06 — PLAN-AST Phase 3.1D: refactor runtime-port resolver onto a per-method def-use map
+
+The Phase 3 runtime-port resolver had a scope-bounding hack: when a `dict.TryGetValue("KEY", out X)` defined a local, the trace forward for consumers was bounded to the nearest enclosing `IfStatementSyntax` / `BlockSyntax` to dodge cross-key contamination (GasPump.SetData reuses one `string text` across five TryGetValue calls; only `strInput01` flows into a typing endpoint, the others go through `bool.Parse(text)` etc.). Worked, but a bespoke-per-pattern hack — and didn't compose into multi-hop alias chains.
+
+Phase 3.1D introduces `MethodDefMap` (SSA-lite): a per-method index of every symbol's def in source order. A use of `X` at position `P` resolves to its most recent prior def via `MostRecentDefAt(symbol, P)`. The resolver now walks every consumer of the local in the *whole* method body and asks each one's def chain whether it terminates at our originating call — a reassignment severs the chain naturally, so cross-key contamination falls out without needing any syntactic bounding.
+
+Captured def shapes:
+- Method parameter binding (def at body start).
+- Variable declarator with initializer (`string text = dict["K"]`).
+- Simple assignment (`this.field = X` / `local = X`).
+- Out-arg call (`dict.TryGetValue("K", out X)` records a def of X anchored to the inv).
+
+Side benefit (the spec's headline): multi-hop alias chains resolve cleanly. `text = dict["K"]; localY = text; consumer(localY)` would have failed before — the consumer of `localY` was searched for in `text`'s scope only, missing the intermediate alias. With the def map, the recursive `ResolvesToOriginatingDef` walks `localY` → its def at `localY = text` → recurse with `text` → its def at the originating TryGetValue. Match.
+
+What this slice does NOT change:
+- `TraceFieldInClass` (cross-method field walks) — stays as-is. Def maps are per-method by definition.
+- `ResolveParamInMethod` and `ResolveFieldUsage` — left as forward-walks. They're already simple AST scans; the def map didn't simplify them.
+- Phase 2/2.1 dispatcher resolver — uses Pattern A/B/C/D/E directly, no def map.
+
+Numbers unchanged from 3.1C:
+
+```
+total objects:    34,558
+total references: 87,845  (5,304 lits + 4,519 wires-to + 118 cond-touches + 38 runtime-wires-to)
+```
+
+All previously-typed runtime ports (GasPump strInput01, GasPressureSense strSignalCond/strInteractionAlarm/strInteractionClear/strCTClear, Heater strInput01/strCondMonitor01, GasRespire2 strInput01) still type identically. 79/79 tests pass.
+
+Leaves the door open for a future slice (Phase 4-ish) to apply the same def-map machinery cross-method: a per-class field-def map would let `TraceFieldInClass` answer "what assigned this field" rather than just "where is this field used." Not necessary for the current set of components.
+
 ## 2026-05-06 — PLAN-AST Phase 3.1C: container-grouping in renderCodeRefsBlock (data-side detail pages)
 
 Phase 1.1 collapsed sibling-literal edges into one labeled block on `code-method` / `code-class` detail pages (the *"`new[] { … }` [lines X–Y]"* groups in `renderCodeOutgoing`). Same treatment now applies on the data-side *Code references (N)* block: when one `code-method` source has multiple incoming edges sharing the same `metadata.containerKey`, they collapse into one `<div class="code-refs-group">` with the container label + line range, with each individual literal hit shown inside.

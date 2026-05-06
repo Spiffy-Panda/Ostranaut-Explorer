@@ -927,29 +927,27 @@ public static class ComponentIndexer
     /// <summary>
     /// <c>dict.TryGetValue("K", out X)</c> — X may be <c>this.field</c>, a
     /// bare field/local identifier, or <c>out var local</c> declaration.
+    ///
+    /// Phase 3.1D: local-variable destinations use the per-method def-use
+    /// map. The originating <c>TryGetValue</c> records a def for the out-var
+    /// at its own source position. Subsequent uses of the variable resolve
+    /// back through the def map's most-recent-def lookup — so a reassignment
+    /// (e.g. GasPump.SetData reusing one <c>string text</c> across five
+    /// TryGetValue calls) naturally severs the chain without needing the
+    /// scope-bounding hack the previous implementation relied on. Multi-hop
+    /// alias chains (<c>text = dict["K"]; localY = text; consumer(localY)</c>)
+    /// resolve through the chain transparently.
     /// </summary>
     private static (string folder, string source) ResolveRuntimeOutDestination(
         ArgumentSyntax outArg,
         InvocationExpressionSyntax invocation,
         ClassDeclarationSyntax implType)
     {
-        // For local-variable destinations we need to bound the search scope —
-        // a pre-declared local like `string text` is REUSED across multiple
-        // TryGetValue calls in real code (GasPump.SetData reads strInput01,
-        // bTurbo, bReverse, bSlowMode, nKnobBus all into the same `text`).
-        // Each TryGetValue's value is only valid within its own enclosing
-        // if-statement / block, never carrying across reassignments.
-        var scope = NearestLocalScope(invocation);
-
-        // out var local — newly-declared local. Narrowed to the enclosing
-        // scope just like pre-declared, since the declaration's lifetime
-        // matches the surrounding block.
+        // out var local — newly-declared local.
         if (outArg.Expression is DeclarationExpressionSyntax decl
             && decl.Designation is SingleVariableDesignationSyntax svd)
         {
-            var localName = svd.Identifier.ValueText;
-            if (scope != null) return TraceVariableInScope(scope, localName, implType, invocation);
-            return ("", "untyped");
+            return TraceLocalViaDefMap(svd.Identifier.ValueText, invocation, implType);
         }
 
         // out this.field
@@ -969,27 +967,82 @@ public static class ComponentIndexer
                 .ToHashSet(StringComparer.Ordinal);
             if (fieldNames.Contains(name))
                 return TraceFieldInClass(implType, name);
-            if (scope != null) return TraceVariableInScope(scope, name, implType, invocation);
+            return TraceLocalViaDefMap(name, invocation, implType);
         }
 
         return ("", "untyped");
     }
 
     /// <summary>
-    /// Smallest syntactic scope where a variable's just-assigned value is
-    /// validly traceable: the nearest enclosing <c>IfStatementSyntax</c> (so
-    /// we can see uses both in its condition and in its then-body) or
-    /// <c>BlockSyntax</c>. Prevents cross-key contamination when a
-    /// <c>string text</c> local is reused across multiple TryGetValue calls.
+    /// Phase 3.1D — find a typing-endpoint consumer of <paramref name="varName"/>
+    /// inside the enclosing method whose value-source chain leads back to
+    /// <paramref name="originatingCall"/>. Builds a per-method def-use map
+    /// once and walks each typing-endpoint call: pull the typed-arg, recurse
+    /// up the def chain via <see cref="MethodDefMap.MostRecentDefAt"/>, and if
+    /// the chain bottoms out at the originating out-arg, this consumer types
+    /// the port. Multi-hop alias chains (<c>text=dict["K"]; localY=text;
+    /// consumer(localY)</c>) fall out of the recursion.
     /// </summary>
-    private static SyntaxNode? NearestLocalScope(SyntaxNode invocation)
+    private static (string folder, string source) TraceLocalViaDefMap(
+        string varName,
+        InvocationExpressionSyntax originatingCall,
+        ClassDeclarationSyntax implType)
     {
-        foreach (var anc in invocation.Ancestors())
+        var enclosingMethod = originatingCall.Ancestors().OfType<BaseMethodDeclarationSyntax>().FirstOrDefault();
+        if (enclosingMethod == null) return ("", "untyped");
+        var body = (SyntaxNode?)enclosingMethod.Body ?? enclosingMethod.ExpressionBody;
+        if (body == null) return ("", "untyped");
+
+        var defMap = MethodDefMap.Build(enclosingMethod);
+
+        foreach (var inv in body.DescendantNodes().OfType<InvocationExpressionSyntax>())
         {
-            if (anc is IfStatementSyntax) return anc;
-            if (anc is BlockSyntax) return anc;
+            if (inv == originatingCall) continue;
+            for (var i = 0; i < inv.ArgumentList.Arguments.Count; i++)
+            {
+                var argExpr = inv.ArgumentList.Arguments[i].Expression;
+                if (!ResolvesToOriginatingDef(argExpr, originatingCall, defMap)) continue;
+                var (f, s) = ClassifyConsumerCall(inv, argPosition: i);
+                if (!string.IsNullOrEmpty(f)) return (f, s);
+            }
         }
-        return null;
+        // Fallback: assigned to a field, then field is consumed elsewhere.
+        // Find any `this.field = <chain back to originatingCall>` assignment,
+        // then trace that field's class-wide usage.
+        foreach (var assign in body.DescendantNodes().OfType<AssignmentExpressionSyntax>())
+        {
+            if (!assign.IsKind(SyntaxKind.SimpleAssignmentExpression)) continue;
+            if (!TryGetReceiverFieldName(assign.Left, out var fieldName)) continue;
+            if (!ResolvesToOriginatingDef(assign.Right, originatingCall, defMap)) continue;
+            var (f, s) = TraceFieldInClass(implType, fieldName);
+            if (!string.IsNullOrEmpty(f)) return (f, s);
+        }
+        return ("", "untyped");
+    }
+
+    /// <summary>
+    /// Recursively resolve <paramref name="expr"/>'s value-source via the def
+    /// map. Returns true when the chain bottoms out at the originating call's
+    /// out-binding (i.e. at <paramref name="originatingCall"/>'s source
+    /// position). Hop budget caps unbounded recursion through pathological
+    /// alias chains.
+    /// </summary>
+    private static bool ResolvesToOriginatingDef(
+        ExpressionSyntax? expr,
+        InvocationExpressionSyntax originatingCall,
+        MethodDefMap defMap,
+        int hopBudget = 6)
+    {
+        if (expr is null || hopBudget <= 0) return false;
+        while (expr is ParenthesizedExpressionSyntax p) expr = p.Expression;
+        if (expr is not IdentifierNameSyntax id) return false;
+        var def = defMap.MostRecentDefAt(id.Identifier.ValueText, id.SpanStart);
+        if (def is null) return false;
+        // Originating call defined this symbol via its out-arg — the def's
+        // anchor node is the call itself. That's our terminator.
+        if (def.DefNode == originatingCall) return true;
+        // Otherwise walk further: an assignment from another local.
+        return ResolvesToOriginatingDef(def.Rvalue, originatingCall, defMap, hopBudget - 1);
     }
 
     /// <summary>
@@ -1020,46 +1073,6 @@ public static class ComponentIndexer
             if (!string.IsNullOrEmpty(folder)) return (folder, src);
         }
 
-        return ("", "untyped");
-    }
-
-    /// <summary>
-    /// Walk forward from a local-variable declaration: any later use of
-    /// <paramref name="varName"/> as an arg to a known typing method types
-    /// the port. Bounded to <paramref name="scope"/> (typically the enclosing
-    /// if-statement or block) to avoid cross-key contamination when the same
-    /// <c>out text</c> local is reused across multiple TryGetValue calls.
-    /// </summary>
-    private static (string folder, string source) TraceVariableInScope(
-        SyntaxNode scope,
-        string varName,
-        ClassDeclarationSyntax implType,
-        InvocationExpressionSyntax originatingCall)
-    {
-        foreach (var inv in scope.DescendantNodes().OfType<InvocationExpressionSyntax>())
-        {
-            if (inv == originatingCall) continue; // skip the TryGetValue itself
-            for (var i = 0; i < inv.ArgumentList.Arguments.Count; i++)
-            {
-                var argExpr = inv.ArgumentList.Arguments[i].Expression;
-                if (argExpr is IdentifierNameSyntax id && id.Identifier.ValueText == varName)
-                {
-                    var (f, s) = ClassifyConsumerCall(inv, argPosition: i);
-                    if (!string.IsNullOrEmpty(f)) return (f, s);
-                }
-            }
-        }
-        // Fallback: assigned to a field for later use? this.field = local
-        foreach (var assign in scope.DescendantNodes().OfType<AssignmentExpressionSyntax>())
-        {
-            if (!assign.IsKind(SyntaxKind.SimpleAssignmentExpression)) continue;
-            if (assign.Right is IdentifierNameSyntax rhs && rhs.Identifier.ValueText == varName
-                && TryGetReceiverFieldName(assign.Left, out var fieldName))
-            {
-                var (f, s) = TraceFieldInClass(implType, fieldName);
-                if (!string.IsNullOrEmpty(f)) return (f, s);
-            }
-        }
         return ("", "untyped");
     }
 
@@ -1183,5 +1196,144 @@ public static class ComponentIndexer
         var i = 0;
         while (i < rest.Length && char.IsDigit(rest[i])) i++;
         return i > 0;
+    }
+}
+
+/// <summary>
+/// PLAN-AST Phase 3.1D — per-method def-use map (SSA-lite). Records every
+/// symbol assignment in source order so a use of <c>X</c> at position
+/// <c>P</c> can be linked back to its most recent prior def via binary
+/// search. Replaces the scope-bounding hack the previous runtime-port
+/// resolver used (an enclosing if-statement / block to dodge cross-key
+/// contamination when one <c>out text</c> local was reused across multiple
+/// TryGetValue calls).
+///
+/// Captured def shapes:
+/// <list type="bullet">
+///   <item><b>Method parameter binding</b> — each parameter is a def at the
+///         method body's start, with no rvalue (caller-side).</item>
+///   <item><b>Variable declarator with initializer</b> —
+///         <c>string text = dict["K"];</c>.</item>
+///   <item><b>Simple assignment</b> — <c>this.field = expr;</c> /
+///         <c>local = expr;</c>.</item>
+///   <item><b>Out-argument call</b> — <c>dict.TryGetValue("K", out X)</c>
+///         records a def of X anchored to the call invocation. The rvalue
+///         is left null (semantically the "value pulled from the call");
+///         the def's <c>DefNode</c> uniquely identifies the originating
+///         call so consumers can verify the chain.</item>
+/// </list>
+///
+/// Cross-method tracking and field-write tracking across methods stay
+/// outside this map (still cross-method via <c>TraceFieldInClass</c>).
+/// </summary>
+internal sealed class MethodDefMap
+{
+    /// <summary>
+    /// One def site for a symbol — its source position, optional rvalue
+    /// expression, and the AST node anchoring the def (assignment / inv /
+    /// declarator / parameter).
+    /// </summary>
+    public sealed record DefSite(int Position, ExpressionSyntax? Rvalue, SyntaxNode DefNode);
+
+    private readonly Dictionary<string, List<DefSite>> _defs;
+
+    private MethodDefMap(Dictionary<string, List<DefSite>> defs) { _defs = defs; }
+
+    /// <summary>
+    /// Returns the most recent def of <paramref name="symbol"/> strictly
+    /// before <paramref name="position"/> in source order, or null if none.
+    /// </summary>
+    public DefSite? MostRecentDefAt(string symbol, int position)
+    {
+        if (!_defs.TryGetValue(symbol, out var list)) return null;
+        DefSite? best = null;
+        foreach (var d in list)
+        {
+            if (d.Position >= position) break;
+            best = d;
+        }
+        return best;
+    }
+
+    public static MethodDefMap Build(BaseMethodDeclarationSyntax method)
+    {
+        var defs = new Dictionary<string, List<DefSite>>(StringComparer.Ordinal);
+        var bodyStart = method.Body?.SpanStart ?? method.SpanStart;
+
+        // Parameters: bound at method-body start with no rvalue.
+        foreach (var p in method.ParameterList.Parameters)
+        {
+            Add(defs, p.Identifier.ValueText, bodyStart, null, p);
+        }
+
+        var scope = (SyntaxNode?)method.Body ?? method.ExpressionBody;
+        if (scope != null)
+        {
+            foreach (var node in scope.DescendantNodes())
+            {
+                switch (node)
+                {
+                    case AssignmentExpressionSyntax assign
+                        when assign.IsKind(SyntaxKind.SimpleAssignmentExpression):
+                        if (TryGetSymbolName(assign.Left, out var n))
+                            Add(defs, n, assign.SpanStart, assign.Right, assign);
+                        break;
+                    case VariableDeclaratorSyntax vd:
+                        Add(defs, vd.Identifier.ValueText, vd.SpanStart, vd.Initializer?.Value, vd);
+                        break;
+                    case InvocationExpressionSyntax inv:
+                        // Out-arg call: each `out X` is a def of X anchored to the inv.
+                        foreach (var arg in inv.ArgumentList.Arguments)
+                        {
+                            if (!arg.RefKindKeyword.IsKind(SyntaxKind.OutKeyword)) continue;
+                            switch (arg.Expression)
+                            {
+                                case DeclarationExpressionSyntax decl
+                                    when decl.Designation is SingleVariableDesignationSyntax svd:
+                                    Add(defs, svd.Identifier.ValueText, decl.SpanStart, null, inv);
+                                    break;
+                                case IdentifierNameSyntax id:
+                                    Add(defs, id.Identifier.ValueText, inv.SpanStart, null, inv);
+                                    break;
+                                case MemberAccessExpressionSyntax ma
+                                    when ma.Expression is ThisExpressionSyntax:
+                                    Add(defs, ma.Name.Identifier.ValueText, inv.SpanStart, null, inv);
+                                    break;
+                            }
+                        }
+                        break;
+                }
+            }
+        }
+
+        foreach (var lst in defs.Values) lst.Sort((a, b) => a.Position - b.Position);
+        return new MethodDefMap(defs);
+    }
+
+    private static void Add(
+        Dictionary<string, List<DefSite>> defs, string name, int pos,
+        ExpressionSyntax? rvalue, SyntaxNode defNode)
+    {
+        if (!defs.TryGetValue(name, out var list))
+        {
+            list = new List<DefSite>();
+            defs[name] = list;
+        }
+        list.Add(new DefSite(pos, rvalue, defNode));
+    }
+
+    private static bool TryGetSymbolName(ExpressionSyntax lhs, out string name)
+    {
+        switch (lhs)
+        {
+            case IdentifierNameSyntax id:
+                name = id.Identifier.ValueText;
+                return true;
+            case MemberAccessExpressionSyntax ma when ma.Expression is ThisExpressionSyntax:
+                name = ma.Name.Identifier.ValueText;
+                return true;
+        }
+        name = "";
+        return false;
     }
 }

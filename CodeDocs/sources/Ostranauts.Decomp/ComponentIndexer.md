@@ -98,13 +98,19 @@ field-flow analysis, plus three new consumer shapes:
 - `ship.GetCOByID(value)` → `condowners/`
 - (existing `DataHandler.GetX(value)` → known folder)
 
-For the local-variable case (`out string text`), the trace is bounded to the
-nearest enclosing `IfStatementSyntax` or `BlockSyntax` so multiple
-TryGetValue calls reusing the same `text` local don't cross-contaminate
-typing. (GasPump.SetData reads `strInput01`, `bTurbo`, `bReverse`,
-`bSlowMode`, `nKnobBus` all into `out text`; only `strInput01` flows into
-`GetCOByID(text)` — others go through `bool.Parse(text)` / `int.Parse(text)`
-and stay untyped.)
+For the local-variable case (`out string text`), Phase 3.1D switched the
+trace from a scope-bounded forward walk to a per-method def-use map
+(`MethodDefMap`, see bottom of `ComponentIndexer.cs`). The map records
+every symbol's def in source order: parameter binding, simple assignment,
+declarator with initializer, and out-arg call. A use of <c>X</c> at
+position <c>P</c> resolves to the most recent prior def via
+`MostRecentDefAt(symbol, P)`. Cross-key contamination is naturally
+prevented (a reassignment severs the chain); multi-hop alias chains
+(`text = dict["K"]; localY = text; consumer(localY)`) resolve through the
+chain without further work. (GasPump.SetData reads `strInput01`,
+`bTurbo`, `bReverse`, `bSlowMode`, `nKnobBus` all into `out text`; only
+`strInput01` flows into `GetCOByID(text)` — others go through
+`bool.Parse(text)` / `int.Parse(text)` and stay untyped, as before.)
 
 A `PlayerWired` flag on the port is true for keys matching
 `strInput0\d+` (the convention for player-editable panel-input slots).
