@@ -4,6 +4,22 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-06 — PLAN-EXPLORER slice 3: inline schema descriptions on the Fields block (UX 1.3)
+
+Schema descriptions now render inline beneath every Fields-block row that has one. Three changes:
+
+**Builder side.** `SchemaCatalog` gains a separate `FieldDescriptions: IReadOnlyDictionary<(folder, field), string>` map, populated by `SchemaLoader.LoadInternal` for *every* field with a `description` in the schema — not just the ones that became a `RefRule`. `GraphExporter` emits a top-level `fieldDescriptions: { "<folder>:<fieldName>": "..." }` block. Schema version unchanged at 6 (additive). The new ctor `SchemaCatalog(rules, fieldDescriptions)` is paired with a one-arg forwarder so existing callers and tests compile unchanged. 79/79 tests pass.
+
+**Site side.** `app.js` merges `graph.fieldDescriptions` into the existing `ruleDescriptions` Map (filling gaps without overwriting — rule and field-description text are typically identical for fields that became rules). `renderFieldsBlock` restructures each row from a flat `<li>` flex-container into `<li class="field-row"><div class="field-line">name + value</div><div class="field-desc">…</div></li>`. The original flex layout moves to `.field-line` so name/value alignment is unchanged.
+
+**Per-folder collapsibility.** A `Hide N descriptions` button next to the Fields header toggles `.descriptions-hidden` on the block; CSS hides `.field-desc` when the class is set. State is keyed by *folder* (not page) in localStorage under `fieldsBlockDescHidden`, so a user who hides descriptions on one `Stat*` page sees them hidden across all `Stat*` pages without losing them on `loot/`. Default is expanded; newcomers don't know to hover, and the user-story acceptance bias for *"render inline, allow collapse"* is explicit.
+
+Verification: navigated to `conditions:StatAtrophy`. The `nDisplaySelf` row now shows the new schema description inline (*"How visible this condition is on the player character… 0 = invisible: the condition is active but never appears in the needs panel, in the mega-tooltip status modules, or in the character inspector's condition pills…"*). Toggle button reads "Hide 2 descriptions" (covers `nDisplaySelf` + `nDisplayOther` on this page). Click flips block to `descriptions-hidden`, descriptions collapse to `offsetHeight: 0`, button reads "Show 2 descriptions"; localStorage persists `["conditions"]`. No console errors.
+
+Builder rerun: 91 rules, 87,845 references, 243 candidates — graph numbers unchanged (descriptions are presentation-side metadata, not edges).
+
+Closes the wiring caveat from slice 2: `conditions:nDisplaySelf` description ships to graph.js and renders inline.
+
 ## 2026-05-06 — PLAN-EXPLORER slice 2: nDisplaySelf / nDisplayOther descriptions in conditions Comment Mod overlay
 
 Add `nDisplaySelf` and `nDisplayOther` descriptions to `comment_mod/data/schemas/conditions-schema.json`. Specifically calls out *"0 = invisible: never appears in the needs panel, in the mega-tooltip status modules, or in the character inspector's condition pills"* — the second clause is what [crew-exercise-invisible-need.md](notes/user-stories/crew-exercise-invisible-need.md) requires the description to make explicit. Without it, the lucky-path tester can't connect "F3 console says StatAtrophy is climbing" to "and that's why it never appears in the inspector pills."

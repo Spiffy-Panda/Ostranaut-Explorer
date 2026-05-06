@@ -91,11 +91,6 @@ Banners keyed on naming convention (`Stat*`, `Thresh*`, `COND*`, `Itm*`,
 localStorage. The single most-leveraged newcomer-onboarding component
 after the glossary card.
 
-### Inline schema field descriptions (UX 1.3) · *proposed*
-
-Hover-only descriptions today. Render inline by default on the Fields
-block, collapsible. Newcomers don't know to hover.
-
 ### Folder + `strType` ref-row badges (UX 1.5) · *partial*
 
 Folder is implicit in the link target today. `strType` is not surfaced.

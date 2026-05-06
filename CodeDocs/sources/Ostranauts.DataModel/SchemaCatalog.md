@@ -39,15 +39,26 @@ public sealed class SchemaCatalog
         FieldShape Shape,
         string? RoutingSibling = null,
         IReadOnlyDictionary<string, string>? RoutingTargets = null,
-        bool IsGhost = false,        // x-ghost in schema; not deserialized by C#
-        string? Description = null); // schema description text; surfaces as a hover tooltip on the site
+        bool IsGhost = false,                              // x-ghost in schema; not deserialized by C#
+        string? Description = null,                         // schema description text
+        IReadOnlyList<string>? FallbackTargets = null,      // x-targets fallback list
+        string? NestedField = null);                        // x-nested-field for NestedDirectArray
 
     // Tolerates duplicate (SourceFolder, FieldName) keys with last-wins semantics
     // — needed for the Comment Mod overlay where the same field gets re-declared.
     public SchemaCatalog(IEnumerable<FieldRule> rules);
 
+    // Slice 3 — same plus a separate (folder, fieldName) → description map
+    // for fields that have a description but don't qualify as ref rules
+    // (integers, booleans, anything non-string). Surfaces inline on the
+    // site's Fields block alongside the ref-rule descriptions.
+    public SchemaCatalog(
+        IEnumerable<FieldRule> rules,
+        IEnumerable<KeyValuePair<(string folder, string field), string>>? fieldDescriptions);
+
     public IReadOnlyList<FieldRule> Rules { get; }    // includes duplicates in load order
     public FieldRule? RuleFor(string folder, string field);  // returns the last-wins entry
+    public IReadOnlyDictionary<(string folder, string field), string> FieldDescriptions { get; }
     public static SchemaCatalog Empty { get; }
 }
 ```

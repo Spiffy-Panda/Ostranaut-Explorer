@@ -61,37 +61,46 @@ public static class SchemaLoader
     public static SchemaCatalog Load(IEnumerable<string> schemaDirs, Action<string>? onWarning = null)
     {
         var byKey = new Dictionary<(string folder, string field), SchemaCatalog.FieldRule>();
+        var descriptions = new Dictionary<(string folder, string field), string>();
         foreach (var dir in schemaDirs)
         {
-            var (rules, suppressed) = LoadInternal(dir, onWarning);
+            var (rules, suppressed, descs) = LoadInternal(dir, onWarning);
             foreach (var rule in rules)
                 byKey[(rule.SourceFolder, rule.FieldName)] = rule;
             foreach (var key in suppressed)
                 byKey.Remove(key);
+            foreach (var kv in descs)
+                descriptions[kv.Key] = kv.Value;  // last-wins overlay
         }
-        return new SchemaCatalog(byKey.Values);
+        return new SchemaCatalog(byKey.Values, descriptions);
     }
 
     public static SchemaCatalog Load(string schemaDir, Action<string>? onWarning = null)
     {
-        var (rules, _) = LoadInternal(schemaDir, onWarning);
-        return new SchemaCatalog(rules);
+        var (rules, _, descs) = LoadInternal(schemaDir, onWarning);
+        return new SchemaCatalog(rules, descs);
     }
 
     /// <summary>
-    /// Single-dir loader returning both derived rules and any (folder, field)
-    /// keys flagged with <c>x-no-ref: true</c> for cross-dir suppression.
+    /// Single-dir loader returning derived rules, any (folder, field) keys
+    /// flagged with <c>x-no-ref: true</c> for cross-dir suppression, and the
+    /// full per-field description map (all fields that have a description,
+    /// regardless of whether they qualified as a ref rule).
     /// </summary>
-    private static (List<SchemaCatalog.FieldRule> rules, List<(string folder, string field)> suppressed) LoadInternal(
-        string schemaDir, Action<string>? onWarning)
+    private static (
+        List<SchemaCatalog.FieldRule> rules,
+        List<(string folder, string field)> suppressed,
+        List<KeyValuePair<(string folder, string field), string>> descriptions
+    ) LoadInternal(string schemaDir, Action<string>? onWarning)
     {
         var rules = new List<SchemaCatalog.FieldRule>();
         var suppressed = new List<(string folder, string field)>();
+        var descriptions = new List<KeyValuePair<(string folder, string field), string>>();
 
         if (!Directory.Exists(schemaDir))
         {
             onWarning?.Invoke($"schemas dir not found: {schemaDir}");
-            return (rules, suppressed);
+            return (rules, suppressed, descriptions);
         }
 
         foreach (var schemaPath in Directory.EnumerateFiles(schemaDir, "*-schema.json"))
@@ -127,13 +136,25 @@ public static class SchemaLoader
                         continue;
                     }
 
+                    // Capture the description (if any) regardless of whether the field
+                    // becomes a ref rule. Non-ref scalars (integers, booleans, etc.)
+                    // still carry useful "what does this field mean" prose for the site.
+                    if (fieldProp.Value.TryGetProperty("description", out var descProp)
+                        && descProp.ValueKind == JsonValueKind.String)
+                    {
+                        var desc = descProp.GetString();
+                        if (!string.IsNullOrWhiteSpace(desc))
+                            descriptions.Add(new KeyValuePair<(string folder, string field), string>(
+                                (sourceFolder, fieldProp.Name), desc!));
+                    }
+
                     var rule = TryDeriveRule(sourceFolder, fieldProp.Name, fieldProp.Value);
                     if (rule is not null) rules.Add(rule);
                 }
             }
         }
 
-        return (rules, suppressed);
+        return (rules, suppressed, descriptions);
     }
 
     private static bool TryGetItemProperties(JsonElement root, out JsonElement properties)

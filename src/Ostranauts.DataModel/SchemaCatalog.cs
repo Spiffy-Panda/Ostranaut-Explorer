@@ -71,6 +71,7 @@ public sealed class SchemaCatalog
 
     private readonly List<FieldRule> _rules;
     private readonly Dictionary<(string folder, string field), FieldRule> _byKey;
+    private readonly Dictionary<(string folder, string field), string> _fieldDescriptions;
 
     /// <summary>
     /// When duplicate (SourceFolder, FieldName) keys appear (e.g. base data
@@ -78,17 +79,44 @@ public sealed class SchemaCatalog
     /// All entries remain visible via <see cref="Rules"/>.
     /// </summary>
     public SchemaCatalog(IEnumerable<FieldRule> rules)
+        : this(rules, fieldDescriptions: null) { }
+
+    /// <summary>
+    /// Same as the rules-only constructor plus a separate
+    /// <paramref name="fieldDescriptions"/> map keyed by (folder, fieldName).
+    /// This map carries descriptions for fields that don't (or can't) become
+    /// a <see cref="FieldRule"/> — non-string scalars, booleans, integers, etc.
+    /// Fields that DO become rules also carry their description on the rule;
+    /// the two paths converge on the site as one descriptions table.
+    /// </summary>
+    public SchemaCatalog(
+        IEnumerable<FieldRule> rules,
+        IEnumerable<KeyValuePair<(string folder, string field), string>>? fieldDescriptions)
     {
         _rules = rules.ToList();
         _byKey = new Dictionary<(string folder, string field), FieldRule>();
         foreach (var r in _rules)
             _byKey[(r.SourceFolder, r.FieldName)] = r;  // last-wins on collision
+
+        _fieldDescriptions = new Dictionary<(string folder, string field), string>();
+        if (fieldDescriptions is not null)
+            foreach (var kv in fieldDescriptions)
+                _fieldDescriptions[kv.Key] = kv.Value;  // last-wins on collision
     }
 
     public IReadOnlyList<FieldRule> Rules => _rules;
 
     public FieldRule? RuleFor(string folder, string field) =>
         _byKey.TryGetValue((folder, field), out var r) ? r : null;
+
+    /// <summary>
+    /// Every (folder, fieldName) → description from the loaded schemas, including
+    /// fields that didn't become a <see cref="FieldRule"/>. Used by the site to
+    /// surface inline descriptions on the Fields block for non-ref scalars
+    /// (e.g. <c>conditions.nDisplaySelf</c>).
+    /// </summary>
+    public IReadOnlyDictionary<(string folder, string field), string> FieldDescriptions
+        => _fieldDescriptions;
 
     public static SchemaCatalog Empty => new(Enumerable.Empty<FieldRule>());
 }

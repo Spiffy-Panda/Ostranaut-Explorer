@@ -357,6 +357,12 @@ section#detail {
   padding: 0.15rem 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.8125rem;
+}
+/* UX 1.3 — Fields block grew from one row per field (name + value) to two rows
+   (name + value, optional inline description). Old `display: flex` on the li
+   stacked everything horizontally; now the li is a vertical container and the
+   `.field-line` child carries the original flex layout for name/value. */
+.fields-block .field-line {
   display: flex;
   gap: 0.75rem;
   align-items: baseline;
@@ -375,6 +381,29 @@ section#detail {
   word-break: break-word;
 }
 .fields-block em.muted { color: var(--muted); font-style: italic; }
+/* Inline schema description below the field row. Sans-serif on purpose so the
+   prose reads as prose, not as more code. Indented to line up with the value. */
+.fields-block .field-desc {
+  margin: 0.1rem 0 0.45rem 12.75em;
+  color: var(--muted);
+  font-style: italic;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+.fields-block.descriptions-hidden .field-desc { display: none; }
+.fields-block .fields-desc-toggle {
+  margin-left: 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  background: none;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.05rem 0.45rem;
+  cursor: pointer;
+}
+.fields-block .fields-desc-toggle:hover { color: var(--fg); }
 
 /* code-refs block — hardcoded string literals found in decomp */
 .code-refs-block {

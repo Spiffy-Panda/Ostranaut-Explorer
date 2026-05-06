@@ -102,6 +102,20 @@ public static class GraphExporter
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();
+
+            // fieldDescriptions — every (folder, fieldName) → description from the
+            // loaded schemas, including non-ref fields. Slice 3 (UX 1.3) renders
+            // these inline beneath each Fields-block row, regardless of whether
+            // the field's value is a cross-folder reference. Rule descriptions are
+            // de-duplicated against this map on the site so we don't ship the same
+            // string twice.
+            writer.WriteStartObject("fieldDescriptions");
+            foreach (var kv in catalog.FieldDescriptions)
+            {
+                var key = $"{kv.Key.folder}:{kv.Key.field}";
+                writer.WriteString(key, kv.Value);
+            }
+            writer.WriteEndObject();
         }
 
         writer.WriteEndObject();

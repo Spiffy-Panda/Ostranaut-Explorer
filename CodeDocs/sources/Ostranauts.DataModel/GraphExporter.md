@@ -31,7 +31,7 @@ Schema v6 is v5 + first-class **code-side nodes** (PLAN-AST Phase 1 + 2). Synthe
 
 Writes a PAIR of files: `graph.js` (the path passed in) plus a sibling `properties.js` in the same directory. The graph file is graph-only (nodes + edges + rules); per-node scalar fields move to `properties.js` under `window.NODE_PROPS`. See `CodeDocs/io/outputs.md` for the full v6 spec.
 
-See `CodeDocs/io/outputs.md` for the canonical spec. Briefly: `$schema_version`, `generated_by`, `object_count`, `reference_count`, `nodes[]` (id/folder/strName/file), `edges[]` (source/target/kind/sourceField/optional metadata).
+See `CodeDocs/io/outputs.md` for the canonical spec. Briefly: `$schema_version`, `generated_by`, `object_count`, `reference_count`, `nodes[]` (id/folder/strName/file), `edges[]` (source/target/kind/sourceField/optional metadata), `rules[]` (when a catalog is supplied), and — slice 3 / UX 1.3 — `fieldDescriptions: { "<folder>:<fieldName>": "..." }` carrying every schema description (incl. non-ref scalar fields). Schema version stays at 6; the new key is purely additive.
 
 Edge `metadata` is serialized as a JSON object with keys preserved as-is. Scalar values are dispatched per type (string, bool, numeric); unknown types fall back to `ToString()`.
 

@@ -114,6 +114,17 @@ function buildIndexes() {
       ruleDescriptions.set(`${rule.sourceFolder}:${rule.fieldName}`, rule.description);
     }
   }
+  // Slice 3 / UX 1.3 — non-ref-rule field descriptions (integers, booleans,
+  // anything the schema describes but doesn't classify as a strName ref).
+  // Builder emits these as a separate `fieldDescriptions` map keyed
+  // `<folder>:<fieldName>`. Merge after rule descriptions so they fill gaps
+  // without overriding (rule and field-description text are typically
+  // identical when both exist; either source is fine).
+  for (const [key, desc] of Object.entries(graph.fieldDescriptions ?? {})) {
+    if (!ruleDescriptions.has(key) && typeof desc === 'string' && desc.length > 0) {
+      ruleDescriptions.set(key, desc);
+    }
+  }
 
   folderCounts = [...nodesByFolder.entries()]
     .filter(([folder]) => !isCodeFolder(folder))
@@ -413,6 +424,17 @@ function renderObjectDetail(folder, strName) {
       const target = a.getAttribute('data-id');
       const [tf, tn] = splitId(target);
       window.location.hash = `#/o/${encodeURIComponent(tf)}/${encodeURIComponent(tn)}`;
+    });
+  });
+  // UX 1.3 — hide-descriptions toggle on the Fields block. Persists per-folder
+  // in localStorage so a power user can mute Stat* descriptions without losing
+  // them on loot/.
+  detailEl.querySelectorAll('.fields-desc-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const f = btn.dataset.folder;
+      const next = !readFieldsBlockHidden(f);
+      writeFieldsBlockHidden(f, next);
+      renderRoute();
     });
   });
   // Wire copy-ref button — copies "<folder>\<strName>" for chat-paste.
@@ -1115,6 +1137,11 @@ function renderFieldsBlock(folder, fields) {
     return '';
   }
   const keys = Object.keys(fields).sort();
+  // UX 1.3 — collapsibility toggle persisted per-folder so a power user
+  // landing on Stat* pages can hide descriptions site-wide for that folder
+  // without losing them on, say, loot/. Default = expanded (newcomers don't
+  // know to hover).
+  const hidden = readFieldsBlockHidden(folder);
   const rows = keys.map(k => {
     const v = fields[k];
     const desc = ruleDescriptions.get(`${folder}:${k}`);
@@ -1144,17 +1171,48 @@ function renderFieldsBlock(folder, fields) {
         valueText = escapeHtml(String(v));
       }
     }
-    return `<li>
-      <span class="field-name"${titleAttr}>${escapeHtml(k)}</span>
-      <span class="field-value">${valueText}</span>
+    const descRow = desc
+      ? `<div class="field-desc">${escapeHtml(desc)}</div>`
+      : '';
+    return `<li class="field-row">
+      <div class="field-line">
+        <span class="field-name"${titleAttr}>${escapeHtml(k)}</span>
+        <span class="field-value">${valueText}</span>
+      </div>
+      ${descRow}
     </li>`;
   }).join('');
+  const descCount = keys.filter(k => ruleDescriptions.has(`${folder}:${k}`)).length;
+  const toggleLabel = hidden
+    ? `Show ${descCount} description${descCount === 1 ? '' : 's'}`
+    : `Hide ${descCount} description${descCount === 1 ? '' : 's'}`;
+  const toggleHtml = descCount > 0
+    ? `<button type="button" class="fields-desc-toggle" data-folder="${escapeAttr(folder)}">${escapeHtml(toggleLabel)}</button>`
+    : '';
   return `
-    <div class="fields-block">
-      <h3>Fields (${keys.length})</h3>
+    <div class="fields-block ${hidden ? 'descriptions-hidden' : ''}">
+      <h3>Fields (${keys.length})${toggleHtml ? ' ' + toggleHtml : ''}</h3>
       <ul>${rows}</ul>
     </div>
   `;
+}
+
+const FIELDS_BLOCK_HIDDEN_KEY = 'fieldsBlockDescHidden';
+function readFieldsBlockHidden(folder) {
+  try {
+    const raw = localStorage.getItem(FIELDS_BLOCK_HIDDEN_KEY);
+    if (!raw) return false;
+    const set = new Set(JSON.parse(raw));
+    return set.has(folder);
+  } catch { return false; }
+}
+function writeFieldsBlockHidden(folder, hidden) {
+  try {
+    const raw = localStorage.getItem(FIELDS_BLOCK_HIDDEN_KEY);
+    const set = new Set(raw ? JSON.parse(raw) : []);
+    if (hidden) set.add(folder); else set.delete(folder);
+    localStorage.setItem(FIELDS_BLOCK_HIDDEN_KEY, JSON.stringify([...set]));
+  } catch {}
 }
 
 // Returns { targetFolder, candidate } if `value` resolves to a known node in

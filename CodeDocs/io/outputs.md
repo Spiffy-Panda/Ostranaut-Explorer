@@ -36,6 +36,8 @@ Adds first-class **code-side graph nodes** to v5's split-payload layout. The Bui
 
 Site checks `$schema_version === 6` and refuses to render on mismatch.
 
+**Slice 3 / UX 1.3 — `fieldDescriptions` block (additive within v6).** Top-level `fieldDescriptions: { "<folder>:<fieldName>": "..." }` carries every schema description the loader saw, including ones for non-ref scalars (integers, booleans, etc.). The site merges this into its existing `ruleDescriptions` Map and renders the descriptions inline beneath each Fields-block row (with a per-folder collapse toggle persisted to `localStorage["fieldsBlockDescHidden"]`). Schema version stays at 6 — the new key is purely additive; older site versions ignore it.
+
 Three files (plus the legacy fourth) sit under `build/data/`:
 
 | File | Global set | Required? | What's in it |

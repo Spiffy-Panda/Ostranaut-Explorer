@@ -27,6 +27,8 @@ public static class SchemaLoader
 
 If `schemaDir` doesn't exist: warns once, returns `SchemaCatalog.Empty` (does not throw — schemas are optional input). Per-file parse errors warn and continue.
 
+In addition to producing `FieldRule`s the loader collects every `(folder, fieldName) → description` pair from the schemas (regardless of whether the field qualified as a ref rule) and threads it through the multi-dir overlay with last-wins semantics. The resulting map is exposed on `SchemaCatalog.FieldDescriptions` so the site can render inline descriptions on non-ref scalars (integers, booleans) too — see slice 3 (UX 1.3) in DEV-LOG.
+
 ## Rule derivation
 
 For each file `<folder>-schema.json`, source folder = `<folder>` (e.g. `items-schema.json` → `items`). Walks `items.properties.<field>` for each schema. A rule is emitted only when:
