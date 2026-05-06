@@ -73,20 +73,12 @@ The full design lives in
 [notes/ux/newcomer-onboarding.md](notes/ux/newcomer-onboarding.md) (12
 core components plus 2 stretch). PLAN tracks build order, not design.
 
-### Per-prefix contextual explainer banners (UX 1.2) · *proposed*
-
-Banners keyed on naming convention (`Stat*`, `Thresh*`, `COND*`, `Itm*`,
-`ACT*`, `DRUG*`). Short banner library
-(`src/Ostranauts.Site/explainers/*.json`), dismissible per-class via
-localStorage. The single most-leveraged newcomer-onboarding component
-after the glossary card.
-
-### Other UX components (1.4 / 1.8-1.12) · *proposed*
+### Other UX components (1.4 / 1.8 / 1.10-1.12) · *proposed*
 
 See [notes/ux/newcomer-onboarding.md](notes/ux/newcomer-onboarding.md)
 sections 1.4 (derived `Thresh<X>` sidebar), 1.8 (`strType` dispatch
-tooltip), 1.9 (*"Why is this in `X/`?"* note), 1.10 (*"Edit this"*
-callout), 1.11 (live-build diff), 1.12 (plain-language wiki links).
+tooltip), 1.10 (*"Edit this"* callout), 1.11 (live-build diff), 1.12
+(plain-language wiki links).
 
 ### Stretch — cluster pages (UX 3.1) · *proposed*
 

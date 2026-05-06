@@ -493,6 +493,8 @@ function renderObjectDetail(folder, strName) {
     </div>
 
     ${isCodeEmitted ? renderCodeEmittedHeader(folder, strName, props) : ''}
+    ${renderPrefixExplainers(folder, strName)}
+    ${renderFolderMismatchNote(folder, strName)}
     ${renderTemplateBlock(folder, strName, id)}
     ${isCodeEmitted ? '' : renderFieldsBlock(folder, props)}
     ${renderCodeRefsBlock(id)}
@@ -552,6 +554,19 @@ function renderObjectDetail(folder, strName) {
   // UX 1.7 — DSL primer popovers on cond-string / loot-string / verb /
   // commandPos / portKey chips. Click to pin; click outside or × to dismiss.
   wireDslPrimers(detailEl);
+  // UX 1.2 — per-prefix explainer banner dismiss. Persists to localStorage
+  // keyed by explainer id, so dismissing on `StatGrav` hides it on every
+  // other Stat* page across the site too.
+  detailEl.querySelectorAll('.prefix-explainer .explainer-dismiss').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const banner = btn.closest('.prefix-explainer');
+      const id = banner?.dataset.explainerId;
+      if (id) {
+        writeExplainerDismissed(id, true);
+        banner.remove();
+      }
+    });
+  });
   // Wire copy-ref button — copies "<folder>\<strName>" for chat-paste.
   const copyBtn = detailEl.querySelector('.detail-head .copy-ref');
   if (copyBtn) {
@@ -1436,6 +1451,167 @@ function renderEdgeRow(edge, perspective) {
   const liClass = isRuntime ? ' class="runtime-edge"' : '';
 
   return `<li${liClass}><span class="arrow">${arrow}</span>${folderTag}${strTypeTag} ${linkHtml}${altSuffix}${meta}</li>`;
+}
+
+// UX 1.2 — per-prefix explainer banners. Keyed on strName naming convention
+// patterns (Stat*, Thresh*, COND*, Itm*, ACT*, DRUG*). Each banner is
+// dismissible per-prefix-class via localStorage so a user who clicks "got it"
+// on `StatGrav` won't see the same banner on `StatHunger`. Default = visible
+// (newcomers don't know to expect a banner; power users dismiss).
+//
+// Each entry: { id, prefix: regex, folders?: [restrict to these folders],
+//   title, body, wikiPage?, wikiSlug? }. Order matters — first match wins,
+//   so list more-specific patterns ahead of broader ones.
+const PREFIX_EXPLAINERS = [
+  {
+    id: 'thresh-conditions',
+    prefix: /^Thresh[A-Z]/,
+    folders: ['conditions', 'conditions_simple'],
+    title: 'About threshold-shift conditions',
+    body: 'An entity holding a Thresh<StatName> condition has the trigger thresholds for <StatName> shifted by the cond-string\'s value. Higher value = more tolerance before consequences fire. Modders typically tune G-LOC, hunger tolerance, etc. by editing values on existing Thresh* entries — not by adding new ones.',
+    wikiPage: 'Conditions',
+    wikiSlug: 'Conditions',
+  },
+  {
+    id: 'stat-conditions',
+    prefix: /^Stat[A-Z]/,
+    folders: ['conditions', 'conditions_simple'],
+    title: 'About Stat conditions',
+    body: 'Stat conditions hold a continuous numeric value the game tracks every tick. The stat itself is rarely tuned directly — instead modders adjust the Thresh<StatName> conditions that shift when this stat triggers in-game consequences. Visibility in the needs panel is controlled by nDisplaySelf (0 = hidden when healthy, 1 = secondary list, 2 = primary).',
+    wikiPage: 'Conditions',
+    wikiSlug: 'Conditions',
+  },
+  {
+    id: 'dc-conditions',
+    prefix: /^Dc[A-Z]/,
+    folders: ['conditions', 'conditions_simple'],
+    title: 'About Dc* discomfort conditions',
+    body: 'Dc<X> conditions are the human-readable consequence tier of a Stat<X> stat — fired by condrules when the underlying stat crosses a threshold. Editing thresholds means editing the matching condrules entry, not the Dc* condition itself.',
+    wikiPage: 'Condition Rules',
+    wikiSlug: 'Condition_Rules',
+  },
+  {
+    id: 'cond-loot',
+    prefix: /^COND/,
+    folders: ['loot'],
+    title: 'About wearable / payload condition grants',
+    body: 'A loot/ entry whose strName starts with COND is a condition grant — the Loot dispatcher applies its aCOs payload to whoever rolls the loot. Common pattern for clothing (per-wear conditions) and tick-effect entries (CONDTick1Hour*). The grant target follows the cond-string DSL: Name=value xduration.',
+  },
+  {
+    id: 'drug-loot',
+    prefix: /^(DRUG|CONDOssifex|CONDStim|CONDDrug)/,
+    folders: ['loot', 'condowners'],
+    title: 'About drug / consumable items',
+    body: 'DRUG* and similar consumables typically grant Per/Stim conditions on use (their aCOs is a list of Thresh*-or-stat-rate cond-strings). Tune dosage by editing the value field of the matching cond-string; tune duration via the xduration token.',
+  },
+  {
+    id: 'itm-condowners',
+    prefix: /^Itm[A-Z]/,
+    folders: ['condowners'],
+    title: 'About installable items (condowners)',
+    body: 'Itm* condowner entries are the per-instance state container for a piece of furniture, equipment, or salvageable. Most Itm* items have an installed and a *Loose variant — the installed one carries IsInstalled in aStartingConds and is referenced by an installables/ entry; the loose one lives in inventory.',
+  },
+  {
+    id: 'act-interactions',
+    prefix: /^ACT[A-Z]/,
+    folders: ['interactions'],
+    title: 'About ACT* interactions',
+    body: 'ACT* is the convention for interactions a CondOwner can perform or have performed on it. Behavior chains via aInverse (priority-ordered fallback list); gates via CTTestUs / CTTestThem (condtrigs); state changes via LootCTsUs / LootCTsThem (condition grants).',
+    wikiPage: 'Modding/Interactions',
+    wikiSlug: 'Modding__Interactions',
+  },
+];
+
+// UX 1.9 — "Why is this in X/?" inline note. Detected automatically: when an
+// entry's strName matches a naming convention that "should" map to folder Y
+// but it actually lives in folder X, render an explainer naming the override
+// mechanism (typically strType on Loot entries).
+const PREFIX_FOLDER_MAPPING = [
+  // (prefix regex, expected folder, override note)
+  { prefix: /^COND/, expected: 'conditions', note: (folder) => folder === 'loot'
+      ? `strName prefixes (COND…, Itm…, ACT…) follow naming convention but do not determine folder. The strType field does. This entry's strType: condition means it lives in loot/ because Loot is the engine's grant-dispatcher folder, not because of the COND… prefix.`
+      : null
+  },
+  { prefix: /^Itm[A-Z]/, expected: 'items', note: (folder) => folder === 'condowners'
+      ? `strName prefixes don't determine folder. Itm* condowner entries are the per-instance state container; the matching items/ entry (often same strName) holds the visual definition that's referenced via strItemDef.`
+      : (folder === 'loot'
+        ? `strName prefixes don't determine folder. This Itm*-named entry lives in loot/ because its strType routes it as a Loot payload — typically initial spawn contents or salvage drops, not a freestanding item entry.`
+        : null)
+  },
+  { prefix: /^ACT[A-Z]/, expected: 'interactions', note: (folder) => folder === 'loot'
+      ? `strName prefixes don't determine folder. An ACT*-named loot entry is a Loot delegate for an interaction (strType: interaction) — the aUpdateCommands Destructable wiring uses this pattern to fire an interaction when an item takes lethal damage.`
+      : null
+  },
+  { prefix: /^StatDamage/, expected: 'conditions', note: (folder) => folder === 'conditions_simple'
+      ? `Stat-prefixed conditions are usually defined inline in conditions/ entries; conditions_simple/ is the shorthand format (one row per condition as a 7-tuple). StatDamage and StatDamageMax happen to be declared in conditions_simple/ because they're flagged-only stats with no per-stat overrides.`
+      : null
+  },
+];
+
+const EXPLAINER_DISMISS_KEY = 'prefixExplainerDismissed';
+function readExplainerDismissed(id) {
+  try {
+    const raw = localStorage.getItem(EXPLAINER_DISMISS_KEY);
+    if (!raw) return false;
+    return new Set(JSON.parse(raw)).has(id);
+  } catch { return false; }
+}
+function writeExplainerDismissed(id, dismissed) {
+  try {
+    const raw = localStorage.getItem(EXPLAINER_DISMISS_KEY);
+    const set = new Set(raw ? JSON.parse(raw) : []);
+    if (dismissed) set.add(id); else set.delete(id);
+    localStorage.setItem(EXPLAINER_DISMISS_KEY, JSON.stringify([...set]));
+  } catch {}
+}
+
+// Walk the explainer library; return all matching entries that haven't been
+// dismissed. Multiple banners can stack on a single page (e.g. Stat* + Thresh*
+// — though Thresh wins as more-specific via first-match).
+function matchingExplainers(folder, strName) {
+  const out = [];
+  for (const exp of PREFIX_EXPLAINERS) {
+    if (exp.folders && !exp.folders.includes(folder)) continue;
+    if (!exp.prefix.test(strName)) continue;
+    if (readExplainerDismissed(exp.id)) continue;
+    out.push(exp);
+  }
+  return out;
+}
+function renderPrefixExplainers(folder, strName) {
+  const explainers = matchingExplainers(folder, strName);
+  if (explainers.length === 0) return '';
+  return explainers.map(exp => {
+    const wikiLink = exp.wikiPage
+      ? `<a class="explainer-wiki" href="https://ostranauts.wiki.gg/wiki/${encodeURIComponent(exp.wikiSlug || exp.wikiPage.replace(/ /g, '_'))}" target="_blank" rel="noopener">📖 ${escapeHtml(exp.wikiPage)} ↗</a>`
+      : '';
+    return `
+      <div class="prefix-explainer" data-explainer-id="${escapeAttr(exp.id)}">
+        <button type="button" class="explainer-dismiss" aria-label="dismiss banner">×</button>
+        <div class="explainer-title">${escapeHtml(exp.title)}</div>
+        <div class="explainer-body">${escapeHtml(exp.body)}</div>
+        ${wikiLink}
+      </div>
+    `;
+  }).join('');
+}
+
+// UX 1.9 — folder-mismatch note. Returns the inline note HTML when the
+// strName's prefix would predict a different folder than the one we're on.
+function renderFolderMismatchNote(folder, strName) {
+  for (const m of PREFIX_FOLDER_MAPPING) {
+    if (!m.prefix.test(strName)) continue;
+    if (m.expected === folder) continue;
+    const noteText = m.note(folder);
+    if (!noteText) continue;
+    return `
+      <div class="folder-mismatch-note">
+        <strong>Why is this in <code>${escapeHtml(folder)}/</code>?</strong>
+        ${escapeHtml(noteText)}
+      </div>
+    `;
+  }
+  return '';
 }
 
 // UX 1.5 — stable folder color vocabulary. Hash the folder name into a

@@ -4,6 +4,28 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-06 — PLAN-EXPLORER slice 6: detail-page top — per-prefix banners + folder-mismatch note (UX 1.2/1.9)
+
+Two cooperating components above the Fields block on every object detail page.
+
+**UX 1.2 — per-prefix explainer banners.** Library of 7 banners keyed on strName naming-convention regexes scoped to one or more folders: `Thresh*` in conditions/, `Stat*` in conditions/, `Dc*` in conditions/, `COND*` in loot/, `DRUG*` / `CONDOssifex*` / `CONDStim*` in loot/condowners, `Itm*` in condowners/, `ACT*` in interactions/. First match wins (more-specific patterns ahead of broader). Each banner: title + 2-4 sentence body + optional wiki link. Dismissible per *id* (not per page) — clicking × on `StatGrav` hides the "About Stat conditions" banner on every Stat* page across the site. State persists in `localStorage["prefixExplainerDismissed"]`.
+
+Library kept inline in `app.js` (`PREFIX_EXPLAINERS` array) rather than a separate `explainers/*.json` payload — 7 entries don't justify a Builder export step, and inline keeps the copy versioned alongside the renderer that consumes it. Easy to lift to JSON later if seed grows.
+
+**UX 1.9 — folder-mismatch inline note.** When a strName's prefix convention disagrees with its actual folder, render a smaller note immediately under the explainer banner (or directly under the file path when no banner fires). Detected via a `PREFIX_FOLDER_MAPPING` rules array — each rule has a prefix regex, an "expected" folder, and a function that emits the explainer text given the *actual* folder (lets one rule cover multiple wrong-folder cases with different prose).
+
+Seeded mappings:
+- `COND*` expected in conditions/, actual in loot/ → "the strType field, not the prefix, decides folder. strType: condition routes through Loot's grant dispatcher." This is the single most-cited newcomer trap from the user stories.
+- `Itm*` expected in items/, actual in condowners/ or loot/ → distinct messages for each (state container vs. loot payload).
+- `ACT*` expected in interactions/, actual in loot/ → "Loot delegate for an interaction (strType: interaction)" — the Destructable-wiring case from mod-hygiene-station.
+- `StatDamage*` expected in conditions/, actual in conditions_simple/ → the conditions_simple/ shorthand-format note. Surfaces the gotcha that Phase 3.1B retargets edges around.
+
+**Detail-page top hierarchy (final).** From top to bottom: header (strName, folder, file path, copy-ref) → code-emitted blurb if applicable → **per-prefix explainer banner(s) (1.2)** → **folder-mismatch note (1.9)** → template block → Fields block → code refs → outgoing/incoming refs. Matches §2.1 of the UX plan.
+
+**Verification.** `conditions:StatGrav` → 1 banner ("About Stat conditions"), no mismatch (correct folder). `loot:CONDApatheticPer` → 1 banner ("About wearable / payload condition grants") + 1 mismatch note ("Why is this in loot/? strName prefixes…follow naming convention but do not determine folder. The strType field does."). `conditions:IsApathetic` → no banner, no mismatch. Dismiss on `StatGrav` removes banner from `StatAtrophy` too; `localStorage["prefixExplainerDismissed"]` reads `["stat-conditions"]`.
+
+Numbers unchanged. No console errors.
+
 ## 2026-05-06 — PLAN-EXPLORER slice 5: ref-row v2 — folder/strType badges + filter pills + DSL primer (UX 1.5/1.6/1.7)
 
 Three UX components shipped together because they all touch the ref-row renderer; bundling avoids three sequential refactors of the same code path.

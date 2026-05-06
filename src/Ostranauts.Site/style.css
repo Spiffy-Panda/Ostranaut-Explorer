@@ -365,6 +365,72 @@ section#detail {
 .refs-block .dangling { color: var(--bad); font-style: italic; }
 .refs-block .empty { color: var(--muted); font-style: italic; padding: 0.25rem 0; }
 
+/* UX 1.2 — per-prefix explainer banner. Dismissible, sits above the Fields
+   block. Tone is "about this kind of thing", not "here's what to do" — that
+   distinction matters for the visual hierarchy on a busy detail page. */
+.prefix-explainer {
+  position: relative;
+  margin: 0.6rem 0 0.4rem;
+  padding: 0.6rem 2rem 0.7rem 0.85rem;
+  background: rgba(108,180,255,0.06);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.prefix-explainer .explainer-title {
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.25rem;
+}
+.prefix-explainer .explainer-body { color: var(--fg); }
+.prefix-explainer .explainer-wiki {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.prefix-explainer .explainer-wiki:hover { color: var(--fg); }
+.prefix-explainer .explainer-dismiss {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.4rem;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.prefix-explainer .explainer-dismiss:hover { color: var(--fg); }
+
+/* UX 1.9 — folder-mismatch inline note. Smaller / quieter than the explainer
+   banner — addresses a specific page-local question, not a general concept.
+   Always visible (no dismiss); shows up only when the prefix↔folder mapping
+   actually disagrees. */
+.folder-mismatch-note {
+  margin: 0.4rem 0 0.6rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255,210,128,0.06);
+  border-left: 3px solid var(--warn);
+  border-radius: 0 3px 3px 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--fg);
+}
+.folder-mismatch-note strong {
+  display: block;
+  color: var(--warn);
+  margin-bottom: 0.15rem;
+}
+.folder-mismatch-note code {
+  font-size: 0.75rem;
+  background: rgba(0,0,0,0.2);
+  padding: 0 0.25rem;
+  border-radius: 2px;
+}
+
 /* UX 1.5 — folder badge: stable per-folder color via inline --badge-color
    set in JS. Pill shape with a colored left bar so the visual works on its
    own AND combines with text label for accessibility (color is never sole
