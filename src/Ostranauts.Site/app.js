@@ -498,6 +498,7 @@ function renderObjectDetail(folder, strName) {
     ${isCodeEmitted ? '' : renderEditThisCallout(folder, strName, id, props, out, node.file)}
     ${renderTemplateBlock(folder, strName, id)}
     ${isCodeEmitted ? '' : renderFieldsBlock(folder, props)}
+    ${renderThreshDerivedPanel(folder, strName)}
     ${renderCodeRefsBlock(id)}
 
     <div class="refs-block">
@@ -568,6 +569,9 @@ function renderObjectDetail(folder, strName) {
       }
     });
   });
+  // UX 1.8 — strType dispatch table tooltip. Click the `?` trigger next to a
+  // strType value in the Fields block to see what folder each value routes to.
+  wireStrTypeDispatchTooltip(detailEl);
   // UX 1.10 — copy-path button on the Edit this callout. Copies the JSON
   // file path so the modder can paste it into their editor's quick-open.
   detailEl.querySelectorAll('.callout-copy-path').forEach(btn => {
@@ -1361,6 +1365,11 @@ function renderFieldsBlock(folder, fields) {
     let valueText;
     if (v === null) {
       valueText = '<em class="muted">null</em>';
+    } else if (k === 'strType') {
+      // UX 1.8 — strType field: append a clickable trigger that pops the
+      // dispatch-table tooltip (item → condowners/, condition → conditions/,
+      // etc.). Beginners shouldn't have to read CLAUDE.md to learn this.
+      valueText = `${escapeHtml(String(v))} <button type="button" class="strtype-dispatch-trigger" data-strtype-value="${escapeAttr(String(v))}" aria-label="show strType dispatch table" title="Show how strType routes Loot payloads">?</button>`;
     } else {
       const resolved = resolveAutoDetectedValue(folder, k, String(v));
       if (resolved) {
@@ -1608,6 +1617,143 @@ function renderPrefixExplainers(folder, strName) {
       </div>
     `;
   }).join('');
+}
+
+// UX 1.4 — derived "Modifies thresholds of this" panel. Surfaces the engine's
+// Thresh<StatName> naming convention as a first-class derived relationship.
+// In real data, Thresh* conditions are synthesized at runtime by the engine
+// (no JSON declaration in data/conditions/), so the partner Thresh<X> is
+// usually NOT a graph node — it shows up only as a dangling edge target
+// from Loot entries that grant it. We aggregate those dangling edges as the
+// panel content: which Loot entries grant ThreshStatX, with sample magnitudes.
+function renderThreshDerivedPanel(folder, strName) {
+  if (folder !== 'conditions' && folder !== 'conditions_simple') return '';
+  if (!/^Stat[A-Z]/.test(strName)) return '';
+
+  const threshName = `Thresh${strName}`;
+  // All edges site-wide whose target name matches Thresh<X> across either
+  // conditions/ or conditions_simple/. Build the set on-demand because the
+  // index is keyed by full id, not by name suffix.
+  const candidates = [
+    `conditions:${threshName}`,
+    `conditions_simple:${threshName}`,
+  ];
+  const sourcesByFolder = new Map();  // sourceFolder -> [{sourceName, sample}]
+  for (const targetId of candidates) {
+    const edges = incoming.get(targetId) || [];
+    for (const e of edges) {
+      const [sf, sn] = splitId(e.source);
+      if (!sourcesByFolder.has(sf)) sourcesByFolder.set(sf, []);
+      sourcesByFolder.get(sf).push({ sourceName: sn, sample: e.metadata });
+    }
+  }
+  // If no edges target Thresh<strName>, this Stat* doesn't have a Thresh handle
+  // in the loaded data — call that out explicitly (the user-story for
+  // mod-suppress-needs depends on this empty-state being legible: "StatFood
+  // and StatHygiene have no Thresh* handle in the base game").
+  if (sourcesByFolder.size === 0) {
+    return `
+      <div class="thresh-panel thresh-empty">
+        <h3>Modifies thresholds of this</h3>
+        <p class="panel-blurb">No <code>Thresh${escapeHtml(strName)}</code> grants found in the loaded data. This stat doesn't have a threshold-shift handle — modders typically suppress its consequences via <code>-${escapeHtml(strName)}Rate</code> entries (slowing the drain rate) instead.</p>
+      </div>
+    `;
+  }
+
+  const folderRows = [...sourcesByFolder.entries()]
+    .sort((a, b) => b[1].length - a[1].length)
+    .map(([sf, entries]) => {
+      // Show top 6 grants per source folder; if more, fold the rest into a count.
+      entries.sort((a, b) => a.sourceName.localeCompare(b.sourceName));
+      const visible = entries.slice(0, 6);
+      const overflow = entries.length - visible.length;
+      const itemsHtml = visible.map(e => {
+        const id = `${sf}:${e.sourceName}`;
+        const sampleVals = e.sample
+          ? ['min', 'max', 'value', 'duration', 'chance']
+              .filter(k => k in e.sample)
+              .slice(0, 2)
+              .map(k => `${k}=${e.sample[k]}`)
+              .join(' ')
+          : '';
+        return `<li>
+          ${renderFolderBadge(sf)}
+          <a href="#/o/${encodeURIComponent(sf)}/${encodeURIComponent(e.sourceName)}" data-id="${escapeAttr(id)}">${escapeHtml(e.sourceName)}</a>
+          ${sampleVals ? `<span class="thresh-meta">[${escapeHtml(sampleVals)}]</span>` : ''}
+        </li>`;
+      }).join('');
+      const tail = overflow > 0 ? `<li class="thresh-overflow">+ ${overflow} more in ${escapeHtml(sf)}/</li>` : '';
+      return `${itemsHtml}${tail}`;
+    }).join('');
+
+  const totalCount = [...sourcesByFolder.values()].reduce((sum, arr) => sum + arr.length, 0);
+  return `
+    <div class="thresh-panel">
+      <h3>Modifies thresholds of this · ${totalCount}</h3>
+      <p class="panel-blurb">Engine convention: <code>Thresh&lt;StatName&gt;</code> conditions dynamically shift the trigger thresholds of <code>&lt;StatName&gt;</code>. Higher value on the cond-string = more tolerance before <code>${escapeHtml(strName)}</code> fires consequences. <code>Thresh${escapeHtml(strName)}</code> is synthesized by the engine at runtime — these are the data entries that grant it.</p>
+      <ul>${folderRows}</ul>
+    </div>
+  `;
+}
+
+// UX 1.8 — strType dispatch tooltip. On any object whose properties carry a
+// `strType` field, surface the engine dispatch table — what folder each
+// strType value routes through. Renders inline on the Fields block via a
+// small clickable primer next to the strType row.
+const STR_TYPE_DISPATCH = [
+  { value: 'condition', target: 'conditions/', summary: 'Loot dispatcher applies the aCOs payload as condition grants on the recipient.' },
+  { value: 'item', target: 'condowners/', summary: 'Loot spawns these as items into inventory (per-instance state container).' },
+  { value: 'interaction', target: 'interactions/', summary: 'Loot fires an interaction — typically used as a Destructable damage-callback delegate.' },
+  { value: 'trigger', target: 'condtrigs/', summary: 'Loot fires a condtrig (a boolean test on conditions held by the recipient).' },
+  { value: 'condrule', target: 'condrules/', summary: 'Loot attaches a condrule (threshold-tier definition) to the recipient.' },
+  { value: 'lifeevent', target: 'lifeevents/', summary: 'Loot enqueues a lifeevent — used in encounter chains and starter ship selection.' },
+  { value: 'ship', target: 'ships/', summary: 'Loot grants a ship — used by character-creation events.' },
+];
+
+function renderStrTypeDispatchTable(activeValue) {
+  const rows = STR_TYPE_DISPATCH.map(r => {
+    const cls = r.value === activeValue ? ' class="active-row"' : '';
+    return `<tr${cls}>
+      <td><code>${escapeHtml(r.value)}</code></td>
+      <td><code>${escapeHtml(r.target)}</code></td>
+      <td>${escapeHtml(r.summary)}</td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="strtype-dispatch" role="tooltip">
+      <button type="button" class="strtype-dispatch-close" aria-label="dismiss">×</button>
+      <div class="primer-title"><code>strType</code> controls how this entry is dispatched</div>
+      <table>
+        <thead><tr><th>strType</th><th>Routes to</th><th>What the engine does</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function wireStrTypeDispatchTooltip(rootEl) {
+  let pinned = null;
+  const dismiss = () => { if (pinned) { pinned.remove(); pinned = null; } };
+  rootEl.querySelectorAll('.strtype-dispatch-trigger').forEach(trigger => {
+    trigger.addEventListener('click', e => {
+      e.stopPropagation();
+      const activeValue = trigger.dataset.strtypeValue;
+      const html = renderStrTypeDispatchTable(activeValue);
+      dismiss();
+      const wrap = document.createElement('div');
+      wrap.innerHTML = html;
+      const popover = wrap.firstElementChild;
+      trigger.parentElement.appendChild(popover);
+      pinned = popover;
+      popover.querySelector('.strtype-dispatch-close').addEventListener('click', ev => {
+        ev.stopPropagation();
+        dismiss();
+      });
+    });
+  });
+  document.addEventListener('click', ev => {
+    if (pinned && !pinned.contains(ev.target)) dismiss();
+  });
 }
 
 // UX 1.10 — "Edit this" callout. Detects the most common modder-tunable

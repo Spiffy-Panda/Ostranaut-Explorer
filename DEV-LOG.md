@@ -4,6 +4,28 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-06 — PLAN-EXPLORER slice 8: Thresh-derived panel + strType dispatch tooltip (UX 1.4/1.8); 1.11 deferred
+
+Two stretch components ship; one defers.
+
+**UX 1.4 — derived "Modifies thresholds of this" panel.** Sits between the Fields block and the code-refs block on `Stat*` condition pages. Aggregates incoming edges to `conditions:Thresh<strName>` + `conditions_simple:Thresh<strName>` — neither node typically exists in real data because Thresh* conditions are *engine-synthesized at runtime*, not declared as JSON entries. The panel reads the dangling-edge targets directly: groups by source folder, sorts each by source-strName, shows up to 6 grants per folder with `+N more` overflow when crowded, and renders sample edge metadata on each row (min/max from the loot-string DSL).
+
+**Empty-state is load-bearing.** [mod-suppress-needs.md](notes/user-stories/mod-suppress-needs.md) explicitly requires the empty state ("StatFood and StatHygiene have no Thresh* handle in the base game") to be visually obvious so the modder pivots to the rate-suppression mechanism. When zero Thresh-targeting edges exist, the panel renders with a `.thresh-empty` warn-accent variant explaining "this stat doesn't have a threshold-shift handle — modders typically suppress its consequences via `-Stat<X>Rate` entries instead." Same prose-first principle as the folder-mismatch note.
+
+Live verification:
+- `conditions:StatGrav` → 12 grants (CONDAntiGravStim2Per, CONDFeeblePer, CONDFitPer, …) — the anti-G-LOC modder lands here and sees both clothing and drug grants in one panel.
+- `conditions:StatAtrophy` / `StatFood` / `StatHygiene` → all empty-state, all explain the rate-suppression pivot.
+
+**UX 1.8 — strType dispatch tooltip.** Click a small `?` trigger next to the `strType` value in the Fields block to pop a 7-row table mapping each `strType` value (`condition`/`item`/`interaction`/`trigger`/`condrule`/`lifeevent`/`ship`) to its target folder + one-line behavior summary. The current entry's strType row is highlighted via `.active-row`. Beginners shouldn't have to read CLAUDE.md to learn this; the dispatch table is encoded in the parser's type-routed loot rules, slice 8 just surfaces it.
+
+Verified: `loot:CONDApatheticPer` (`strType: condition`) → click `?` → table shows 7 rows with `condition` row highlighted as active.
+
+**UX 1.11 — live-build diff: deferred.** Genuinely larger than a one-sitting slice. Needs (a) a graph-payload snapshot cached in localStorage at every page load, (b) a diff pass comparing current edges against the cached previous, (c) per-edge highlight rendering with decay logic. Worth doing after the rest of the newcomer surface gets a user-test pass — at which point we'll know whether this matters more than other items not on PLAN today. Documented in PLAN-EXPLORER as deferred, not removed.
+
+**UX 1.12 — plain-language wiki links: tagged partial.** Glossary cards and per-prefix banners already carry wiki links. DSL primers (1.7) and Edit-this callouts (1.10) don't yet. Trivial to add; bundle into the next user-test cycle rather than its own slice.
+
+Numbers unchanged: 91 rules, 87,845 references, 31 glossary cards, 193 field descriptions. No console errors (stale clipboard NotAllowed lines from earlier preview-eval probes are cosmetic, not from the new code).
+
 ## 2026-05-06 — PLAN-EXPLORER slice 7: Edit-this callout (UX 1.10)
 
 Generated edit instructions for the most common modder-tunable patterns. Sits below the per-prefix banner / folder-mismatch note and above the Fields block — strongest visual emphasis on the page when it appears, since for a modder on a tuning task this is the destination.

@@ -73,11 +73,19 @@ The full design lives in
 [notes/ux/newcomer-onboarding.md](notes/ux/newcomer-onboarding.md) (12
 core components plus 2 stretch). PLAN tracks build order, not design.
 
-### Other UX components (1.4 / 1.8 / 1.11-1.12) · *proposed*
+### Live-build diff highlight (UX 1.11) · *deferred*
 
-See [notes/ux/newcomer-onboarding.md](notes/ux/newcomer-onboarding.md)
-sections 1.4 (derived `Thresh<X>` sidebar), 1.8 (`strType` dispatch
-tooltip), 1.11 (live-build diff), 1.12 (plain-language wiki links).
+Cross-build comparison + per-edge "changed since last build" markers.
+Needs a previous-build cache keyed in localStorage and a graph-payload
+diff pass at site init. Real work; not blocked, but not a one-sitting
+slice. Pick up after the rest of the newcomer surface is in user-test.
+
+### Plain-language wiki links (UX 1.12) · *partial*
+
+Glossary cards (1.1) and per-prefix banners (1.2) already render wiki
+links. The remaining gap is sprinkling them into the DSL primer (1.7)
+and Edit-this callout (1.10). Small, but trivial enough that it doesn't
+block; bundle into the next user-test pass.
 
 ### Stretch — cluster pages (UX 3.1) · *proposed*
 

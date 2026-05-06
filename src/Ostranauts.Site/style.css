@@ -405,6 +405,115 @@ section#detail {
 }
 .prefix-explainer .explainer-dismiss:hover { color: var(--fg); }
 
+/* UX 1.4 — derived "Modifies thresholds of this" panel. Sits between the
+   Fields block and the code-refs block. Visually distinct from the regular
+   refs panel — this is a *derived* relationship from a name pattern, not
+   a real schema-driven edge, so the panel-blurb explains it. */
+.thresh-panel {
+  margin-top: 1.25rem;
+  padding: 0.55rem 0.75rem 0.65rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 4px 4px 0;
+  background: rgba(108,180,255,0.04);
+}
+.thresh-panel h3 {
+  font-size: 0.875rem;
+  margin: 0 0 0.3rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+.thresh-panel .panel-blurb {
+  margin: 0 0 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.thresh-panel ul { list-style: none; margin: 0; padding: 0; }
+.thresh-panel li {
+  padding: 0.2rem 0;
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+}
+.thresh-panel .thresh-incount,
+.thresh-panel .thresh-meta { color: var(--muted); font-size: 0.75rem; }
+.thresh-panel .thresh-overflow { font-style: italic; color: var(--muted); }
+.thresh-panel.thresh-empty { border-left-color: var(--warn); background: rgba(255,210,128,0.04); }
+.thresh-panel.thresh-empty h3 { color: var(--warn); }
+
+/* UX 1.8 — strType dispatch trigger + popover. Trigger is the small `?` next
+   to a strType value in the Fields block. Click pops a table mapping each
+   strType value to the folder Loot routes through. */
+.strtype-dispatch-trigger {
+  display: inline-block;
+  margin-left: 0.4rem;
+  background: rgba(108,180,255,0.12);
+  border: 1px solid rgba(108,180,255,0.25);
+  color: var(--accent);
+  padding: 0 0.35rem;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.2;
+}
+.strtype-dispatch-trigger:hover { background: rgba(108,180,255,0.25); }
+.strtype-dispatch {
+  display: block;
+  position: relative;
+  margin: 0.4rem 0;
+  padding: 0.6rem 0.85rem 0.7rem;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  max-width: 42rem;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+  font-family: inherit;
+  font-size: 0.8125rem;
+}
+.strtype-dispatch .primer-title {
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+}
+.strtype-dispatch table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.8125rem;
+}
+.strtype-dispatch th, .strtype-dispatch td {
+  text-align: left;
+  padding: 0.2rem 0.4rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.strtype-dispatch th { color: var(--muted); font-weight: 500; font-size: 0.75rem; }
+.strtype-dispatch td code {
+  background: rgba(108,180,255,0.10);
+  color: var(--accent);
+  padding: 0 0.2rem;
+  border-radius: 2px;
+}
+.strtype-dispatch .active-row { background: rgba(108,180,255,0.08); }
+.strtype-dispatch .active-row td { font-weight: 500; }
+.strtype-dispatch-close {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.4rem;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.strtype-dispatch-close:hover { color: var(--fg); }
+
 /* UX 1.10 — "Edit this" callout. Strongest visual emphasis on the page when
    it appears: the modder came here to do an edit, this is the destination
    not the journey. Distinct accent color (warn) so it doesn't compete with
