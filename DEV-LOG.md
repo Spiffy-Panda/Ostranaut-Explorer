@@ -4,6 +4,30 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-06 — PLAN-AST Phase 3.1A: resolve dangling RuntimeWiresTo targets, synthesize code-emitted condition nodes when truly missing
+
+The 17 dangling `RuntimeWiresTo` edges Phase 3 left behind ("`guipropmaps:AlarmPressureCO2 → conditions:IsReadyPressureSense`" and friends) all landed on a "No object known" placeholder when clicked. Phase 3.1A closes that hop. Two branches in `BridgePhase2`'s emit loop: when the runtime-port resolver typed an edge to `conditions/` and the name isn't there, (a) retarget to `conditions_simple/` if found there, otherwise (b) synthesize a new `DataObject` in `conditions/` with `Fields = { kind: "code-emitted", producedBy: "<component>" }` so the modder lands on a populated detail page.
+
+In the current real-data run **all 17** originally-dangling targets land in `conditions_simple/` (they're declared as 7-tuples in `conditions_simple.json` even though the code-side AddCondAmount is what actually drives them at runtime). So the retarget branch handles all of them and the synthesis branch fires zero times. The synthesis branch remains for future genuinely code-only conditions (e.g. if a future `aUpdateCommands` component emits a name that's not in either folder).
+
+Site-side: `renderObjectDetail` checks `props.kind === 'code-emitted'` and inserts a `renderCodeEmittedHeader(folder, strName, props)` blurb explaining "this isn't in `data/conditions/` — it's set by `code-component:<X>` via a dynamic `co.AddCondAmount(this.<key>, …)` call". When the page is a retargeted `conditions_simple/` entry the standard layout renders unchanged — the *Referenced by* block already shows the 7 incoming `RuntimeWiresTo` edges, each tagged with the source guipropmap and the port key in `metadata`.
+
+Numbers:
+
+```
+total objects:    34,558  (unchanged — 0 synthesized; 17 retargeted edges instead)
+total references: 84,964  (unchanged — same edge count, different target folder)
+dangling RuntimeWiresTo edges: 0  (was: 17)
+```
+
+PLAN-AST Phase 3.1's framing assumed +17 synthesized condition nodes. Reality: those names already exist as `conditions_simple/` entries; retargeting to where the data lives is the more accurate fix. The synthesis path stays in place for future use.
+
+Acceptance smoke:
+- `#/o/guipropmaps/AlarmPressureCO2` → click "IsReadyPressureSense" → lands on `#/o/conditions_simple/IsReadyPressureSense` (populated, *Referenced by 7*).
+- All `RuntimeWiresTo` edges resolve to known graph nodes (verified by walking `GRAPH_DATA.edges` in the live page).
+
+All 79 tests still pass.
+
 ## 2026-05-06 — PLAN-AST Phase 3: runtime ports + RuntimeWiresTo edges from guipropmaps to code-emitted destinations
 
 Phase 2 made `aUpdateCommands` legible — modders can see how a condowner wires to a code-component and what its positional args type to. Phase 3 closes the other half of the loop: what the code-component *reads at runtime* from its guipropmap dictionary, and where those values point. The high-impact deliverable: `IsReadyPressureSense`, `IsReadyPumpAir`, `IsReadyHeat` — code-emitted conditions that don't exist in `data/conditions/` and previously appeared nowhere in the graph — now show up as dashed edges from the 17 guipropmap entries that name them.

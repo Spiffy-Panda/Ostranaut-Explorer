@@ -402,6 +402,12 @@ internal static class Program
             }
         }
 
+        // PLAN-AST Phase 3.1A — collect code-emitted condition candidates
+        // during the same pass so we can synthesize their nodes after the
+        // edge-emit loop. Key: condition strName. Value: producing-component
+        // name (last seen) — we just need one for the file pointer.
+        var codeEmittedConds = new Dictionary<string, string>(StringComparer.Ordinal);
+
         var runtimeEdgeCount = 0;
         foreach (var co in currentObjects)
         {
@@ -428,6 +434,27 @@ internal static class Program
                 // the edge through is the whole point of PLAN-AST: surfacing
                 // the code-side ref the data layer can't see. The data-health
                 // page renders dangling targets as such.
+                //
+                // Phase 3.1A — figure out where the modder should actually
+                // land. The runtime port types `co.HasCond(value)` to the
+                // generic `conditions/` folder, but ~half of those names live
+                // in `conditions_simple/` instead (the simplified definition
+                // surface). Retarget when we find the value there. If neither
+                // folder has it, mark for synthesis below.
+                var emitFolder = typing.folder;
+                if (typing.folder == "conditions"
+                    && !dataExistenceSet.Contains(("conditions", value!)))
+                {
+                    if (dataExistenceSet.Contains(("conditions_simple", value!)))
+                    {
+                        emitFolder = "conditions_simple";
+                    }
+                    else if (typing.components.Count > 0
+                        && !codeEmittedConds.ContainsKey(value!))
+                    {
+                        codeEmittedConds[value!] = typing.components[0];
+                    }
+                }
 
                 var meta = new Dictionary<string, object>
                 {
@@ -439,12 +466,32 @@ internal static class Program
                     SourceFolder: "guipropmaps",
                     SourceName: co.StrName,
                     SourceField: "dictGUIPropMap",
-                    TargetFolder: typing.folder,
+                    TargetFolder: emitFolder,
                     TargetName: value,
                     Kind: RefKind.RuntimeWiresTo,
                     Metadata: meta));
                 runtimeEdgeCount++;
             }
+        }
+
+        // PLAN-AST Phase 3.1A — synthesize code-emitted condition nodes for
+        // every dangling RuntimeWiresTo target above. Each gets a `kind:
+        // "code-emitted"` flag in Fields so the site renders an explanatory
+        // header instead of the default fields/refs layout. The producing
+        // component is captured as a scalar field (`producedBy`) so the site
+        // can deep-link without re-querying the runtime key map.
+        foreach (var (condName, producer) in codeEmittedConds)
+        {
+            var fields = JsonSerializer.SerializeToElement(new
+            {
+                kind = "code-emitted",
+                producedBy = producer,
+            }).Clone();
+            dataObjects.Add(new DataObject(
+                Folder: "conditions",
+                FilePath: $"decomp/Assembly-CSharp/{producer}.cs",
+                StrName: condName,
+                Fields: fields));
         }
 
         return (dataObjects, refs, wiresToCount, condEdgeCount, runtimeEdgeCount);

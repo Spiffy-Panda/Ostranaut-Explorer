@@ -359,6 +359,8 @@ function renderObjectDetail(folder, strName) {
   const inc = allInc.filter(e => !isCodeRefEdge(e));
 
   const chatRef = `${folder}\\${strName}`;
+  const props = (window.NODE_PROPS ?? {})[id];
+  const isCodeEmitted = props && props.kind === 'code-emitted';
   const html = `
     <div class="detail-head">
       <div class="crumbs">${escapeHtml(folder)}</div>
@@ -367,8 +369,9 @@ function renderObjectDetail(folder, strName) {
       <button type="button" class="copy-ref" data-ref="${escapeHtml(chatRef)}" title="Copy '${escapeHtml(chatRef)}' to clipboard for pasting into chat">copy ref</button>
     </div>
 
+    ${isCodeEmitted ? renderCodeEmittedHeader(folder, strName, props) : ''}
     ${renderTemplateBlock(folder, strName, id)}
-    ${renderFieldsBlock(folder, (window.NODE_PROPS ?? {})[id])}
+    ${isCodeEmitted ? '' : renderFieldsBlock(folder, props)}
     ${renderCodeRefsBlock(id)}
 
     <div class="refs-block">
@@ -410,6 +413,26 @@ function renderObjectDetail(folder, strName) {
   }
   // Wire template editor.
   wireTemplateBlock(folder, strName, id);
+}
+
+// PLAN-AST Phase 3.1A — code-emitted condition header. Synthesized for every
+// RuntimeWiresTo target (in conditions/) that doesn't exist in data/conditions/.
+// The producing component is captured as a scalar field by Program.BridgePhase2.
+function renderCodeEmittedHeader(folder, strName, props) {
+  const producer = props.producedBy || '';
+  const producerLink = producer
+    ? `<a href="#/o/${encodeURIComponent('code-component')}/${encodeURIComponent(producer)}" data-id="code-component:${escapeAttr(producer)}">code-component:${escapeHtml(producer)}</a>`
+    : '<span class="muted">(unknown)</span>';
+  return `
+    <p class="page-blurb code-emitted-blurb">
+      <strong>This condition isn't defined in <code>data/conditions/</code>.</strong>
+      It's a code-emitted runtime signal — set / cleared by ${producerLink} via a dynamic
+      <code>co.AddCondAmount(this.${escapeHtml(strName)}, …)</code>-style call whose first
+      arg is driven by a guipropmap config key (PLAN-AST Phase 3). Synthesized into the
+      graph by Phase 3.1A so the cross-link from the guipropmaps that name it lands here
+      instead of <em>"No object known."</em>
+    </p>
+  `;
 }
 
 /* ─── code-side detail (PLAN-AST Phase 1) ──────────────────── */
