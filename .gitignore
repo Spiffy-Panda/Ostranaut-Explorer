@@ -37,8 +37,15 @@
 *.suo
 .vs/
 
-# Claude Code per-user settings (a shared .claude/settings.json would be tracked)
+# Claude Code per-user settings (a shared .claude/settings.json would be tracked).
+# .claude/launch.json IS tracked — preview-server config is shared dev tooling.
+# .claude/skills/ holds per-user skill registrations (managed by Claude Code).
 .claude/settings.local.json
+.claude/skills/
+
+# Per-session retrospective notes the skill-extraction skill writes here.
+# Each is a one-off reflection — keep them out of the repo to avoid noise.
+/skill-extractions/
 
 # OS
 .DS_Store
