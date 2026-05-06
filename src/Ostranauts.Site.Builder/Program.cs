@@ -201,6 +201,17 @@ internal static class Program
                 ["line"] = e.Line,
                 ["text"] = e.LineText,
             };
+            // Phase 1.1 — structural-parent grouping. When the literal sits
+            // inside an array initializer / args list with siblings, carry
+            // the container info on the edge so the site can render the
+            // group as one labeled block.
+            if (!string.IsNullOrEmpty(e.ContainerKey))
+            {
+                metadata["containerKey"] = e.ContainerKey;
+                metadata["containerLabel"] = e.ContainerLabel;
+                metadata["containerLineStart"] = e.ContainerLineStart;
+                metadata["containerLineEnd"] = e.ContainerLineEnd;
+            }
             // Emit one edge per matching folder. Multi-folder strNames (Itm*
             // names commonly hit loot/, condowners/, items/) all surface.
             foreach (var folder in folders)

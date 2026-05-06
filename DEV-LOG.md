@@ -4,6 +4,22 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-05 — PLAN-AST Phase 1.1: structural-parent grouping + UI polish on code-side detail pages
+
+Three small but visible improvements layered on top of Phase 1+2's data, no schema bump:
+
+- **Sibling literals collapse into one labeled block.** Reading `code-class:CondOwner` used to render four separate rows for the four entries of a `new[] { "DropItem", "DropItemStack", "PickupItem", "PickupItemStack" }` array literal. Each row repeated the same arrow / file:line / source-line snippet. The indexer was AST-aware enough to find each literal, but threw away the syntactic parent. Now `DecompIndexer.FindContainer` walks up to the nearest `InitializerExpressionSyntax` or `ArgumentListSyntax`, generates a stable `ContainerKey` (`<NodeType>@<SpanStart>`), a human label (`aFoo[]` from a named field, `new[] { … }` for inline arrays, `MethodName(…)` for arg lists), and the line range. Builder threads these onto the edge `Metadata`. Site `renderCodeOutgoing` buckets adjacent edges sharing a `containerKey` and renders one labeled `.code-out-group` block instead of N look-alike rows. Single-literal containers and standalone literals fall through to the existing per-row render unchanged. Method bodies usually don't group (each `co.HasCond("X")` call is its own one-arg `ArgumentList`); only true sibling-literal cases (array initializers, multi-string-arg calls) collapse.
+
+- **`code-method` headings show `()` so methods read as callable.** `BodyTemp.Exposure` looked like a field access; it's now `BodyTemp.Exposure()` in the detail header, search results, folder index, and the Code-references block on data-side pages. The graph id / strName stays bare so overload-suffix disambiguation (`#2`, `#3`) and search-by-typing keep working — `formatCodeName(folder, strName)` is purely a render-time transform.
+
+- **Code lines come through trimmed.** The indexer stored `TrimEnd()` lines, leaving leading tabs in the `<pre>` block; switched to `Trim()` at extract time and added a defensive `.trim()` in the renderers so older data still reads cleanly.
+
+- **Sidebar gains a `Code (PLAN-AST)` subsection.** I'd filtered code-* folders out of the sidebar entirely on the previous slice; that hid them from anyone who didn't already know the URL convention. Now they appear at the bottom under a non-clickable `Code (PLAN-AST)` divider, ordered `code-component (14)` → `code-class (60)` → `code-method (1942)` so the small + structurally-meaningful set is on top.
+
+Build numbers unchanged (still 34,558 objects / 84,655 references / v6 schema) — these are presentation layers on top of Phase 1+2's data, plus the indexer's metadata extension.
+
+Acceptance smoke: `#/o/code-class/CondOwner` now renders one block `new[] { … } [lines 10089–10094]` listing all four interactions, instead of four separate rows. `#/o/code-method/BodyTemp.Exposure` heading reads `BodyTemp.Exposure()` and code-line snippets have their leading tabs stripped.
+
 ## 2026-05-04 — PLAN-AST Phase 2: code-component nodes + aUpdateCommands wiring + condition role classification
 
 Followup slice on top of Phase 1, shipped same day. Phase 1 made *every* method/class with literal strings a graph node. Phase 2 picks out the structurally-meaningful ones — the entries in `CondOwner.AddCommand`'s dispatcher, which are what `condowners.aUpdateCommands` strings actually invoke at runtime — and surfaces them as their own kind: `code-component`. A condowner now has a navigable path *through code* to the conditions it produces, instead of just "this strName appears as a quoted literal somewhere."

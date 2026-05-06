@@ -29,7 +29,16 @@ public sealed record CodeLiteralEdge(
     string SourceQualifiedName,
     string Literal,
     int Line,
-    string LineText);
+    string LineText,
+    // Structural-parent grouping. Multiple literals that share an
+    // <see cref="ContainerKey"/> are syntactic siblings (array initializer
+    // entries, args of one call, etc.) — the site renders them as a single
+    // grouped block instead of N separate rows. Empty when the literal has
+    // no useful structural parent (standalone literal in an expression).
+    string ContainerKey,        // unique-per-tree id; empty = no group
+    string ContainerLabel,      // human-readable, e.g. "aDelays[]" or "AddCond(…)"
+    int ContainerLineStart,     // line range of the structural parent
+    int ContainerLineEnd);
 
 public sealed record DecompIndexResult(
     IReadOnlyList<CodeNode> Nodes,
@@ -179,7 +188,7 @@ public static class DecompIndexer
         foreach (var typeDecl in root.DescendantNodes().OfType<TypeDeclarationSyntax>())
         {
             var typeName = GetQualifiedTypeName(typeDecl);
-            var classLiterals = new List<(string lit, int line, string text)>();
+            var classLiterals = new List<LiteralFinding>();
 
             foreach (var member in typeDecl.Members)
             {
@@ -212,8 +221,17 @@ public static class DecompIndexer
                 LineStart: span.StartLinePosition.Line + 1,
                 LineEnd: span.EndLinePosition.Line + 1));
 
-            foreach (var (lit, line, text) in classLiterals)
-                edges.Add(new CodeLiteralEdge("code-class", qname, lit, line, text));
+            foreach (var f in classLiterals)
+                edges.Add(new CodeLiteralEdge(
+                    SourceFolder: "code-class",
+                    SourceQualifiedName: qname,
+                    Literal: f.Value,
+                    Line: f.Line,
+                    LineText: f.LineText,
+                    ContainerKey: f.ContainerKey,
+                    ContainerLabel: f.ContainerLabel,
+                    ContainerLineStart: f.ContainerLineStart,
+                    ContainerLineEnd: f.ContainerLineEnd));
         }
 
         // Pass 2: methods, constructors, operators, destructors. Walk method
@@ -227,7 +245,7 @@ public static class DecompIndexer
             var methodName = MethodName(method);
             if (methodName is null) continue;
 
-            var methodLiterals = new List<(string lit, int line, string text)>();
+            var methodLiterals = new List<LiteralFinding>();
             if (method.Body is { } body) ExtractLiterals(body, sourceText, methodLiterals);
             if (method.ExpressionBody is { } eb) ExtractLiterals(eb, sourceText, methodLiterals);
 
@@ -243,8 +261,17 @@ public static class DecompIndexer
                 LineStart: span.StartLinePosition.Line + 1,
                 LineEnd: span.EndLinePosition.Line + 1));
 
-            foreach (var (lit, line, text) in methodLiterals)
-                edges.Add(new CodeLiteralEdge("code-method", qname, lit, line, text));
+            foreach (var f in methodLiterals)
+                edges.Add(new CodeLiteralEdge(
+                    SourceFolder: "code-method",
+                    SourceQualifiedName: qname,
+                    Literal: f.Value,
+                    Line: f.Line,
+                    LineText: f.LineText,
+                    ContainerKey: f.ContainerKey,
+                    ContainerLabel: f.ContainerLabel,
+                    ContainerLineStart: f.ContainerLineStart,
+                    ContainerLineEnd: f.ContainerLineEnd));
         }
     }
 
@@ -258,10 +285,23 @@ public static class DecompIndexer
         _                                    => null,
     };
 
+    /// <summary>
+    /// One identifier-shaped string literal extracted from a method body or
+    /// class-level initializer, plus structural-parent info for grouping.
+    /// </summary>
+    private sealed record LiteralFinding(
+        string Value,
+        int Line,
+        string LineText,
+        string ContainerKey,
+        string ContainerLabel,
+        int ContainerLineStart,
+        int ContainerLineEnd);
+
     private static void ExtractLiterals(
         SyntaxNode root,
         SourceText sourceText,
-        List<(string lit, int line, string text)> output)
+        List<LiteralFinding> output)
     {
         // Skip nested type declarations — their literals belong to those
         // types, not to the enclosing scope. Methods recurse fine; only
@@ -280,16 +320,130 @@ public static class DecompIndexer
                 {
                     var span = lit.GetLocation().GetLineSpan();
                     var lineNo = span.StartLinePosition.Line + 1;
+                    // Trim both ends — leading indentation is decompiler noise
+                    // when the line is rendered in a <pre> block on the site;
+                    // the (file, line) citation already locates the literal.
                     var lineText = sourceText.Lines[span.StartLinePosition.Line]
-                        .ToString().TrimEnd();
+                        .ToString().Trim();
                     if (lineText.Length > 200) lineText = lineText.Substring(0, 200);
-                    output.Add((value, lineNo, lineText));
+
+                    var (cKey, cLabel, cStart, cEnd) = FindContainer(lit, root);
+                    output.Add(new LiteralFinding(
+                        Value: value,
+                        Line: lineNo,
+                        LineText: lineText,
+                        ContainerKey: cKey,
+                        ContainerLabel: cLabel,
+                        ContainerLineStart: cStart,
+                        ContainerLineEnd: cEnd));
                 }
             }
 
             foreach (var child in node.ChildNodes())
                 stack.Push(child);
         }
+    }
+
+    /// <summary>
+    /// Walks up from a literal node to find the nearest "structural parent"
+    /// — an array/collection initializer or an argument list — that the
+    /// literal participates in as a sibling. The site uses this to render
+    /// e.g. four <c>aDelaysIAReplaceOk</c> array entries as one labeled block
+    /// instead of four redundant rows.
+    ///
+    /// Returns empty key/label for literals with no useful structural parent
+    /// (single-arg expressions, standalone literals).
+    /// </summary>
+    private static (string key, string label, int lineStart, int lineEnd) FindContainer(
+        SyntaxNode literal,
+        SyntaxNode searchBoundary)
+    {
+        SyntaxNode? cur = literal.Parent;
+        SyntaxNode? container = null;
+        while (cur != null && cur != searchBoundary)
+        {
+            // Stop at method/type boundaries; never let a container span into
+            // the enclosing method's body or out of the type body.
+            if (cur is BaseMethodDeclarationSyntax || cur is TypeDeclarationSyntax) break;
+
+            if (cur is InitializerExpressionSyntax || cur is ArgumentListSyntax)
+            {
+                container = cur;
+                break;
+            }
+            cur = cur.Parent;
+        }
+
+        if (container is null) return ("", "", 0, 0);
+
+        // Don't bother grouping containers with only one literal child — that
+        // shows up as a regular standalone row anyway, no need for a header.
+        var literalSiblings = container.DescendantNodes()
+            .OfType<LiteralExpressionSyntax>()
+            .Count(l => l.IsKind(SyntaxKind.StringLiteralExpression)
+                        && IsIdentifierShaped(l.Token.ValueText));
+        if (literalSiblings <= 1) return ("", "", 0, 0);
+
+        var span = container.GetLocation().GetLineSpan();
+        var lineStart = span.StartLinePosition.Line + 1;
+        var lineEnd = span.EndLinePosition.Line + 1;
+        var key = $"{container.GetType().Name}@{container.SpanStart}";
+        var label = MakeContainerLabel(container);
+        return (key, label, lineStart, lineEnd);
+    }
+
+    /// <summary>
+    /// Short human-readable label for a container — surfaced on the site as
+    /// the header of a grouped block. Walks up one or two levels to find a
+    /// useful name (the variable, field, or invoked method).
+    /// </summary>
+    private static string MakeContainerLabel(SyntaxNode container)
+    {
+        if (container is InitializerExpressionSyntax)
+        {
+            // new[] { ... } / { ... } in an initializer — climb to find a
+            // VariableDeclarator or FieldDeclaration to grab a name.
+            SyntaxNode? cur = container.Parent;
+            while (cur != null)
+            {
+                switch (cur)
+                {
+                    case VariableDeclaratorSyntax v:
+                        return v.Identifier.ValueText + "[]";
+                    case FieldDeclarationSyntax fd when fd.Declaration.Variables.Count > 0:
+                        return fd.Declaration.Variables[0].Identifier.ValueText + "[]";
+                    case PropertyDeclarationSyntax p:
+                        return p.Identifier.ValueText + "[]";
+                    case ArrayCreationExpressionSyntax:
+                        return "new[] { … }";
+                    case AssignmentExpressionSyntax a when a.Left is IdentifierNameSyntax id:
+                        return id.Identifier.ValueText + "[]";
+                    case AssignmentExpressionSyntax a2 when a2.Left is MemberAccessExpressionSyntax ma:
+                        return ma.Name.Identifier.ValueText + "[]";
+                    case BaseMethodDeclarationSyntax:
+                    case TypeDeclarationSyntax:
+                        return "{ … }";
+                }
+                cur = cur.Parent;
+            }
+            return "{ … }";
+        }
+
+        if (container is ArgumentListSyntax args)
+        {
+            switch (args.Parent)
+            {
+                case InvocationExpressionSyntax inv when inv.Expression is MemberAccessExpressionSyntax ma:
+                    return ma.Name.Identifier.ValueText + "(…)";
+                case InvocationExpressionSyntax inv2 when inv2.Expression is IdentifierNameSyntax id:
+                    return id.Identifier.ValueText + "(…)";
+                case ObjectCreationExpressionSyntax oc:
+                    return "new " + oc.Type + "(…)";
+            }
+            return "(…)";
+        }
+
+        return "{ … }";
     }
 
     private static bool IsIdentifierShaped(string s)

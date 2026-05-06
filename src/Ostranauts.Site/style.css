@@ -206,6 +206,24 @@ aside#folders {
 #folder-list li.active { background: rgba(108,180,255,0.18); color: var(--accent); }
 #folder-list .count { color: var(--muted); }
 
+/* PLAN-AST synthetic-folder section — visually separated from data folders.
+   Heading is non-clickable (no hover), borrowing the upper-aside heading
+   styling so it reads as a sub-header inside the same scrolling list. */
+#folder-list .folder-section-heading {
+  margin: 0.75rem 0 0.25rem;
+  padding: 0.4rem 1rem 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: help;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  pointer-events: auto;
+}
+#folder-list .folder-section-heading:hover { background: transparent; }
+
 /* ─── detail panel ─────────────────────────────────────────── */
 
 section#detail {
@@ -405,6 +423,29 @@ section#detail {
 .code-out > li { margin-bottom: 0.5rem; }
 .code-out .arrow { margin-right: 0.4rem; color: var(--muted); }
 .code-out .meta { color: var(--muted); font-size: 0.75rem; }
+/* Phase 1.1 — grouped sibling literals (array initializer entries, args of
+   one call) collapse under one labeled header instead of N look-alike rows. */
+.code-out-group {
+  padding: 0.4rem 0.65rem;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+.code-out-group .group-head {
+  font-size: 0.8rem;
+  margin-bottom: 0.25rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.code-out-group .group-head code {
+  color: var(--fg);
+  background: transparent;
+}
+.code-out-group ul { list-style: none; padding: 0; margin: 0; }
+.code-out-group ul li {
+  font-size: 0.8125rem;
+  padding: 0.1rem 0;
+}
 
 /* code-component detail (PLAN-AST Phase 2) — in-port specs, cond-touch
    role groupings, condowner wiring listings */

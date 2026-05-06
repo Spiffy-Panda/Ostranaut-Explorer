@@ -27,7 +27,8 @@ let nodesById = new Map(); // id -> node
 let outgoing = new Map();  // sourceId -> [edges]
 let incoming = new Map();  // targetId -> [edges]
 let nodesByFolder = new Map(); // folder -> [nodes] (sorted by strName)
-let folderCounts = [];     // [{folder, count}] sorted
+let folderCounts = [];     // [{folder, count}] sorted — DATA-side folders
+let codeFolderCounts = []; // [{folder, count}] — synthetic code-* folders (PLAN-AST)
 let rulesBySource = new Map(); // sourceFolder -> [rules]
 let edgeCountByRule = new Map(); // "<sourceFolder>:<fieldName>" -> int
 let ruleDescriptions = new Map(); // "<sourceFolder>:<fieldName>" -> description
@@ -119,6 +120,16 @@ function buildIndexes() {
     .map(([folder, list]) => ({ folder, count: list.length }))
     .sort((a, b) => a.folder.localeCompare(b.folder));
 
+  // PLAN-AST synthetic folders surface in their own sidebar section so they
+  // read as a different KIND of object — derived from decomp, not data —
+  // without burying the data folders. code-component first (small +
+  // structurally meaningful), then code-class, then code-method (largest).
+  const codeOrder = { 'code-component': 0, 'code-class': 1, 'code-method': 2 };
+  codeFolderCounts = [...nodesByFolder.entries()]
+    .filter(([folder]) => isCodeFolder(folder))
+    .map(([folder, list]) => ({ folder, count: list.length }))
+    .sort((a, b) => (codeOrder[a.folder] ?? 99) - (codeOrder[b.folder] ?? 99) || a.folder.localeCompare(b.folder));
+
   // Detector candidates — keep the full list for the coverage page, plus a fast
   // index of TOP-LEVEL SCALAR uncovered candidates for Fields-block decoration.
   // (Array/nested paths surface only on the coverage page, not inline.)
@@ -137,12 +148,23 @@ function buildIndexes() {
 function renderFolderList() {
   folderListEl.innerHTML = '';
   const currentFolder = currentFolderFromHash();
-  for (const { folder, count } of folderCounts) {
+
+  const appendFolderRow = ({ folder, count }) => {
     const li = document.createElement('li');
     if (folder === currentFolder) li.classList.add('active');
     li.innerHTML = `<span>${folder}</span><span class="count">${count}</span>`;
     li.addEventListener('click', () => { window.location.hash = `#/f/${encodeURIComponent(folder)}`; });
     folderListEl.appendChild(li);
+  };
+
+  for (const fc of folderCounts) appendFolderRow(fc);
+
+  if (codeFolderCounts.length > 0) {
+    const heading = document.createElement('li');
+    heading.className = 'folder-section-heading';
+    heading.innerHTML = `<span title="Synthetic graph nodes derived from decomp/Assembly-CSharp/ — see PLAN-AST.md">Code (PLAN-AST)</span>`;
+    folderListEl.appendChild(heading);
+    for (const fc of codeFolderCounts) appendFolderRow(fc);
   }
 }
 
@@ -228,7 +250,7 @@ function renderSearchResults(nodes) {
   }
   for (const node of nodes) {
     const li = document.createElement('li');
-    li.innerHTML = `<span class="name">${escapeHtml(node.strName)}</span><span class="folder">${escapeHtml(node.folder)}</span>`;
+    li.innerHTML = `<span class="name">${escapeHtml(formatCodeName(node.folder, node.strName))}</span><span class="folder">${escapeHtml(node.folder)}</span>`;
     li.addEventListener('mousedown', () => navigateToObject(node)); // mousedown fires before blur
     searchResultsEl.appendChild(li);
   }
@@ -395,6 +417,16 @@ function renderObjectDetail(folder, strName) {
 const CODE_REF_KINDS = new Set(['LiteralInMethod', 'LiteralInClass']);
 function isCodeRefEdge(edge) { return CODE_REF_KINDS.has(edge.kind); }
 
+// Visual formatter for code-* node names. The graph IDs / strNames stay bare
+// ("BodyTemp.Exposure") so overload-suffix disambiguation (#2, #3) and search
+// keep working; this only affects what the modder sees rendered. Methods get
+// a trailing "()" so "Exposure" reads as a callable rather than a field of
+// BodyTemp; classes get nothing (the bare type name is unambiguous).
+function formatCodeName(folder, strName) {
+  if (folder === 'code-method') return `${strName}()`;
+  return strName;
+}
+
 // Detail page for synthetic code-method / code-class nodes. Simpler shape than
 // data nodes: no template / notes block, no incoming-data refs (a method is
 // only ever the SOURCE of a literal-in-* edge). Outgoing edges list the data
@@ -417,7 +449,7 @@ function renderCodeNodeDetail(folder, strName, id, node) {
   detailEl.innerHTML = `
     <div class="detail-head">
       <div class="crumbs">${escapeHtml(folder)}</div>
-      <h2>${escapeHtml(strName)}</h2>
+      <h2>${escapeHtml(formatCodeName(folder, strName))}</h2>
       <div class="file">${escapeHtml(fileLine)} · ${escapeHtml(kindLabel)}</div>
     </div>
     <p class="page-blurb">
@@ -571,22 +603,62 @@ function renderCodeOutgoing(edges) {
     const lb = (b.metadata && b.metadata.line) ?? 0;
     return la - lb;
   });
-  const rows = sorted.map(e => {
+
+  // Bucket adjacent edges by their structural-parent containerKey so an
+  // array initializer like `aDelaysIAReplaceOk = { "DropItem", "DropItemStack",
+  // ... }` renders as one labeled block instead of N look-alike rows.
+  // Edges without a containerKey stand alone in their own single-edge bucket.
+  const buckets = [];
+  for (const e of sorted) {
+    const key = e.metadata?.containerKey ?? '';
+    const last = buckets[buckets.length - 1];
+    if (key && last && last.key === key) {
+      last.edges.push(e);
+    } else {
+      buckets.push({ key, edges: [e] });
+    }
+  }
+
+  return `<ul class="code-out">${buckets.map(b => b.edges.length > 1 ? renderCodeOutgoingGroup(b) : renderCodeOutgoingSingle(b.edges[0])).join('')}</ul>`;
+}
+
+function renderCodeOutgoingSingle(e) {
+  const [tf, tn] = splitId(e.target);
+  const known = nodesById.has(e.target);
+  const link = known
+    ? `<a href="#/o/${encodeURIComponent(tf)}/${encodeURIComponent(tn)}" data-id="${escapeAttr(e.target)}">${escapeHtml(tn)}</a>`
+    : `<span class="dangling" title="not in index">${escapeHtml(tn)}</span>`;
+  const altSuffix = known ? renderAltFolderSuffix(tf, tn) : '';
+  const line = (e.metadata && e.metadata.line) ?? '?';
+  const text = ((e.metadata && e.metadata.text) ?? '').trim();
+  return `<li>
+    <div><span class="arrow">→</span><span class="field">${escapeHtml(tf)}</span>:${link}${altSuffix}
+      <span class="meta">[line ${escapeHtml(String(line))}]</span></div>
+    <pre class="code-line">${escapeHtml(text)}</pre>
+  </li>`;
+}
+
+function renderCodeOutgoingGroup(bucket) {
+  const first = bucket.edges[0].metadata ?? {};
+  const label = first.containerLabel || '{ … }';
+  const lineStart = first.containerLineStart ?? bucket.edges[0].metadata?.line;
+  const lineEnd = first.containerLineEnd ?? bucket.edges[bucket.edges.length - 1].metadata?.line;
+  const lineRange = lineStart === lineEnd
+    ? `line ${lineStart}`
+    : `lines ${lineStart}–${lineEnd}`;
+  const rows = bucket.edges.map(e => {
     const [tf, tn] = splitId(e.target);
     const known = nodesById.has(e.target);
     const link = known
       ? `<a href="#/o/${encodeURIComponent(tf)}/${encodeURIComponent(tn)}" data-id="${escapeAttr(e.target)}">${escapeHtml(tn)}</a>`
       : `<span class="dangling" title="not in index">${escapeHtml(tn)}</span>`;
     const altSuffix = known ? renderAltFolderSuffix(tf, tn) : '';
-    const line = (e.metadata && e.metadata.line) ?? '?';
-    const text = (e.metadata && e.metadata.text) ?? '';
-    return `<li>
-      <div><span class="arrow">→</span><span class="field">${escapeHtml(tf)}</span>:${link}${altSuffix}
-        <span class="meta">[line ${escapeHtml(String(line))}]</span></div>
-      <pre class="code-line">${escapeHtml(text)}</pre>
-    </li>`;
+    return `<li><span class="arrow">→</span><span class="field">${escapeHtml(tf)}</span>:${link}${altSuffix}</li>`;
   }).join('');
-  return `<ul class="code-out">${rows}</ul>`;
+  return `<li class="code-out-group">
+    <div class="group-head"><code>${escapeHtml(label)}</code> <span class="meta">[${escapeHtml(lineRange)}]</span></div>
+    <ul>${rows}</ul>
+  </li>`;
 }
 
 /* ─── template engine ──────────────────────────────────────── */
@@ -862,12 +934,14 @@ function renderCodeRefsBlock(id) {
     const [sFolder, sName] = splitId(sourceId);
     const file = sourceNode?.file ?? '';
     const kindLabel = sFolder === 'code-class' ? 'class' : 'method';
-    const link = `<a href="#/o/${encodeURIComponent(sFolder)}/${encodeURIComponent(sName)}" data-id="${escapeAttr(sourceId)}">${escapeHtml(sName)}</a>`;
+    const link = `<a href="#/o/${encodeURIComponent(sFolder)}/${encodeURIComponent(sName)}" data-id="${escapeAttr(sourceId)}">${escapeHtml(formatCodeName(sFolder, sName))}</a>`;
     const occurrences = bySource.get(sourceId)
       .sort((a, b) => ((a.metadata?.line ?? 0) - (b.metadata?.line ?? 0)))
       .map(e => {
         const line = e.metadata?.line ?? '?';
-        const text = e.metadata?.text ?? '';
+        // Defensive trim — older indexers stored TrimEnd'd lines (leading
+        // tabs preserved). New indexer emits Trim'd lines.
+        const text = (e.metadata?.text ?? '').trim();
         return `<div class="code-loc">${escapeHtml(file)}:${escapeHtml(String(line))}</div>
                 <pre class="code-line">${escapeHtml(text)}</pre>`;
       }).join('');
@@ -1045,7 +1119,7 @@ function renderFolderIndex(folder) {
           const inCount = incoming.get(n.id)?.length ?? 0;
           const outCount = outgoing.get(n.id)?.length ?? 0;
           const marker = (inCount === 0 && outCount === 0) ? '❌' : '⭕';
-          return `<li><span class="ref-marker">${marker}</span><a href="#/o/${encodeURIComponent(folder)}/${encodeURIComponent(n.strName)}">${escapeHtml(n.strName)}</a><span class="ref-counts">(${inCount}/${outCount})</span></li>`;
+          return `<li><span class="ref-marker">${marker}</span><a href="#/o/${encodeURIComponent(folder)}/${encodeURIComponent(n.strName)}">${escapeHtml(formatCodeName(folder, n.strName))}</a><span class="ref-counts">(${inCount}/${outCount})</span></li>`;
         }).join('')}
       </ul>
     </div>
