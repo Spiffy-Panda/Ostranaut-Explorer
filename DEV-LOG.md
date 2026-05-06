@@ -4,6 +4,27 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-06 — PLAN-EXPLORER slice 7: Edit-this callout (UX 1.10)
+
+Generated edit instructions for the most common modder-tunable patterns. Sits below the per-prefix banner / folder-mismatch note and above the Fields block — strongest visual emphasis on the page when it appears, since for a modder on a tuning task this is the destination.
+
+**Detection per (folder, outgoing-edge shape).** Not by reading payload arrays from `properties.js` (those don't ship — arrays are gated to code-* folders) but by inspecting the *outgoing edges* the parser produced. Three pattern matchers seeded:
+
+- `loot/` with `aCOs` edges carrying `chance/min/max` metadata → condition-grant case (anti-G-LOC, atrophy drugs, mood grants, hygiene effects). Picks a sample target name and tailors the direction-of-effect hint: `Thresh*` → "more tolerance"; `*Rate` → "scales the drain rate"; otherwise generic "stronger effect". When the entry also has `aLoots` outgoing edges, appends a second `<div class="callout-sub">` flagging the parallel item-drop dial.
+- `loot/` with `aLoots` edges only → item-drop case (chance/min/max as quantity dials).
+- `condowners/` with `aStartingConds` edges → default-state case ("only fresh spawns pick up the change" — the save-safety caveat from mod-suppress-needs).
+- `traitscores:Trait Scores,1` (well-known strName) → chargen cost-table case ("position 2 of each comma-separated triple"; calls out the `0,0` filter-out gotcha from mod-free-traits).
+
+**Rendering.** `renderCallout({ heading, body, steps, clipboard })` helper produces a yellow-tinted callout (warn accent, distinct from the blue-tinted explainer banner so the two don't visually compete). Header carries a "copy path" button; click writes the JSON file path to the clipboard so the modder can paste it into their editor's quick-open. Steps render as an ordered list — typically open file, find strName, edit field, run `make`, reload.
+
+The callout text is generated, not stored — the `Name=chance x min-max` example pulls a real edge target from the current page so the example matches what the modder actually sees in the data.
+
+**One nuance worth flagging.** The user-stories' "edit value 1.0 → 2.0" framing for `ThreshStatGrav=1.0x0.03125` was imprecise — the parser stores Loot.aCOs as loot-string format, so `1.0` is stored as `chance` and `0.03125` as `min/max` (not as cond-string `value`/`duration`). The callout copy reflects this honestly: "the dial is the magnitude after the `x`" with a labeled live example, rather than parroting the user-story's mislabel.
+
+**Verification.** `loot:CONDApatheticPer` → callout with `ThreshStatAchievement=1.0x0.2` example + 4 steps + copy button. `loot:CONDOssifexStimPer` → callout with the *Rate* hint variant. `condowners:ItmSink01` → starting-conditions callout. `traitscores:Trait Scores,1` → chargen-cost callout. `conditions:StatGrav` → no callout (correct — stat conditions don't carry an aCOs payload to tune).
+
+Numbers unchanged. No console errors except expected clipboard-API NotAllowed in the headless preview eval.
+
 ## 2026-05-06 — PLAN-EXPLORER slice 6: detail-page top — per-prefix banners + folder-mismatch note (UX 1.2/1.9)
 
 Two cooperating components above the Fields block on every object detail page.

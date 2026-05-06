@@ -495,6 +495,7 @@ function renderObjectDetail(folder, strName) {
     ${isCodeEmitted ? renderCodeEmittedHeader(folder, strName, props) : ''}
     ${renderPrefixExplainers(folder, strName)}
     ${renderFolderMismatchNote(folder, strName)}
+    ${isCodeEmitted ? '' : renderEditThisCallout(folder, strName, id, props, out, node.file)}
     ${renderTemplateBlock(folder, strName, id)}
     ${isCodeEmitted ? '' : renderFieldsBlock(folder, props)}
     ${renderCodeRefsBlock(id)}
@@ -565,6 +566,19 @@ function renderObjectDetail(folder, strName) {
         writeExplainerDismissed(id, true);
         banner.remove();
       }
+    });
+  });
+  // UX 1.10 — copy-path button on the Edit this callout. Copies the JSON
+  // file path so the modder can paste it into their editor's quick-open.
+  detailEl.querySelectorAll('.callout-copy-path').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.path);
+        const orig = btn.textContent;
+        btn.textContent = 'copied';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+      } catch (err) { console.error('clipboard write failed', err); }
     });
   });
   // Wire copy-ref button — copies "<folder>\<strName>" for chat-paste.
@@ -1594,6 +1608,122 @@ function renderPrefixExplainers(folder, strName) {
       </div>
     `;
   }).join('');
+}
+
+// UX 1.10 — "Edit this" callout. Detects the most common modder-tunable
+// patterns and renders a generated edit instruction: which field, which file,
+// direction of effect, sensible increment, build reminder. Sits above the
+// Fields block and gets the strongest visual weight on the page — for a
+// modder on a tuning task this is the destination, not the journey.
+function renderEditThisCallout(folder, strName, id, props, outEdges, file) {
+  const filePath = file || (typeof props?.file === 'string' ? props.file : '');
+  if (!filePath) return '';
+
+  // Loot entry — detect by outgoing edges. aCOs with strType=condition is
+  // the user-story-driven case (anti-G-LOC, atrophy drugs, mood grants);
+  // aLoots is the item-drop case. Both edge kinds carry chance/min/max
+  // metadata (loot-string DSL parsed into the edge).
+  if (folder === 'loot') {
+    const aCOsEdges = outEdges.filter(e => e.sourceField === 'aCOs' && e.metadata && 'chance' in e.metadata);
+    const aLootsEdges = outEdges.filter(e => e.sourceField === 'aLoots' && e.metadata && 'chance' in e.metadata);
+    if (aCOsEdges.length > 0) {
+      // The "magnitude" dial for a strType=condition Loot entry is the value
+      // after the `x` in `Name=chance x min-max` (which the parser stores as
+      // the min/max pair). For a typical grant like ThreshStatGrav=1.0x0.2,
+      // chance=1.0 means "always applies", min=max=0.2 is the per-tick
+      // threshold-shift magnitude — that's what you bump.
+      const sample = aCOsEdges[0];
+      const [, sampleTarget] = splitId(sample.target);
+      const isThresh = /^Thresh[A-Z]/.test(sampleTarget);
+      const isStatRate = /Rate$/.test(sampleTarget);
+      const directionHint = isThresh
+        ? 'Higher magnitude = more tolerance before consequences fire.'
+        : isStatRate
+          ? 'On a *Rate stat, the magnitude scales the drain rate; lower magnitude on a `-Stat*Rate` means slower drain.'
+          : 'Higher magnitude = stronger effect.';
+      const extraLootHint = aLootsEdges.length > 0
+        ? `<div class="callout-sub">Has ${aLootsEdges.length} aLoots payload${aLootsEdges.length === 1 ? '' : 's'} too — independent dials per drop slot.</div>`
+        : '';
+      return renderCallout({
+        heading: 'Edit this',
+        body: `Condition-grant Loot entry. The dial is the magnitude after the <code>x</code> in each <code>aCOs</code> entry — for example, <code>${escapeHtml(sampleTarget)}=1.0x0.2</code> grants <code>${escapeHtml(sampleTarget)}</code> with magnitude <code>0.2</code> on a <code>1.0</code> chance. ${directionHint} Increments of 0.1 are typically meaningful; sweep wider for clear feel.`,
+        steps: [
+          `Open <code>${escapeHtml(filePath)}</code>, search for <code>"${escapeHtml(strName)}"</code>.`,
+          `Edit each <code>aCOs</code> entry's <code>min</code>/<code>max</code> token (the part after <code>x</code>) to bump magnitude.`,
+          `<code>chance</code> (the part before <code>x</code>) controls roll probability per application — 1.0 = always.`,
+          `Run <code>make</code>; reload to see the new metadata on the edge.`,
+        ],
+        clipboard: filePath,
+      }) + extraLootHint;
+    }
+    if (aLootsEdges.length > 0) {
+      return renderCallout({
+        heading: 'Edit this',
+        body: `Loot drop table. Edit <code>chance</code> (0-1, roll probability) and <code>min</code>/<code>max</code> (count when the roll succeeds) on each <code>aLoots</code> entry in this loot.`,
+        steps: [
+          `Open <code>${escapeHtml(filePath)}</code>, search for <code>"${escapeHtml(strName)}"</code>.`,
+          `Edit the loot-string parts: <code>chance</code> bumps frequency, <code>min</code>/<code>max</code> bump quantity.`,
+          `Leading <code>-</code> on the name makes the payout subtractive (subtracts from recipient).`,
+          `Run <code>make</code>; reload.`,
+        ],
+        clipboard: filePath,
+      });
+    }
+  }
+
+  // Condowner with aStartingConds outgoing edges (default state per spawn).
+  // Detect via outgoing edges since aStartingConds is an array (not in props).
+  if (folder === 'condowners') {
+    const startingCondsEdges = outEdges.filter(e => e.sourceField === 'aStartingConds');
+    if (startingCondsEdges.length > 0) {
+      return renderCallout({
+        heading: 'Edit this',
+        body: `Starting conditions on this condowner. Each entry in <code>aStartingConds</code> is a cond-string (<code>Name=value xduration</code>) applied at spawn. Edit <code>value</code> to change initial stat / threshold / flag amounts.`,
+        steps: [
+          `Open <code>${escapeHtml(filePath)}</code>, search for <code>"${escapeHtml(strName)}"</code>.`,
+          `Modify <code>aStartingConds</code> entries; <code>1.0x1</code> is a typical "permanently set" pattern.`,
+          `Run <code>make</code>; existing instances in saves keep their old conditions, only fresh spawns pick up the change.`,
+        ],
+        clipboard: filePath,
+      });
+    }
+  }
+
+  // Trait Scores — every selectable trait/skill at chargen. The Free Traits
+  // user story's exact pattern. Detect by the well-known strName since the
+  // aValues array doesn't reach NODE_PROPS.
+  if (folder === 'traitscores' && strName === 'Trait Scores,1') {
+    return renderCallout({
+      heading: 'Edit this',
+      body: `Character-creation cost table. Each <code>aValues</code> entry is a comma-separated triple <code>"&lt;CondName&gt;,&lt;nYears&gt;,&lt;nCost&gt;"</code>. Position 2 (<code>nYears</code>) is the age cost paid when picking the trait at chargen — set to <code>0</code> to make a trait free.`,
+      steps: [
+        `Open <code>${escapeHtml(filePath)}</code>.`,
+        `Find the <code>aValues</code> entry for the trait you want to retune; change position 2 (the second comma-separated value).`,
+        `<code>0,1</code> = free pick that's still selectable; <code>0,0</code> = filtered out of the chargen UI (visibility flag must be non-zero).`,
+        `Run <code>make</code>; reload.`,
+      ],
+      clipboard: filePath,
+    });
+  }
+
+  return '';
+}
+
+function renderCallout({ heading, body, steps, clipboard }) {
+  const stepsHtml = steps.map(s => `<li>${s}</li>`).join('');
+  const clipboardBtn = clipboard
+    ? `<button type="button" class="callout-copy-path" data-path="${escapeAttr(clipboard)}" title="Copy file path">copy path</button>`
+    : '';
+  return `
+    <div class="edit-this-callout">
+      <div class="callout-head">
+        <span class="callout-label">✏️ ${escapeHtml(heading)}</span>
+        ${clipboardBtn}
+      </div>
+      <div class="callout-body">${body}</div>
+      <ol class="callout-steps">${stepsHtml}</ol>
+    </div>
+  `;
 }
 
 // UX 1.9 — folder-mismatch note. Returns the inline note HTML when the

@@ -73,12 +73,11 @@ The full design lives in
 [notes/ux/newcomer-onboarding.md](notes/ux/newcomer-onboarding.md) (12
 core components plus 2 stretch). PLAN tracks build order, not design.
 
-### Other UX components (1.4 / 1.8 / 1.10-1.12) · *proposed*
+### Other UX components (1.4 / 1.8 / 1.11-1.12) · *proposed*
 
 See [notes/ux/newcomer-onboarding.md](notes/ux/newcomer-onboarding.md)
 sections 1.4 (derived `Thresh<X>` sidebar), 1.8 (`strType` dispatch
-tooltip), 1.10 (*"Edit this"* callout), 1.11 (live-build diff), 1.12
-(plain-language wiki links).
+tooltip), 1.11 (live-build diff), 1.12 (plain-language wiki links).
 
 ### Stretch — cluster pages (UX 3.1) · *proposed*
 

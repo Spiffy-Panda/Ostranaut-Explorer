@@ -405,6 +405,77 @@ section#detail {
 }
 .prefix-explainer .explainer-dismiss:hover { color: var(--fg); }
 
+/* UX 1.10 — "Edit this" callout. Strongest visual emphasis on the page when
+   it appears: the modder came here to do an edit, this is the destination
+   not the journey. Distinct accent color (warn) so it doesn't compete with
+   the explainer banner's accent-blue. */
+.edit-this-callout {
+  margin: 0.6rem 0 0.8rem;
+  padding: 0.65rem 0.9rem 0.7rem;
+  background: rgba(255,210,128,0.06);
+  border: 1px solid var(--warn);
+  border-left: 4px solid var(--warn);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.edit-this-callout .callout-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.35rem;
+}
+.edit-this-callout .callout-label {
+  font-weight: 600;
+  color: var(--warn);
+  font-size: 0.95rem;
+}
+.edit-this-callout .callout-copy-path {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 3px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.7rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.edit-this-callout .callout-copy-path:hover { color: var(--fg); border-color: var(--warn); }
+.edit-this-callout .callout-copy-path.copied { color: var(--good, #aed581); }
+.edit-this-callout .callout-body {
+  color: var(--fg);
+  margin-bottom: 0.35rem;
+}
+.edit-this-callout .callout-body code {
+  background: rgba(0,0,0,0.25);
+  padding: 0 0.25rem;
+  border-radius: 2px;
+  font-size: 0.8125rem;
+}
+.edit-this-callout .callout-steps {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--fg);
+}
+.edit-this-callout .callout-steps li { padding: 0.1rem 0; }
+.edit-this-callout .callout-steps code {
+  background: rgba(0,0,0,0.25);
+  padding: 0 0.2rem;
+  border-radius: 2px;
+  font-size: 0.8125rem;
+}
+.edit-this-callout + .callout-sub {
+  margin: -0.55rem 0 0.6rem;
+  padding: 0.4rem 0.9rem;
+  background: rgba(255,210,128,0.04);
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 4px 4px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
 /* UX 1.9 — folder-mismatch inline note. Smaller / quieter than the explainer
    banner — addresses a specific page-local question, not a general concept.
    Always visible (no dismiss); shows up only when the prefix↔folder mapping
