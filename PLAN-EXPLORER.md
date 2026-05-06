@@ -114,6 +114,57 @@ Promote both to badges with stable site-wide colors.
 Plain-language pill set above any ref list >5 rows. Auto-suggested per
 page from the source folders + `strType`s present.
 
+### Externalize internal-facing prose on code-side detail pages · *next*
+
+PLAN-AST landed three sets of synthetic graph nodes (`code-method`,
+`code-class`, `code-component`) with detail-page blurbs that read like a
+DEV-LOG entry — phrases like *"Synthetic node from PLAN-AST Phase 1"*,
+*"a Roslyn AST walk over `decomp/Assembly-CSharp/`"*, *"identifier-shaped
+string literal"*, *"each entry in `CondOwner.AddCommand`'s dispatcher"*,
+*"dict keys this component reads from its guipropmap at runtime (PLAN-AST
+Phase 3)"*. Useful while building, opaque for the audience the explorer
+is for.
+
+The fix is a per-page-kind blurb rewrite, modder-pov-first. Each blurb
+should answer in three sentences: *what am I looking at*, *why does it
+matter when I'm modding*, *what should I click next*. Mention the C#
+class name, not the Roslyn surface; mention "the game's wiring code,"
+not "AST". Concrete inventory:
+
+- `code-method` / `code-class` blurb (`app.js`'s `renderCodeNodeDetail`,
+  ~line 456): rewrite to *"This page lists every reference this method/class
+  makes to data you can edit. Each row's a hardcoded mention in the game's
+  C# code; click through to see what depends on this name elsewhere. Useful
+  when you've changed a strName and want to find what code expects it."*
+- `code-component` blurb (`renderCodeComponentDetail`, ~line 519): rewrite
+  to *"A `code-component` is one entry in the game's command table — what
+  the data engine does when a condowner's `aUpdateCommands` line starts
+  with `&lt;CommandName&gt;`. Below: which condowners wire to it, what
+  positional args it accepts (with the data folder each one targets), and
+  which conditions the component manipulates."*
+- *Runtime ports* block muted-note (~line 532) — drop the parenthetical
+  "PLAN-AST Phase 3"; explain instead *"Dict keys this component reads
+  from its guipropmap at runtime — the inputs you can set in panel UI
+  in-game."*
+- *Code references* block muted-note (~line 992): the *"in decompiled
+  C#"* phrasing is fine; drop the *"PLAN-AST Phase 1"* tag.
+- Sidebar section heading (~line 165): *"Code (PLAN-AST)"* → *"Code"*,
+  with a tooltip *"Synthetic graph nodes derived from the game's C# code
+  — these surface refs the data files alone can't see."*
+
+Same pass should remove `decomp/Assembly-CSharp/` literal paths from any
+user-facing prose; the modder doesn't care what subdirectory the
+decompiler dumped its output to. Keep the file:line strings on edges
+(those are useful — they're a destination, not architecture).
+
+Internal `// PLAN-AST Phase X` comments in JS / C# stay — those help
+agents and contributors reading the code, and PLAN-AST is the only place
+where the phase numbering is the right vocabulary. The cleanup is
+strictly user-facing strings.
+
+Ship together with the next UX item that touches `app.js`; the diff is
+small enough to ride along.
+
 ### Other UX components (1.4 / 1.7-1.12) · *proposed*
 
 See [notes/ux/newcomer-onboarding.md](notes/ux/newcomer-onboarding.md)
