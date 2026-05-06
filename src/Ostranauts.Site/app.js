@@ -976,6 +976,13 @@ function renderEdgeGroups(edges, perspective, viewFolder) {
 // source code-method/code-class node, render with file:line pulled from each
 // edge's metadata. Falls back to legacy window.CODE_REFS only if no edges
 // exist (lets pre-Phase-1 generated graphs still display refs).
+//
+// Phase 3.1C — within each source group, sibling edges sharing the same
+// metadata.containerKey collapse into one block (mirrors renderCodeOutgoing's
+// Phase 1.1 logic). Sibling-literal patterns like
+// `co.GetGUIPropMap("FFWD", null, …)` called twice in the same arg list, or
+// a `new[] { … }` array with multiple matches, render as one labeled block
+// instead of N near-identical rows.
 function renderCodeRefsBlock(id) {
   const inc = incoming.get(id) ?? [];
   const codeEdges = inc.filter(isCodeRefEdge);
@@ -993,16 +1000,32 @@ function renderCodeRefsBlock(id) {
     const file = sourceNode?.file ?? '';
     const kindLabel = sFolder === 'code-class' ? 'class' : 'method';
     const link = `<a href="#/o/${encodeURIComponent(sFolder)}/${encodeURIComponent(sName)}" data-id="${escapeAttr(sourceId)}">${escapeHtml(formatCodeName(sFolder, sName))}</a>`;
-    const occurrences = bySource.get(sourceId)
-      .sort((a, b) => ((a.metadata?.line ?? 0) - (b.metadata?.line ?? 0)))
-      .map(e => {
-        const line = e.metadata?.line ?? '?';
-        // Defensive trim — older indexers stored TrimEnd'd lines (leading
-        // tabs preserved). New indexer emits Trim'd lines.
-        const text = (e.metadata?.text ?? '').trim();
-        return `<div class="code-loc">${escapeHtml(file)}:${escapeHtml(String(line))}</div>
-                <pre class="code-line">${escapeHtml(text)}</pre>`;
-      }).join('');
+    const sortedEdges = bySource.get(sourceId)
+      .sort((a, b) => ((a.metadata?.line ?? 0) - (b.metadata?.line ?? 0)));
+
+    // Bucket adjacent edges by their structural-parent containerKey so an
+    // array initializer / arg list with multiple matching literals renders
+    // as one block instead of N look-alike rows.
+    const buckets = [];
+    for (const e of sortedEdges) {
+      const ck = e.metadata?.containerKey ?? '';
+      const last = buckets[buckets.length - 1];
+      if (ck && last && last.key === ck) {
+        last.edges.push(e);
+      } else {
+        buckets.push({ key: ck, edges: [e] });
+      }
+    }
+    const occurrences = buckets.map(b => {
+      if (b.edges.length > 1) return renderCodeRefsBlockGroup(b, file);
+      const e = b.edges[0];
+      const line = e.metadata?.line ?? '?';
+      // Defensive trim — older indexers stored TrimEnd'd lines (leading
+      // tabs preserved). New indexer emits Trim'd lines.
+      const text = (e.metadata?.text ?? '').trim();
+      return `<div class="code-loc">${escapeHtml(file)}:${escapeHtml(String(line))}</div>
+              <pre class="code-line">${escapeHtml(text)}</pre>`;
+    }).join('');
     return `<li>
       <div class="code-source">${link} <span class="muted">(${kindLabel})</span></div>
       ${occurrences}
@@ -1017,6 +1040,30 @@ function renderCodeRefsBlock(id) {
       <ul>${items}</ul>
     </div>
   `;
+}
+
+// One bucket of N≥2 sibling edges from the same source sharing a
+// containerKey. The labeled header (containerLabel, lineRange) replaces
+// the per-edge file:line snippets — the rows below show each individual
+// literal hit's line and trimmed source text.
+function renderCodeRefsBlockGroup(bucket, file) {
+  const meta = bucket.edges[0].metadata ?? {};
+  const label = meta.containerLabel || '{ … }';
+  const lineStart = meta.containerLineStart ?? bucket.edges[0].metadata?.line;
+  const lineEnd = meta.containerLineEnd ?? bucket.edges[bucket.edges.length - 1].metadata?.line;
+  const lineRange = lineStart === lineEnd
+    ? `line ${lineStart}`
+    : `lines ${lineStart}–${lineEnd}`;
+  const inner = bucket.edges.map(e => {
+    const line = e.metadata?.line ?? '?';
+    const text = (e.metadata?.text ?? '').trim();
+    return `<div class="code-loc">${escapeHtml(file)}:${escapeHtml(String(line))}</div>
+            <pre class="code-line">${escapeHtml(text)}</pre>`;
+  }).join('');
+  return `<div class="code-refs-group">
+    <div class="group-head"><code>${escapeHtml(label)}</code> <span class="meta">[${escapeHtml(lineRange)}]</span></div>
+    ${inner}
+  </div>`;
 }
 
 // Legacy path: window.CODE_REFS produced by utils/python/emit_code_refs.py.

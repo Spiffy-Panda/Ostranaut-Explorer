@@ -4,6 +4,20 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-06 — PLAN-AST Phase 3.1C: container-grouping in renderCodeRefsBlock (data-side detail pages)
+
+Phase 1.1 collapsed sibling-literal edges into one labeled block on `code-method` / `code-class` detail pages (the *"`new[] { … }` [lines X–Y]"* groups in `renderCodeOutgoing`). Same treatment now applies on the data-side *Code references (N)* block: when one `code-method` source has multiple incoming edges sharing the same `metadata.containerKey`, they collapse into one `<div class="code-refs-group">` with the container label + line range, with each individual literal hit shown inside.
+
+The change is purely site-side — Phase 1.1 already populates `containerKey` / `containerLabel` / `containerLineStart` / `containerLineEnd` on every literal edge. `renderCodeRefsBlock` now buckets adjacent (line-sorted) edges within each source group by `containerKey` and renders multi-edge buckets via a new `renderCodeRefsBlockGroup` helper. Single-edge buckets fall through to the existing per-occurrence render unchanged.
+
+Common case in the wild: `code-method:CrewSim.Awake` calls `CrewSim.LowerUI(CrewSim.tplCurrentUI != null && tplCurrentUI.Item1 == "FFWD" && tplLastUI != null && tplLastUI.Item1 != "FFWD")` — that one arg-list at line 226 contains two `"FFWD"` literals. On `audioemitters/FFWD`'s detail page the two used to render as adjacent identical `LowerUI(...)` rows; now they collapse under one `<code>LowerUI(…)</code> [line 226]` header.
+
+Build numbers unchanged (presentation-only on top of Phase 1.1's existing edge metadata).
+
+Acceptance smoke:
+- `#/o/audioemitters/FFWD` → *Code references* block under *CrewSim.Awake* renders one `<code>LowerUI(…)</code> [line 226]` group with two inner snippets (was: two adjacent `decomp/Assembly-CSharp/CrewSim.cs:226` rows).
+- Single-edge sources still render the bare per-edge layout. 79/79 tests pass.
+
 ## 2026-05-06 — PLAN-AST Phase 3.1B: helper-class follow-into for Destructable, +2,881 wires-to edges
 
 `Destructable` was the only one of the 14 dispatcher commands whose typed in-ports the resolver couldn't reach. The dispatcher does `destructable.SetData(array)`; `Destructable.SetData` forwards to `DestCheck.SetData(aStrings, this.co)` on a *different* class; that's where the per-index field assignments + cond-method endpoints actually type the args (`aStrings[1]` → `this.strDamageCond` → `co.HasCond(...)`, etc.).

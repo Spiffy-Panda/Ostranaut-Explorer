@@ -418,6 +418,26 @@ section#detail {
   font-size: 0.85rem;
 }
 .code-refs-block .code-source .muted { color: var(--muted); font-size: 0.75rem; }
+/* Phase 3.1C — multi-edge sibling group inside the data-side Code references
+   block (mirrors .code-out-group). Same labeled-header treatment. */
+.code-refs-block .code-refs-group {
+  padding: 0.4rem 0.65rem;
+  margin-top: 0.35rem;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+.code-refs-block .code-refs-group .group-head {
+  font-size: 0.8rem;
+  margin-bottom: 0.25rem;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.code-refs-block .code-refs-group .group-head code {
+  color: var(--fg);
+  background: transparent;
+}
+.code-refs-block .code-refs-group .meta { color: var(--muted); font-size: 0.75rem; }
 /* code-method / code-class detail page — outgoing literal listing */
 .code-out { list-style: none; padding: 0; margin: 0; }
 .code-out > li { margin-bottom: 0.5rem; }
