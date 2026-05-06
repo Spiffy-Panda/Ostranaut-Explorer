@@ -77,6 +77,7 @@ public static class ComponentIndexer
         ["GetGasRespire"]        = "gasrespires",
         ["GetGUIPropMap"]        = "guipropmaps",
         ["GetCondTrigger"]       = "condtrigs",
+        ["GetCondOwner"]         = "condowners", // returns spawned CondOwner; arg is still a condowners/ strName
         ["GetCondOwnerDef"]      = "condowners",
         ["GetCondRule"]          = "condrules",
         ["GetItemDef"]           = "items",
@@ -174,6 +175,20 @@ public static class ComponentIndexer
             return Array.Empty<CodeComponent>();
         }
 
+        // Index every class declaration by short name so Phase 2 can do
+        // depth-1 "follow-into" resolution: when the dispatcher does
+        // `comp.SetData(array[1])` and `comp` is e.g. a Heater, we look up
+        // Heater's SetData method body and continue tracing array[1] there.
+        // Last-wins on collisions — matches the indexer's overall semantics.
+        var typesByName = new Dictionary<string, ClassDeclarationSyntax>(StringComparer.Ordinal);
+        foreach (var pt in parsed.Trees)
+        {
+            foreach (var cls in pt.Tree.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>())
+            {
+                typesByName[cls.Identifier.ValueText] = cls;
+            }
+        }
+
         // The dispatcher's body is a chain of `if (array[0] == "X") { ... }
         // else if (array[0] == "Y") { ... }` (sometimes nested inside `else`).
         // Find every comparison literal and then its enclosing then-block.
@@ -202,7 +217,7 @@ public static class ComponentIndexer
 
             var arity = ExtractArityCheck(body);
             var implementingType = ExtractImplementingType(body);
-            var inPorts = ExtractInPorts(body);
+            var inPorts = ExtractInPorts(body, implementingType, typesByName);
 
             var dispatcherSpan = binExpr.GetLocation().GetLineSpan();
             components.Add(new CodeComponent(
@@ -277,63 +292,306 @@ public static class ComponentIndexer
     }
 
     /// <summary>
-    /// For every <c>array[i]</c> access in the branch (where <c>i</c> is a
-    /// literal int), inspect the immediately-enclosing argument context and
-    /// classify:
-    /// <list type="bullet">
-    ///   <item><c>DataHandler.GetXxx(array[i])</c> — port [i] = folder for
-    ///         <c>GetXxx</c> via <see cref="KnownGetters"/>.</item>
-    ///   <item>Otherwise — port [i] = untyped (still recorded so the modder
-    ///         knows the position is consumed).</item>
+    /// PLAN-AST Phase 2 — for each <c>array[i]</c> access in the dispatcher
+    /// branch, classify port [i]'s target folder via a small flow analyzer.
+    /// Five resolution patterns, depth-1 follow-into through the implementing
+    /// type's methods + field assignments. Anything beyond falls through as
+    /// untyped (still recorded so the modder knows the slot is consumed).
+    ///
+    /// Patterns, applied in order:
+    /// <list type="number">
+    ///   <item><b>A — direct.</b> <c>DataHandler.GetX(array[i])</c>: port [i] =
+    ///         folder for <c>GetX</c> via <see cref="KnownGetters"/>.</item>
+    ///   <item><b>B/C — pass-through method call.</b> <c>comp.M(array[i])</c>
+    ///         or <c>comp.M(arg0, array[i], …)</c> on the implementing type:
+    ///         look up <c>M</c>, find <c>DataHandler.GetX(paramN)</c> in M's
+    ///         body where <c>paramN</c> is the matching parameter — covers
+    ///         Heater / Wound / Rotor.</item>
+    ///   <item><b>D — whole-array forwarding.</b> <c>comp.M(array)</c>: recurse
+    ///         into M's body, treating M's parameter as the new "array"
+    ///         variable. Lets us see <c>aStrings[i] = this.field</c> +
+    ///         <c>DataHandler.GetX(this.field)</c> chains — covers Electrical.</item>
+    ///   <item><b>E — direct field assignment.</b> <c>comp.field = array[i]</c>:
+    ///         find <c>DataHandler.GetX(this.field)</c> elsewhere in the impl
+    ///         type — covers Explosion.</item>
     /// </list>
-    /// PLAN-AST: this is the "one-hop" semantic resolution. Going deeper
-    /// (following <c>component.SetData(array)</c> into <c>SetData</c>'s body)
-    /// is a Phase 3 nicety; an untyped port is correct, just less rich.
+    ///
+    /// Patterns within a method's body share the same machinery via
+    /// <see cref="ResolvePortFromArray"/>; the recursion is bounded at depth 1
+    /// to keep the analysis tractable. PLAN-AST's framing of "use the full
+    /// SemanticModel" turned out unnecessary in practice — the call shapes
+    /// are syntactically obvious within the implementing type.
     /// </summary>
-    private static IReadOnlyList<CodeComponentInPort> ExtractInPorts(StatementSyntax body)
+    private static IReadOnlyList<CodeComponentInPort> ExtractInPorts(
+        StatementSyntax body,
+        string implementingType,
+        Dictionary<string, ClassDeclarationSyntax> typesByName)
     {
+        ClassDeclarationSyntax? implType = null;
+        if (!string.IsNullOrEmpty(implementingType))
+            typesByName.TryGetValue(implementingType, out implType);
+
         var portsByIndex = new Dictionary<int, CodeComponentInPort>();
+
+        // Discover every array[i] access we should try to resolve. Two
+        // sources:
+        //   (a) direct accesses in the dispatcher branch body, e.g.
+        //       `DataHandler.GetX(array[1])` or `comp.M(array[2])`;
+        //   (b) accesses inside a method receiving the WHOLE array
+        //       (`comp.M(array)`), since Electrical / Destructable index
+        //       the array only after the forwarding hop.
+        var indices = new HashSet<int>();
         foreach (var ea in body.DescendantNodes().OfType<ElementAccessExpressionSyntax>())
         {
-            if (ea.Expression is not IdentifierNameSyntax id || id.Identifier.ValueText != "array") continue;
-            if (ea.ArgumentList.Arguments.Count != 1) continue;
-            if (ea.ArgumentList.Arguments[0].Expression is not LiteralExpressionSyntax lit) continue;
-            if (!int.TryParse(lit.Token.ValueText, out var idx)) continue;
-            if (idx < 1) continue; // index 0 is the command name itself
-
-            // What's the immediately-enclosing call? Want
-            //    SomeCall(array[idx], ...)
-            // and we care about SomeCall's name.
-            var arg = ea.Parent as ArgumentSyntax;
-            var argList = arg?.Parent as ArgumentListSyntax;
-            var inv = argList?.Parent as InvocationExpressionSyntax;
-            string folder = "";
-            string source = "untyped";
-
-            if (inv?.Expression is MemberAccessExpressionSyntax ma)
+            if (TryArrayLiteralIndex(ea, "array", out var i) && i >= 1) indices.Add(i);
+        }
+        if (implType != null)
+        {
+            foreach (var inv in body.DescendantNodes().OfType<InvocationExpressionSyntax>())
             {
-                var name = ma.Name.Identifier.ValueText;
-                // Only treat the call as resolution if the receiver is
-                // DataHandler — guards against false positives like
-                // gasPump.SetData(array[1], ...) where SetData isn't a getter.
-                var isOnDataHandler = ma.Expression is IdentifierNameSyntax recv && recv.Identifier.ValueText == "DataHandler";
-                if (isOnDataHandler && KnownGetters.TryGetValue(name, out var f))
+                if (inv.Expression is not MemberAccessExpressionSyntax ma) continue;
+                if (inv.ArgumentList.Arguments.Count != 1) continue;
+                if (inv.ArgumentList.Arguments[0].Expression is not IdentifierNameSyntax argId) continue;
+                if (argId.Identifier.ValueText != "array") continue;
+
+                var methodName = ma.Name.Identifier.ValueText;
+                var method = implType.Members.OfType<MethodDeclarationSyntax>()
+                    .FirstOrDefault(m => m.Identifier.ValueText == methodName
+                        && m.ParameterList.Parameters.Count == 1
+                        && m.Body != null);
+                if (method?.Body is null) continue;
+                var paramName = method.ParameterList.Parameters[0].Identifier.ValueText;
+                foreach (var ea2 in method.Body.DescendantNodes().OfType<ElementAccessExpressionSyntax>())
                 {
-                    folder = f;
-                    source = $"DataHandler.{name}";
+                    if (TryArrayLiteralIndex(ea2, paramName, out var i) && i >= 1) indices.Add(i);
                 }
-            }
-
-            // First sighting wins — multiple uses of array[i] in the same
-            // branch all describe the same port; prefer the typed sighting if
-            // we already saw an untyped one.
-            if (!portsByIndex.TryGetValue(idx, out var existing) || (string.IsNullOrEmpty(existing.TargetFolder) && !string.IsNullOrEmpty(folder)))
-            {
-                portsByIndex[idx] = new CodeComponentInPort(idx, folder, source);
             }
         }
 
+        foreach (var idx in indices)
+        {
+            var (folder, source) = ResolvePortFromArray("array", idx, body, implType, depth: 0);
+            portsByIndex[idx] = new CodeComponentInPort(
+                Index: idx,
+                TargetFolder: folder,
+                Source: string.IsNullOrEmpty(folder) ? "untyped" : source);
+        }
+
         return portsByIndex.OrderBy(kv => kv.Key).Select(kv => kv.Value).ToList();
+    }
+
+    /// <summary>
+    /// Resolve <c><paramref name="arrayVarName"/>[<paramref name="index"/>]</c>
+    /// inside <paramref name="scope"/>. Walks Patterns A/B/C/E on every direct
+    /// access, then Pattern D (whole-array forwarding into a method on the
+    /// impl type) when nothing more direct matched. Returns
+    /// <c>(folder, source-description)</c> or <c>("", _)</c> if untyped.
+    /// </summary>
+    private static (string folder, string source) ResolvePortFromArray(
+        string arrayVarName,
+        int index,
+        SyntaxNode scope,
+        ClassDeclarationSyntax? implType,
+        int depth)
+    {
+        // Pass 1: direct accesses arrayVarName[index] and immediate consumers.
+        foreach (var ea in scope.DescendantNodes().OfType<ElementAccessExpressionSyntax>())
+        {
+            if (!TryArrayLiteralIndex(ea, arrayVarName, out var i) || i != index) continue;
+            var (folder, source) = TryDirectPatterns(ea, implType, depth);
+            if (!string.IsNullOrEmpty(folder)) return (folder, source);
+        }
+
+        // Pass 2 (Pattern D): the whole array variable is forwarded to a
+        // method on the impl type — recurse into that method's body using its
+        // parameter as the new array name.
+        if (depth >= 1 || implType is null) return ("", "untyped");
+        foreach (var inv in scope.DescendantNodes().OfType<InvocationExpressionSyntax>())
+        {
+            if (inv.Expression is not MemberAccessExpressionSyntax ma) continue;
+            // Look for <recv>.M(arrayVarName) — single arg, exactly the variable.
+            if (inv.ArgumentList.Arguments.Count != 1) continue;
+            if (inv.ArgumentList.Arguments[0].Expression is not IdentifierNameSyntax argId) continue;
+            if (argId.Identifier.ValueText != arrayVarName) continue;
+
+            var methodName = ma.Name.Identifier.ValueText;
+            var method = implType.Members.OfType<MethodDeclarationSyntax>()
+                .FirstOrDefault(m => m.Identifier.ValueText == methodName
+                    && m.ParameterList.Parameters.Count == 1
+                    && m.Body != null);
+            if (method?.Body is null) continue;
+            var paramName = method.ParameterList.Parameters[0].Identifier.ValueText;
+            var (folder, source) = ResolvePortFromArray(paramName, index, method.Body, implType, depth + 1);
+            if (!string.IsNullOrEmpty(folder)) return (folder, $"{source} ← {methodName}({paramName}[])");
+        }
+
+        return ("", "untyped");
+    }
+
+    /// <summary>
+    /// Patterns A / B / C / E applied to a single <c>array[i]</c> access.
+    /// Pattern D (whole-array forwarding) is handled by the caller.
+    /// </summary>
+    private static (string folder, string source) TryDirectPatterns(
+        ElementAccessExpressionSyntax ea,
+        ClassDeclarationSyntax? implType,
+        int depth)
+    {
+        // Pattern E — the access is the RHS of an assignment to a field on
+        // the impl type's instance. Find the field's name and look for
+        // DataHandler.GetX(this.field) elsewhere in the type.
+        if (ea.Parent is AssignmentExpressionSyntax assign && assign.Right == ea
+            && assign.IsKind(SyntaxKind.SimpleAssignmentExpression))
+        {
+            if (implType != null && TryGetReceiverFieldName(assign.Left, out var fieldName))
+            {
+                var (fldFolder, fldSource) = ResolveFieldUsage(implType, fieldName);
+                if (!string.IsNullOrEmpty(fldFolder)) return (fldFolder, $"{fldSource} ← .{fieldName}=[i]");
+            }
+            return ("", "field assignment");
+        }
+
+        // Patterns A / B / C — array[i] is an argument to a call.
+        if (ea.Parent is not ArgumentSyntax arg) return ("", "untyped");
+        if (arg.Parent is not ArgumentListSyntax argList) return ("", "untyped");
+        if (argList.Parent is not InvocationExpressionSyntax inv) return ("", "untyped");
+        if (inv.Expression is not MemberAccessExpressionSyntax ma) return ("", "untyped");
+
+        var calleeName = ma.Name.Identifier.ValueText;
+        var argPos = argList.Arguments.IndexOf(arg);
+
+        // Pattern A — DataHandler.GetX(array[i])
+        if (ma.Expression is IdentifierNameSyntax dh
+            && dh.Identifier.ValueText == "DataHandler"
+            && KnownGetters.TryGetValue(calleeName, out var fA))
+        {
+            return (fA, $"DataHandler.{calleeName}");
+        }
+
+        // Patterns B/C — comp.M(...args including array[i]...) on impl type.
+        if (depth >= 1) return ("", "untyped (depth)");
+        if (implType is null) return ("", "untyped");
+        var method = implType.Members.OfType<MethodDeclarationSyntax>()
+            .FirstOrDefault(m => m.Identifier.ValueText == calleeName
+                && m.ParameterList.Parameters.Count == argList.Arguments.Count
+                && m.Body != null);
+        if (method?.Body is null) return ("", "untyped");
+        if (argPos < 0 || argPos >= method.ParameterList.Parameters.Count) return ("", "untyped");
+        var paramName = method.ParameterList.Parameters[argPos].Identifier.ValueText;
+        var (folder, source) = ResolveParamInMethod(method.Body, paramName, implType);
+        if (!string.IsNullOrEmpty(folder)) return (folder, $"{source} ← {calleeName}({paramName})");
+        return ("", "untyped");
+    }
+
+    /// <summary>
+    /// Inside a method body, trace where a single named parameter ends up:
+    /// either it flows directly into <c>DataHandler.GetX(paramName)</c>, or
+    /// it's stored to a field that's later passed to <c>DataHandler.GetX</c>
+    /// somewhere in the containing type.
+    /// </summary>
+    private static (string folder, string source) ResolveParamInMethod(
+        SyntaxNode methodBody,
+        string paramName,
+        ClassDeclarationSyntax implType)
+    {
+        // Direct: DataHandler.GetX(paramName)
+        foreach (var inv in methodBody.DescendantNodes().OfType<InvocationExpressionSyntax>())
+        {
+            if (!IsDataHandlerGetter(inv, out var name, out var firstArg)) continue;
+            if (firstArg is IdentifierNameSyntax id && id.Identifier.ValueText == paramName)
+            {
+                if (KnownGetters.TryGetValue(name, out var f)) return (f, $"DataHandler.{name}");
+            }
+        }
+
+        // Via field: this.field = paramName, then DataHandler.GetX(this.field)
+        foreach (var assign in methodBody.DescendantNodes().OfType<AssignmentExpressionSyntax>())
+        {
+            if (!assign.IsKind(SyntaxKind.SimpleAssignmentExpression)) continue;
+            if (assign.Right is not IdentifierNameSyntax rhs || rhs.Identifier.ValueText != paramName) continue;
+            if (!TryGetReceiverFieldName(assign.Left, out var fieldName)) continue;
+            var (folder, source) = ResolveFieldUsage(implType, fieldName);
+            if (!string.IsNullOrEmpty(folder)) return (folder, source);
+        }
+
+        return ("", "untyped");
+    }
+
+    /// <summary>
+    /// Search the implementing type for <c>DataHandler.GetX(this.field)</c>
+    /// (or bare <c>field</c>) — that tells us what data folder the field's
+    /// values come from, transitively typing the dispatcher port.
+    /// </summary>
+    private static (string folder, string source) ResolveFieldUsage(
+        ClassDeclarationSyntax implType,
+        string fieldName)
+    {
+        foreach (var inv in implType.DescendantNodes().OfType<InvocationExpressionSyntax>())
+        {
+            if (!IsDataHandlerGetter(inv, out var name, out var firstArg)) continue;
+            if (!KnownGetters.TryGetValue(name, out var f)) continue;
+            if (firstArg is MemberAccessExpressionSyntax fma
+                && fma.Expression is ThisExpressionSyntax
+                && fma.Name.Identifier.ValueText == fieldName)
+            {
+                return (f, $"DataHandler.{name}(this.{fieldName})");
+            }
+            if (firstArg is IdentifierNameSyntax fid && fid.Identifier.ValueText == fieldName)
+            {
+                return (f, $"DataHandler.{name}({fieldName})");
+            }
+        }
+        return ("", "untyped");
+    }
+
+    /// <summary>
+    /// Returns true and pulls the field name when <paramref name="lhs"/> is
+    /// <c>this.field</c> or <c>localVar.field</c> (the dispatcher canonically
+    /// stashes <c>AddComponent&lt;T&gt;()</c> in a local). The bare-identifier
+    /// case is also accepted; without a SemanticModel we don't verify the
+    /// receiver's type, but the dispatcher branch is small and the pattern is
+    /// canonical (one local of impl type per branch).
+    /// </summary>
+    private static bool TryGetReceiverFieldName(ExpressionSyntax lhs, out string fieldName)
+    {
+        switch (lhs)
+        {
+            case MemberAccessExpressionSyntax ma:
+                fieldName = ma.Name.Identifier.ValueText;
+                return true;
+            case IdentifierNameSyntax id:
+                fieldName = id.Identifier.ValueText;
+                return true;
+        }
+        fieldName = "";
+        return false;
+    }
+
+    private static bool IsDataHandlerGetter(
+        InvocationExpressionSyntax inv,
+        out string name,
+        out ExpressionSyntax? firstArg)
+    {
+        name = "";
+        firstArg = null;
+        if (inv.Expression is not MemberAccessExpressionSyntax ma) return false;
+        if (ma.Expression is not IdentifierNameSyntax dh || dh.Identifier.ValueText != "DataHandler") return false;
+        if (inv.ArgumentList.Arguments.Count == 0) return false;
+        name = ma.Name.Identifier.ValueText;
+        firstArg = inv.ArgumentList.Arguments[0].Expression;
+        return true;
+    }
+
+    private static bool TryArrayLiteralIndex(
+        ElementAccessExpressionSyntax ea,
+        string expectedVarName,
+        out int index)
+    {
+        index = 0;
+        if (ea.Expression is not IdentifierNameSyntax id || id.Identifier.ValueText != expectedVarName) return false;
+        if (ea.ArgumentList.Arguments.Count != 1) return false;
+        if (ea.ArgumentList.Arguments[0].Expression is not LiteralExpressionSyntax lit) return false;
+        return int.TryParse(lit.Token.ValueText, out index);
     }
 
     /// <summary>

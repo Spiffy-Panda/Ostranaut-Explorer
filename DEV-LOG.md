@@ -4,6 +4,38 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-05 — PLAN-AST Phase 2.1: depth-1 follow-into for `aUpdateCommands` typed in-ports + Phase 3 plan refresh
+
+Phase 2 left 9 of 14 dispatcher commands with no typed in-ports because the `array[i]` flow went through `comp.SetData(...)` instead of straight into `DataHandler.GetX`. This slice extends the resolver to handle that hop, plus four other shapes that showed up once I read the components more carefully.
+
+`ComponentIndexer` now applies five resolution patterns in order to each `array[i]` access in a dispatcher branch:
+
+| Pattern | Shape | Component |
+|---|---|---|
+| **A** — direct | `DataHandler.GetX(array[i])` | already handled in Phase 2 |
+| **B / C** — pass-through method call | `comp.M(array[i])` or `comp.M(arg0, array[i], …)` — follow into M, look for `DataHandler.GetX(paramName)` (also handles `paramName` stored to `this.field` then read elsewhere) | `Heater`, `Wound`, `Rotor` |
+| **D** — whole-array forwarding | `comp.M(array)` — recurse into M's body using its parameter as the new "array" variable; chains B/C/E from there | `Electrical` (two-hop: `SetData(strings)` → `strings[1] = this.strGPMKey` → `GetGUIPropMap(this.strGPMKey)`) |
+| **E** — direct field assignment | `comp.field = array[i]`, then look for `DataHandler.GetX(this.field)` elsewhere in the impl type | `Explosion` (`explosion.strType = array[1]` + `GetExplosion(this.strType)`) |
+
+Net result: 5 components newly typed (`Heater[1] → condtrigs`, `Wound[1] → wounds`, `Rotor[1] → condowners`, `Explosion[1] → explosions`, `Electrical[1] → guipropmaps`). 271 new `WiresTo` edges (1,367 → 1,638). 84,655 → 84,926 total references. Source-attribution strings on the port chain are visible to modders — e.g. Electrical's UI now reads `[1] → guipropmaps (DataHandler.GetGUIPropMap(this.strGPMKey) ← .strGPMKey=[i] ← SetData(strings[]))`, showing the full three-hop trace.
+
+Implementation notes:
+- Recursion bounded at depth 1; anything deeper falls through as untyped (still recorded so the modder knows the slot is consumed).
+- Index-discovery pass also walks into `comp.M(array)` callees so we can resolve indices that only appear inside the receiving method's body. Without this, Electrical's branch — which never indexes `array` directly at the dispatcher level — would have stayed un-typed.
+- `KnownGetters` extended with `GetCondOwner → condowners` for Rotor.
+- `Destructable` remains untyped: it forwards to `DestCheck.SetData` on a different class. A per-component allowlist of follow-through types would unblock it; deferred since the head wires-to-component edge is the load-bearing piece for the modder.
+- The full Roslyn `SemanticModel` rung remained unnecessary — pure AST + the static getter table covered everything.
+
+Phase 3 plan refresh (also landed in this commit, [PLAN-AST.md](PLAN-AST.md)) — once I had the AST patterns nailed and read the actual components that consume `strInput01` (Heater, GasPump, GUIAirPump, GUIMeter, GUIToggle4x*), several Phase-3-as-originally-drafted assumptions turned out wrong:
+
+- **There is no `panels/` folder.** Runtime wiring lives inside `guipropmaps/`'s `dictGUIPropMap` flat key/value array. Cross-side join is `code-component` ↔ `guipropmaps` keys.
+- **`strInput01` values are CO instance ids set at runtime, not strNames.** Most static defaults are empty; the binding is fully player-side. Phase 3's value-add is making the *port* visible plus surfacing whatever static defaults exist — not "matching strNames."
+- **Same complexity rung as Phase 2** (AST + depth-1 follow-into), not the `SemanticModel`-tier I'd originally framed. Reuse `ResolveFieldUsage` for the `dict["strInput01"] → field → GetCOByID(field)` chain.
+
+The refresh adds a new edge `kind` (`RuntimeWiresTo`, dashed in the UI) and a `runtimeInPorts[]` array on `code-component` properties. Updated the complexity table to put Phase 3 on the AST tier.
+
+All 79 existing tests still pass.
+
 ## 2026-05-05 — PLAN-AST Phase 1.1: structural-parent grouping + UI polish on code-side detail pages
 
 Three small but visible improvements layered on top of Phase 1+2's data, no schema bump:

@@ -12,8 +12,23 @@ For each branch the indexer extracts:
 - **Command name** — the literal compared against `array[0]`.
 - **Minimum arity** — from the leading `if (array.Length < N) return;` guard.
 - **Implementing C# class** — the type argument of the first `gameObject.AddComponent<T>()` (or `GetComponent<T>()`) call in the branch.
-- **Typed in-ports** — for every `array[i]` access, the immediately-enclosing call is checked: if it's `DataHandler.GetXxx(array[i])`, port `[i]` resolves to the data folder for `Xxx` (via the static `KnownGetters` map). Otherwise `[i]` is recorded as untyped — still a port, just without a target folder.
+- **Typed in-ports** — for every `array[i]` access (direct or reachable through a depth-1 follow-into the implementing type), classify port `[i]`'s target data folder via five resolution patterns. See *Resolution patterns* below.
 - **Cond-touch literals** — the implementing class is then swept for invocations of `AddCond` / `AddCondAmount` / `RemoveCond` / `RemCond` / `ZeroCondAmount` / `HasCond` / `GetCondAmount`. A literal first argument becomes a `CodeComponentLiteralProducer` classified as `produces` / `consumes` / `observes` per the verb.
+
+#### Resolution patterns (Phase 2.1)
+
+Five shapes the resolver tries, in order, against each `array[i]` it discovers:
+
+| Pattern | Shape | Example component |
+|---------|-------|---------|
+| **A — direct** | `DataHandler.GetX(array[i])` | `GasPump`, `GasRespire2`, `GasPressureSense`, `Sensor`, `Pledge` |
+| **B / C — pass-through method call** | `comp.M(array[i])` or `comp.M(arg0, array[i], …)` — follow into M, look for `DataHandler.GetX(paramName)` (also handles `paramName` stored to `this.field` then read elsewhere) | `Heater` (`SetData(strCT)`), `Wound` (`SetData(strName)`), `Rotor` (`SetData(this, rotorCoName, strCOKey)`) |
+| **D — whole-array forwarding** | `comp.M(array)` — recurse into M's body using its parameter as the new "array" variable; chains B/C/E from there | `Electrical` (`SetData(strings)` → `strings[1] = this.strGPMKey` → `GetGUIPropMap(this.strGPMKey)`), `Destructable` (still untyped — forwards to a different class' SetData) |
+| **E — direct field assignment** | `comp.field = array[i]`, then look for `DataHandler.GetX(this.field)` elsewhere in the impl type | `Explosion` (`explosion.strType = array[1]` + `GetExplosion(this.strType)`) |
+
+Recursion is bounded at depth 1 — enough to cover every dispatcher branch without runaway analysis. Anything deeper falls through as untyped (still recorded so the modder knows the slot is consumed).
+
+PLAN-AST originally framed Phase 2 as "Roslyn `SemanticModel` work"; in practice the dispatcher and the impl-type method bodies are syntactically obvious enough that an AST + a small static `KnownGetters` table is sufficient. If a future dispatcher gets harder, promoting to `SemanticModel` is a localized change in `ResolvePortFromArray` / `ResolveParamInMethod`.
 
 The Builder bridges these into the data graph as:
 
@@ -60,11 +75,26 @@ public static class ComponentIndexer
 
 ```
 14 code-component nodes (one per CondOwner.AddCommand branch)
-1,367 wires-to edges    (head + typed positional args from condowners' aUpdateCommands)
+1,638 wires-to edges    (head + typed positional args from condowners' aUpdateCommands)
    118 produces/consumes/observes edges (from literal AddCond patterns)
 ```
 
-The 14 commands are: `GasExchange`, `Pledge`, `OnAddCond`, `OnRemoveCond`, `GasRespire2`, `GasPump`, `GasPressureSense`, `Sensor`, `Destructable`, `Heater`, `Explosion`, `Wound`, `Electrical`, `Meat`, `Rotor`. Five (`Pledge`, `GasRespire2`, `GasPump`, `GasPressureSense`, `Sensor`) have at least one typed in-port via `DataHandler.Get*` resolution; the rest emit untyped ports for their positional args — the wires-to-component head edge still surfaces.
+The 14 commands are: `GasExchange`, `Pledge`, `OnAddCond`, `OnRemoveCond`, `GasRespire2`, `GasPump`, `GasPressureSense`, `Sensor`, `Destructable`, `Heater`, `Explosion`, `Wound`, `Electrical`, `Meat`, `Rotor`. Ten of them now have at least one typed in-port:
+
+| Component | Port | Folder | Resolution chain |
+|---|---|---|---|
+| `Pledge` | `[1]` | `pledges` | A (direct `GetPledge`) |
+| `GasRespire2` | `[1]` | `gasrespires` | A (direct `GetGasRespire`) |
+| `GasPump` | `[1]` | `gasrespires` | A (direct `GetGasRespire`) |
+| `GasPressureSense` | `[1]` | `guipropmaps` | A (direct `GetGUIPropMap`) |
+| `Sensor` | `[1]` | `guipropmaps` | A (direct `GetGUIPropMap`) |
+| `Heater` | `[1]` | `condtrigs` | B (`SetData(strCT)` → `GetCondTrigger(strCT)`) |
+| `Wound` | `[1]` | `wounds` | B (`SetData(strName)` → `GetWound(strName)`) |
+| `Rotor` | `[1]` | `condowners` | C (`SetData(this, rotorCoName, …)` → `GetCondOwner(rotorCoName)`) |
+| `Explosion` | `[1]` | `explosions` | E (`explosion.strType = array[1]` + `GetExplosion(this.strType)`) |
+| `Electrical` | `[1]` | `guipropmaps` | D + E + A (`SetData(strings)` → `strings[1] = this.strGPMKey` → `GetGUIPropMap(this.strGPMKey)`) |
+
+The four remaining (`Destructable`, `GasExchange`, `OnAddCond`, `OnRemoveCond`, `Meat`) emit untyped or no positional ports. `Destructable` forwards into `DestCheck.SetData` — a different class outside the impl-type lookup — and would need a per-component allowlist of helper types to follow further. `OnAddCond`/`OnRemoveCond` populate `dictAddCondEvents` (the dispatcher itself stuffs values into a CondOwner-side dictionary; no third-party DataHandler getter to pin against). The wires-to-component head edge still surfaces for all of them.
 
 ## Limitations
 
