@@ -83,7 +83,9 @@ PLAN-AST Phase 3.1A — for each `RuntimeWiresTo` edge that the runtime-port res
 
 Stdout: lists each loaded root, both decomp-pipeline summaries if they ran (`phase 1: parsed N files, K nodes, M edges` / `phase 2: K components, M wires-to + N produces/consumes/observes`), then the written-path plus `objects`, `references`, `rules`, and `candidates` counts; if any warnings fired, the count is reported pointing at stderr.
 
-Real-data run (vanilla `data/` + `comment_mod/data/` overlay + `decomp/Assembly-CSharp/`): 34,558 objects (1,390 conditions_simple synthetics + 2,002 Phase 1 code nodes + 14 Phase 2 code-component nodes), 84,964 references (5,304 Phase 1 literal edges + 1,638 Phase 2 wires-to + 118 Phase 2 cond-touch edges + 38 Phase 3 runtime-wires-to edges), 91 rules, 243 detector candidates (187 uncovered).
+Real-data run (vanilla `data/` + `comment_mod/data/` overlay + `decomp/Assembly-CSharp/`): 34,558 objects (1,390 conditions_simple synthetics + 2,002 Phase 1 code nodes + 14 Phase 2 code-component nodes), 87,845 references (5,304 Phase 1 literal edges + 4,519 Phase 2/3.1B wires-to + 118 Phase 2 cond-touch edges + 38 Phase 3 runtime-wires-to edges), 91 rules, 243 detector candidates (187 uncovered).
+
+Phase 3.1B — when an `aUpdateCommands` typed-arg edge is inferred to `conditions/` but the value lives in `conditions_simple/`, `BridgePhase2` retargets the edge to `conditions_simple/` (same fallback the Phase 3.1A `RuntimeWiresTo` retarget uses). Without this, `Destructable`'s newly-typed `[1]` and `[3]` ports — which mostly point at `StatDamage`/`StatDamageMax` (declared in `conditions_simple/`) — would generate ~1,920 dangling edges that get filtered out.
 
 ## Depends on
 

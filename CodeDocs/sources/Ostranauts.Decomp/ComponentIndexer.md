@@ -15,18 +15,18 @@ For each branch the indexer extracts:
 - **Typed in-ports** — for every `array[i]` access (direct or reachable through a depth-1 follow-into the implementing type), classify port `[i]`'s target data folder via five resolution patterns. See *Resolution patterns* below.
 - **Cond-touch literals** — the implementing class is then swept for invocations of `AddCond` / `AddCondAmount` / `RemoveCond` / `RemCond` / `ZeroCondAmount` / `HasCond` / `GetCondAmount`. A literal first argument becomes a `CodeComponentLiteralProducer` classified as `produces` / `consumes` / `observes` per the verb.
 
-#### Resolution patterns (Phase 2.1)
+#### Resolution patterns (Phase 2.1, extended in Phase 3.1B)
 
 Five shapes the resolver tries, in order, against each `array[i]` it discovers:
 
 | Pattern | Shape | Example component |
 |---------|-------|---------|
-| **A — direct** | `DataHandler.GetX(array[i])` | `GasPump`, `GasRespire2`, `GasPressureSense`, `Sensor`, `Pledge` |
+| **A — direct** | `DataHandler.GetX(array[i])` | `GasPump`, `GasRespire2`, `GasPressureSense`, `Pledge` |
 | **B / C — pass-through method call** | `comp.M(array[i])` or `comp.M(arg0, array[i], …)` — follow into M, look for `DataHandler.GetX(paramName)` (also handles `paramName` stored to `this.field` then read elsewhere) | `Heater` (`SetData(strCT)`), `Wound` (`SetData(strName)`), `Rotor` (`SetData(this, rotorCoName, strCOKey)`) |
-| **D — whole-array forwarding** | `comp.M(array)` — recurse into M's body using its parameter as the new "array" variable; chains B/C/E from there | `Electrical` (`SetData(strings)` → `strings[1] = this.strGPMKey` → `GetGUIPropMap(this.strGPMKey)`), `Destructable` (still untyped — forwards to a different class' SetData) |
-| **E — direct field assignment** | `comp.field = array[i]`, then look for `DataHandler.GetX(this.field)` elsewhere in the impl type | `Explosion` (`explosion.strType = array[1]` + `GetExplosion(this.strType)`) |
+| **D — whole-array forwarding** | `comp.M(array, …)` — recurse into M's body using its matching parameter as the new "array" variable; chains B/C/E from there. Phase 3.1B: forwarded calls also search the per-component `FollowIntoTypes` allow-list (e.g. `["DestCheck"]` for `Destructable`) so cross-class chains like `Destructable.SetData → DestCheck.SetData(aStrings, this.co)` are reachable. | `Electrical` (`SetData(strings)` → `strings[1] = this.strGPMKey` → `GetGUIPropMap(this.strGPMKey)`), `Destructable` (`SetData(array)` → `Destructable.SetData(aStrings)` → `DestCheck.SetData(aStrings, this.co)` — typed via Phase 3.1B helper-class follow-into) |
+| **E — direct field assignment** | `comp.field = array[i]`, then look for any **typing endpoint** that takes <code>this.field</code> as first arg — Phase 3.1B widens the endpoint set from `DataHandler.Get*` only to <code>DataHandler.Get*</code> ∪ `CondOwner` cond-methods (`HasCond`, `AddCondAmount`, …) → `conditions/` ∪ `Ship.GetCOByID` → `condowners/`. | `Explosion` (`explosion.strType = array[1]` + `GetExplosion(this.strType)`); `DestCheck` (`this.strDamageCond = aStrings[1]` + `co.HasCond(this.strDamageCond)` → `conditions/`) |
 
-Recursion is bounded at depth 1 — enough to cover every dispatcher branch without runaway analysis. Anything deeper falls through as untyped (still recorded so the modder knows the slot is consumed).
+Recursion is bounded at depth 2 (Phase 3.1B raised it from 1 to accommodate `Destructable`'s dispatcher → `Destructable.SetData` → `DestCheck.SetData` chain). Anything deeper falls through as untyped (still recorded so the modder knows the slot is consumed).
 
 PLAN-AST originally framed Phase 2 as "Roslyn `SemanticModel` work"; in practice the dispatcher and the impl-type method bodies are syntactically obvious enough that an AST + a small static `KnownGetters` table is sufficient. If a future dispatcher gets harder, promoting to `SemanticModel` is a localized change in `ResolvePortFromArray` / `ResolveParamInMethod`.
 
@@ -49,7 +49,8 @@ public sealed record CodeComponent(
     int DispatcherLine,
     IReadOnlyList<CodeComponentInPort> InPorts,
     IReadOnlyList<CodeComponentLiteralProducer> Produces,
-    IReadOnlyList<CodeComponentRuntimePort> RuntimePorts);  // PLAN-AST Phase 3
+    IReadOnlyList<CodeComponentRuntimePort> RuntimePorts,  // PLAN-AST Phase 3
+    IReadOnlyList<string> FollowIntoTypes);                // PLAN-AST Phase 3.1B
 
 public sealed record CodeComponentInPort(
     int Index,            // 1-based; 0 is the command name token
@@ -108,16 +109,16 @@ and stay untyped.)
 A `PlayerWired` flag on the port is true for keys matching
 `strInput0\d+` (the convention for player-editable panel-input slots).
 
-## Output volumes (current real-data run)
+## Output volumes (current real-data run, Phase 3.1B)
 
 ```
 14 code-component nodes (one per CondOwner.AddCommand branch)
-1,638 wires-to edges    (head + typed positional args from condowners' aUpdateCommands)
+4,519 wires-to edges    (head + typed positional args from condowners' aUpdateCommands)
    118 produces/consumes/observes edges (from literal AddCond patterns)
     38 runtime-wires-to edges (Phase 3 — guipropmap → resolved typed target via runtime port)
 ```
 
-The 14 commands are: `GasExchange`, `Pledge`, `OnAddCond`, `OnRemoveCond`, `GasRespire2`, `GasPump`, `GasPressureSense`, `Sensor`, `Destructable`, `Heater`, `Explosion`, `Wound`, `Electrical`, `Meat`, `Rotor`. Ten of them now have at least one typed in-port:
+The 14 commands are: `GasExchange`, `Pledge`, `OnAddCond`, `OnRemoveCond`, `GasRespire2`, `GasPump`, `GasPressureSense`, `Destructable`, `Heater`, `Explosion`, `Wound`, `Electrical`, `Meat`, `Rotor`. Eleven of them now have at least one typed in-port (Phase 3.1B added `Destructable[1/2/3]`):
 
 | Component | Port | Folder | Resolution chain |
 |---|---|---|---|
@@ -131,8 +132,11 @@ The 14 commands are: `GasExchange`, `Pledge`, `OnAddCond`, `OnRemoveCond`, `GasR
 | `Rotor` | `[1]` | `condowners` | C (`SetData(this, rotorCoName, …)` → `GetCondOwner(rotorCoName)`) |
 | `Explosion` | `[1]` | `explosions` | E (`explosion.strType = array[1]` + `GetExplosion(this.strType)`) |
 | `Electrical` | `[1]` | `guipropmaps` | D + E + A (`SetData(strings)` → `strings[1] = this.strGPMKey` → `GetGUIPropMap(this.strGPMKey)`) |
+| `Destructable` | `[1]` | `conditions` | D × 2 + E + cond-method endpoint (`Destructable.SetData(aStrings)` → `DestCheck.SetData(aStrings, this.co)` → `this.strDamageCond = aStrings[1]` + `co.HasCond(this.strDamageCond)`) — Phase 3.1B helper-class follow-into |
+| `Destructable` | `[2]` | `loot` | D × 2 + E + A (chain: `… DestCheck.SetData …` → `this.strLootModeSwitch = aStrings[2]` + `DataHandler.GetLoot(this.strLootModeSwitch)`) |
+| `Destructable` | `[3]` | `conditions` | D × 2 + E + cond-method endpoint (chain: `… DestCheck.SetData …` → `this.strDamageCondMax = aStrings[3]` + `co.HasCond(this.strDamageCondMax)`) |
 
-The four remaining (`Destructable`, `GasExchange`, `OnAddCond`, `OnRemoveCond`, `Meat`) emit untyped or no positional ports. `Destructable` forwards into `DestCheck.SetData` — a different class outside the impl-type lookup — and would need a per-component allowlist of helper types to follow further. `OnAddCond`/`OnRemoveCond` populate `dictAddCondEvents` (the dispatcher itself stuffs values into a CondOwner-side dictionary; no third-party DataHandler getter to pin against). The wires-to-component head edge still surfaces for all of them.
+The three remaining (`GasExchange`, `OnAddCond`, `OnRemoveCond`, `Meat`) emit untyped or no positional ports. `OnAddCond`/`OnRemoveCond` populate `dictAddCondEvents` (the dispatcher itself stuffs values into a CondOwner-side dictionary; no third-party DataHandler getter to pin against). The wires-to-component head edge still surfaces for all of them.
 
 ## Limitations
 

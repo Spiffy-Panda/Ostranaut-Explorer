@@ -4,6 +4,39 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-06 — PLAN-AST Phase 3.1B: helper-class follow-into for Destructable, +2,881 wires-to edges
+
+`Destructable` was the only one of the 14 dispatcher commands whose typed in-ports the resolver couldn't reach. The dispatcher does `destructable.SetData(array)`; `Destructable.SetData` forwards to `DestCheck.SetData(aStrings, this.co)` on a *different* class; that's where the per-index field assignments + cond-method endpoints actually type the args (`aStrings[1]` → `this.strDamageCond` → `co.HasCond(...)`, etc.).
+
+The `CodeComponent` record gains `FollowIntoTypes: IReadOnlyList<string>` — defaulted empty, populated via a one-line allow-list (`["DestCheck"]` for `Destructable`). Pattern D's whole-array forwarding now searches `[implType] ∪ FollowIntoTypes` for the called method, recursing with the helper class as the new `implType` so Pattern E and `ResolveFieldUsage` walk DestCheck's field declarations and usages. Index-discovery extracted into a shared recursive `DiscoverIndices` helper bounded at the same depth as the resolver.
+
+Two adjacent changes the slice required:
+
+1. **Depth limit raised from 1 to 2.** Required for the dispatcher → `Destructable.SetData` → `DestCheck.SetData` chain. Anything deeper still falls through as untyped.
+2. **`ResolveFieldUsage` typing-endpoint vocabulary widened.** Phase 2.1 only knew `DataHandler.Get*` + folder. DestCheck's field consumers are `co.HasCond(this.strDamageCond)` / `co.GetCondAmount(...)` / `co.AddCondAmount(this.strDamageCond, …)` — all CondOwner cond-methods, no DataHandler involvement. Extended the resolver to also recognize the `CondOwnerCondMethods` set (→ `conditions/`) and `ship.GetCOByID` (→ `condowners/`) when classifying field-use sites. Sanity-checked GasPump/Heater/Wound/Rotor/Explosion/Electrical/Pledge/GasRespire2 — no regressions; their existing typings are untouched.
+
+Builder-side change: `BridgePhase2`'s typed-arg WiresTo emit now retargets `conditions/` → `conditions_simple/` when the value lives there (mirrors Phase 3.1A's RuntimeWiresTo retarget). Without it, ~1,920 of the new Destructable edges would be dropped because `StatDamage` / `StatDamageMax` declare in `conditions_simple/`.
+
+Numbers:
+
+```
+decomp phase 1: 1,299 .cs parsed → 2,002 code-method/class nodes, 5,304 literal edges
+decomp phase 2: 14 code-component nodes
+                + 4,519 wires-to (was 1,638; +2,881 from Destructable[1/2/3])
+                + 118 produces/consumes/observes
+                + 38 RuntimeWiresTo edges
+total objects:    34,558  (unchanged)
+total references: 87,845  (was 84,964; +2,881)
+```
+
+Per-position breakdown for Destructable: head (pos=0) 963 + [1] 961 + [2] 955 + [3] 4 + [4] 0 (untyped). Totals 2,883 from Destructable specifically, very close to the upper bound of 963 × 4 = 3,852 (the gap is per-instance values whose strNames don't exist in any folder — e.g. `StatDamageMax` does, but a handful of [3] arg values are placeholders or unique strNames).
+
+Acceptance smoke:
+- `#/o/code-component/Destructable` shows 4 typed in-ports: `[1] → conditions`, `[2] → loot`, `[3] → conditions`, `[4] → untyped`. The attribution chain on each reads the full cross-class trace, e.g. `[1] → conditions (.GetCondAmount(this.strDamageCond) ← .strDamageCond=[i] ← DestCheck.SetData(aStrings[]) ← SetData(aStrings[]))`.
+- 79/79 tests pass; previously-typed components (GasPump, Heater, Wound, Rotor, Explosion, Electrical, Pledge, GasRespire2, GasPressureSense) all keep their typings.
+
+Note on PLAN-AST 3.1B's framing: the spec said `[2]→interactions`. In practice the Destructable code-side flow types `[2]` to `loot` (the field flows into `DataHandler.GetLoot(...)`). Real condowner data carries names like `ACTAeroParts3x301Destroy` at position 2 — those live in `loot/`, not `interactions/`. Implementation tracks the actual code, not the spec's misremembering.
+
 ## 2026-05-06 — PLAN-AST Phase 3.1A: resolve dangling RuntimeWiresTo targets, synthesize code-emitted condition nodes when truly missing
 
 The 17 dangling `RuntimeWiresTo` edges Phase 3 left behind ("`guipropmaps:AlarmPressureCO2 → conditions:IsReadyPressureSense`" and friends) all landed on a "No object known" placeholder when clicked. Phase 3.1A closes that hop. Two branches in `BridgePhase2`'s emit loop: when the runtime-port resolver typed an edge to `conditions/` and the name isn't there, (a) retarget to `conditions_simple/` if found there, otherwise (b) synthesize a new `DataObject` in `conditions/` with `Fields = { kind: "code-emitted", producedBy: "<component>" }` so the modder lands on a populated detail page.

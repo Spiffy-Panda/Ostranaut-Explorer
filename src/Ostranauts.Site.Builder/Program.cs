@@ -355,14 +355,29 @@ internal static class Program
                 // Edges 2+: typed positional args. Only emit when the inferred
                 // folder actually contains the referenced strName — keeps the
                 // graph honest and lets the dangling-edges health page focus
-                // on real data bugs.
+                // on real data bugs. Phase 3.1 — when the resolver typed to
+                // `conditions/` but the value lives in `conditions_simple/`
+                // (the simplified-tuple folder where most stat conditions
+                // declare themselves), retarget so the edge resolves cleanly.
                 foreach (var port in comp.InPorts)
                 {
                     if (string.IsNullOrEmpty(port.TargetFolder)) continue;
                     if (port.Index >= tokens.Length) continue;
                     var argValue = tokens[port.Index].Trim();
                     if (string.IsNullOrEmpty(argValue)) continue;
-                    if (!dataExistenceSet.Contains((port.TargetFolder, argValue))) continue;
+                    var emitFolder = port.TargetFolder;
+                    if (!dataExistenceSet.Contains((emitFolder, argValue)))
+                    {
+                        if (emitFolder == "conditions"
+                            && dataExistenceSet.Contains(("conditions_simple", argValue)))
+                        {
+                            emitFolder = "conditions_simple";
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                    }
                     var argMeta = new Dictionary<string, object>
                     {
                         ["commandName"] = commandName,
@@ -374,7 +389,7 @@ internal static class Program
                         SourceFolder: "condowners",
                         SourceName: co.StrName,
                         SourceField: "aUpdateCommands",
-                        TargetFolder: port.TargetFolder,
+                        TargetFolder: emitFolder,
                         TargetName: argValue,
                         Kind: RefKind.WiresTo,
                         Metadata: argMeta));

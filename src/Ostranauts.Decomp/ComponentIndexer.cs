@@ -17,7 +17,11 @@ public sealed record CodeComponent(
     int DispatcherLine,                                  // line of the matching `array[0] == "X"` literal
     IReadOnlyList<CodeComponentInPort> InPorts,          // typed positional args (when resolvable)
     IReadOnlyList<CodeComponentLiteralProducer> Produces, // literal-string AddCond/RemCond/HasCond patterns
-    IReadOnlyList<CodeComponentRuntimePort> RuntimePorts); // PLAN-AST Phase 3: dict-keyed runtime config reads
+    IReadOnlyList<CodeComponentRuntimePort> RuntimePorts, // PLAN-AST Phase 3: dict-keyed runtime config reads
+    IReadOnlyList<string> FollowIntoTypes);               // PLAN-AST Phase 3.1B: extra helper classes the
+                                                          // resolver may search for forwarded methods (e.g.
+                                                          // ["DestCheck"] for Destructable, whose SetData
+                                                          // forwards to DestCheck.SetData(aStrings, this.co))
 
 /// <summary>
 /// Positional argument of an <c>aUpdateCommands</c> string, resolved (when
@@ -133,6 +137,23 @@ public static class ComponentIndexer
     };
 
     /// <summary>
+    /// PLAN-AST Phase 3.1B — per-component helper-class allow-list. The
+    /// resolver normally caps follow-into at the impl type itself; entries
+    /// here extend the lookup to specific helper classes whose name is
+    /// referenced by a forwarded call. Currently <c>Destructable</c> forwards
+    /// <c>SetData(aStrings)</c> to <c>DestCheck.SetData(aStrings, this.co)</c>
+    /// on a different class — that's where the per-index typing actually
+    /// happens (<c>aStrings[1]</c>=damage condition, <c>aStrings[2]</c>=loot
+    /// switch, <c>aStrings[3]</c>=damage-condition-max). One micro-rule per
+    /// component as needed; if a future dispatcher grows a similar second
+    /// hop, add a line here.
+    /// </summary>
+    private static readonly Dictionary<string, string[]> ComponentFollowIntoTypes = new(StringComparer.Ordinal)
+    {
+        ["Destructable"] = new[] { "DestCheck" },
+    };
+
+    /// <summary>
     /// Cond-touching methods on <c>CondOwner</c>, classified by role. Order
     /// is checked-once and the verb dictates whether a literal first-arg is
     /// treated as produces / consumes / observes.
@@ -233,7 +254,10 @@ public static class ComponentIndexer
 
             var arity = ExtractArityCheck(body);
             var implementingType = ExtractImplementingType(body);
-            var inPorts = ExtractInPorts(body, implementingType, typesByName);
+            var followInto = ComponentFollowIntoTypes.TryGetValue(commandName, out var fi)
+                ? (IReadOnlyList<string>)fi
+                : Array.Empty<string>();
+            var inPorts = ExtractInPorts(body, implementingType, typesByName, followInto);
 
             var dispatcherSpan = binExpr.GetLocation().GetLineSpan();
             components.Add(new CodeComponent(
@@ -244,7 +268,8 @@ public static class ComponentIndexer
                 DispatcherLine: dispatcherSpan.StartLinePosition.Line + 1,
                 InPorts: inPorts,
                 Produces: Array.Empty<CodeComponentLiteralProducer>(),     // filled in below per implementing-type
-                RuntimePorts: Array.Empty<CodeComponentRuntimePort>()));   // ditto
+                RuntimePorts: Array.Empty<CodeComponentRuntimePort>(),     // ditto
+                FollowIntoTypes: followInto));
         }
 
         // For each unique implementing type, sweep its declaration for literal
@@ -349,11 +374,22 @@ public static class ComponentIndexer
     private static IReadOnlyList<CodeComponentInPort> ExtractInPorts(
         StatementSyntax body,
         string implementingType,
-        Dictionary<string, ClassDeclarationSyntax> typesByName)
+        Dictionary<string, ClassDeclarationSyntax> typesByName,
+        IReadOnlyList<string> followIntoTypes)
     {
         ClassDeclarationSyntax? implType = null;
         if (!string.IsNullOrEmpty(implementingType))
             typesByName.TryGetValue(implementingType, out implType);
+
+        // Pre-resolve helper classes once. Phase 3.1B — Pattern D's whole-
+        // array forwarding searches the union of [implType] ∪ FollowIntoTypes
+        // for the called method, so a `destCheck.SetData(aStrings, this.co)`
+        // inside `Destructable.SetData` follows into DestCheck.
+        var followTypes = followIntoTypes
+            .Select(name => typesByName.TryGetValue(name, out var t) ? t : null)
+            .Where(t => t != null)
+            .Select(t => t!)
+            .ToList();
 
         var portsByIndex = new Dictionary<int, CodeComponentInPort>();
 
@@ -365,36 +401,11 @@ public static class ComponentIndexer
         //       (`comp.M(array)`), since Electrical / Destructable index
         //       the array only after the forwarding hop.
         var indices = new HashSet<int>();
-        foreach (var ea in body.DescendantNodes().OfType<ElementAccessExpressionSyntax>())
-        {
-            if (TryArrayLiteralIndex(ea, "array", out var i) && i >= 1) indices.Add(i);
-        }
-        if (implType != null)
-        {
-            foreach (var inv in body.DescendantNodes().OfType<InvocationExpressionSyntax>())
-            {
-                if (inv.Expression is not MemberAccessExpressionSyntax ma) continue;
-                if (inv.ArgumentList.Arguments.Count != 1) continue;
-                if (inv.ArgumentList.Arguments[0].Expression is not IdentifierNameSyntax argId) continue;
-                if (argId.Identifier.ValueText != "array") continue;
-
-                var methodName = ma.Name.Identifier.ValueText;
-                var method = implType.Members.OfType<MethodDeclarationSyntax>()
-                    .FirstOrDefault(m => m.Identifier.ValueText == methodName
-                        && m.ParameterList.Parameters.Count == 1
-                        && m.Body != null);
-                if (method?.Body is null) continue;
-                var paramName = method.ParameterList.Parameters[0].Identifier.ValueText;
-                foreach (var ea2 in method.Body.DescendantNodes().OfType<ElementAccessExpressionSyntax>())
-                {
-                    if (TryArrayLiteralIndex(ea2, paramName, out var i) && i >= 1) indices.Add(i);
-                }
-            }
-        }
+        DiscoverIndices("array", body, implType, followTypes, indices, depth: 0);
 
         foreach (var idx in indices)
         {
-            var (folder, source) = ResolvePortFromArray("array", idx, body, implType, depth: 0);
+            var (folder, source) = ResolvePortFromArray("array", idx, body, implType, followTypes, depth: 0);
             portsByIndex[idx] = new CodeComponentInPort(
                 Index: idx,
                 TargetFolder: folder,
@@ -402,6 +413,80 @@ public static class ComponentIndexer
         }
 
         return portsByIndex.OrderBy(kv => kv.Key).Select(kv => kv.Value).ToList();
+    }
+
+    /// <summary>
+    /// Recursively gather every index <c>I</c> for which <c>arrayVar[I]</c>
+    /// is read in <paramref name="scope"/> or in any forwarded method
+    /// reachable from it through Patterns B/C/D. Bounded at depth 2 to keep
+    /// runtime tractable; that's enough for the deepest known chain
+    /// (<c>Destructable</c>: dispatcher → <c>Destructable.SetData</c> →
+    /// <c>DestCheck.SetData</c>, where the per-index typing finally happens).
+    /// </summary>
+    private static void DiscoverIndices(
+        string arrayVarName,
+        SyntaxNode scope,
+        ClassDeclarationSyntax? implType,
+        IReadOnlyList<ClassDeclarationSyntax> followTypes,
+        HashSet<int> indices,
+        int depth)
+    {
+        foreach (var ea in scope.DescendantNodes().OfType<ElementAccessExpressionSyntax>())
+        {
+            if (TryArrayLiteralIndex(ea, arrayVarName, out var i) && i >= 1) indices.Add(i);
+        }
+        if (depth >= 2 || implType is null) return;
+        foreach (var inv in scope.DescendantNodes().OfType<InvocationExpressionSyntax>())
+        {
+            if (inv.Expression is not MemberAccessExpressionSyntax ma) continue;
+            if (!TryFindArrayArgPosition(inv, arrayVarName, out var argPos)) continue;
+
+            var methodName = ma.Name.Identifier.ValueText;
+            foreach (var hostType in EnumerateLookupTypes(implType, followTypes))
+            {
+                var method = hostType.Members.OfType<MethodDeclarationSyntax>()
+                    .FirstOrDefault(m => m.Identifier.ValueText == methodName
+                        && m.ParameterList.Parameters.Count == inv.ArgumentList.Arguments.Count
+                        && m.Body != null);
+                if (method?.Body is null) continue;
+                if (argPos >= method.ParameterList.Parameters.Count) continue;
+                var paramName = method.ParameterList.Parameters[argPos].Identifier.ValueText;
+                DiscoverIndices(paramName, method.Body, hostType, followTypes, indices, depth + 1);
+                break; // first host wins
+            }
+        }
+    }
+
+    /// <summary>
+    /// Locate <paramref name="varName"/> as an exact-identifier argument in
+    /// <paramref name="inv"/>'s arg list and return its position. Used by the
+    /// whole-array forwarding pass — e.g. <c>destCheck.SetData(aStrings, this.co)</c>
+    /// has aStrings at position 0.
+    /// </summary>
+    private static bool TryFindArrayArgPosition(
+        InvocationExpressionSyntax inv,
+        string varName,
+        out int position)
+    {
+        for (var i = 0; i < inv.ArgumentList.Arguments.Count; i++)
+        {
+            if (inv.ArgumentList.Arguments[i].Expression is IdentifierNameSyntax id
+                && id.Identifier.ValueText == varName)
+            {
+                position = i;
+                return true;
+            }
+        }
+        position = -1;
+        return false;
+    }
+
+    private static IEnumerable<ClassDeclarationSyntax> EnumerateLookupTypes(
+        ClassDeclarationSyntax? implType,
+        IReadOnlyList<ClassDeclarationSyntax> followTypes)
+    {
+        if (implType != null) yield return implType;
+        foreach (var t in followTypes) yield return t;
     }
 
     /// <summary>
@@ -416,37 +501,54 @@ public static class ComponentIndexer
         int index,
         SyntaxNode scope,
         ClassDeclarationSyntax? implType,
+        IReadOnlyList<ClassDeclarationSyntax> followTypes,
         int depth)
     {
         // Pass 1: direct accesses arrayVarName[index] and immediate consumers.
         foreach (var ea in scope.DescendantNodes().OfType<ElementAccessExpressionSyntax>())
         {
             if (!TryArrayLiteralIndex(ea, arrayVarName, out var i) || i != index) continue;
-            var (folder, source) = TryDirectPatterns(ea, implType, depth);
+            var (folder, source) = TryDirectPatterns(ea, arrayVarName, implType, followTypes, depth);
             if (!string.IsNullOrEmpty(folder)) return (folder, source);
         }
 
-        // Pass 2 (Pattern D): the whole array variable is forwarded to a
-        // method on the impl type — recurse into that method's body using its
-        // parameter as the new array name.
-        if (depth >= 1 || implType is null) return ("", "untyped");
+        // Pass 2 (Pattern D): the array variable is forwarded to a method on
+        // the impl type — or, with Phase 3.1B's helper-class allow-list, on
+        // a follow-into helper class (e.g. Destructable.SetData → DestCheck.
+        // SetData(aStrings, this.co)). Recurse into the called method's body
+        // using its matching parameter as the new array name. Depth bounded
+        // at 2 so the resolver can chain dispatcher → A.SetData → B.SetData
+        // (as Destructable does), but no further.
+        if (depth >= 2 || implType is null) return ("", "untyped");
         foreach (var inv in scope.DescendantNodes().OfType<InvocationExpressionSyntax>())
         {
             if (inv.Expression is not MemberAccessExpressionSyntax ma) continue;
-            // Look for <recv>.M(arrayVarName) — single arg, exactly the variable.
-            if (inv.ArgumentList.Arguments.Count != 1) continue;
-            if (inv.ArgumentList.Arguments[0].Expression is not IdentifierNameSyntax argId) continue;
-            if (argId.Identifier.ValueText != arrayVarName) continue;
+            if (!TryFindArrayArgPosition(inv, arrayVarName, out var argPos)) continue;
 
             var methodName = ma.Name.Identifier.ValueText;
-            var method = implType.Members.OfType<MethodDeclarationSyntax>()
-                .FirstOrDefault(m => m.Identifier.ValueText == methodName
-                    && m.ParameterList.Parameters.Count == 1
-                    && m.Body != null);
-            if (method?.Body is null) continue;
-            var paramName = method.ParameterList.Parameters[0].Identifier.ValueText;
-            var (folder, source) = ResolvePortFromArray(paramName, index, method.Body, implType, depth + 1);
-            if (!string.IsNullOrEmpty(folder)) return (folder, $"{source} ← {methodName}({paramName}[])");
+            // Search implType first, then helper classes. When the match
+            // lives in a helper class, the recursion uses that class as the
+            // new implType so Pattern E's field-walk and the field-usage
+            // resolver scan the right type.
+            foreach (var hostType in EnumerateLookupTypes(implType, followTypes))
+            {
+                var method = hostType.Members.OfType<MethodDeclarationSyntax>()
+                    .FirstOrDefault(m => m.Identifier.ValueText == methodName
+                        && m.ParameterList.Parameters.Count == inv.ArgumentList.Arguments.Count
+                        && m.Body != null);
+                if (method?.Body is null) continue;
+                if (argPos >= method.ParameterList.Parameters.Count) continue;
+                var paramName = method.ParameterList.Parameters[argPos].Identifier.ValueText;
+                var (folder, source) = ResolvePortFromArray(paramName, index, method.Body, hostType, followTypes, depth + 1);
+                if (!string.IsNullOrEmpty(folder))
+                {
+                    var hop = hostType == implType
+                        ? $"{methodName}({paramName}[])"
+                        : $"{hostType.Identifier.ValueText}.{methodName}({paramName}[])";
+                    return (folder, $"{source} ← {hop}");
+                }
+                break; // first host wins
+            }
         }
 
         return ("", "untyped");
@@ -458,7 +560,9 @@ public static class ComponentIndexer
     /// </summary>
     private static (string folder, string source) TryDirectPatterns(
         ElementAccessExpressionSyntax ea,
+        string arrayVarName,
         ClassDeclarationSyntax? implType,
+        IReadOnlyList<ClassDeclarationSyntax> followTypes,
         int depth)
     {
         // Pattern E — the access is the RHS of an assignment to a field on
@@ -492,18 +596,23 @@ public static class ComponentIndexer
             return (fA, $"DataHandler.{calleeName}");
         }
 
-        // Patterns B/C — comp.M(...args including array[i]...) on impl type.
+        // Patterns B/C — comp.M(...args including array[i]...) on impl type
+        // or any FollowInto helper class.
         if (depth >= 1) return ("", "untyped (depth)");
         if (implType is null) return ("", "untyped");
-        var method = implType.Members.OfType<MethodDeclarationSyntax>()
-            .FirstOrDefault(m => m.Identifier.ValueText == calleeName
-                && m.ParameterList.Parameters.Count == argList.Arguments.Count
-                && m.Body != null);
-        if (method?.Body is null) return ("", "untyped");
-        if (argPos < 0 || argPos >= method.ParameterList.Parameters.Count) return ("", "untyped");
-        var paramName = method.ParameterList.Parameters[argPos].Identifier.ValueText;
-        var (folder, source) = ResolveParamInMethod(method.Body, paramName, implType);
-        if (!string.IsNullOrEmpty(folder)) return (folder, $"{source} ← {calleeName}({paramName})");
+        foreach (var hostType in EnumerateLookupTypes(implType, followTypes))
+        {
+            var method = hostType.Members.OfType<MethodDeclarationSyntax>()
+                .FirstOrDefault(m => m.Identifier.ValueText == calleeName
+                    && m.ParameterList.Parameters.Count == argList.Arguments.Count
+                    && m.Body != null);
+            if (method?.Body is null) continue;
+            if (argPos < 0 || argPos >= method.ParameterList.Parameters.Count) continue;
+            var paramName = method.ParameterList.Parameters[argPos].Identifier.ValueText;
+            var (folder, source) = ResolveParamInMethod(method.Body, paramName, hostType);
+            if (!string.IsNullOrEmpty(folder)) return (folder, $"{source} ← {calleeName}({paramName})");
+            break;
+        }
         return ("", "untyped");
     }
 
@@ -542,9 +651,16 @@ public static class ComponentIndexer
     }
 
     /// <summary>
-    /// Search the implementing type for <c>DataHandler.GetX(this.field)</c>
-    /// (or bare <c>field</c>) — that tells us what data folder the field's
-    /// values come from, transitively typing the dispatcher port.
+    /// Search the implementing type for any typing endpoint that takes
+    /// <c>this.field</c> (or bare <c>field</c>) as its first argument — the
+    /// folder behind that endpoint transitively types the dispatcher port.
+    /// Endpoints: <see cref="KnownGetters"/> (<c>DataHandler.Get*</c>) +
+    /// <see cref="CondOwnerCondMethods"/> (<c>co.HasCond</c>, <c>AddCondAmount</c>,
+    /// …) + <see cref="ShipCOByIdMethods"/> (<c>ship.GetCOByID</c>). The
+    /// CondOwner/Ship surface area was added in Phase 3.1B because
+    /// <c>DestCheck</c>'s field consumers are <c>co.HasCond(this.strDamageCond)</c>
+    /// / <c>co.AddCondAmount(this.strDamageCond, …)</c> — no DataHandler.Get*
+    /// involvement, but the typing target (<c>conditions/</c>) is identical.
     /// </summary>
     private static (string folder, string source) ResolveFieldUsage(
         ClassDeclarationSyntax implType,
@@ -552,20 +668,40 @@ public static class ComponentIndexer
     {
         foreach (var inv in implType.DescendantNodes().OfType<InvocationExpressionSyntax>())
         {
-            if (!IsDataHandlerGetter(inv, out var name, out var firstArg)) continue;
-            if (!KnownGetters.TryGetValue(name, out var f)) continue;
-            if (firstArg is MemberAccessExpressionSyntax fma
-                && fma.Expression is ThisExpressionSyntax
-                && fma.Name.Identifier.ValueText == fieldName)
+            if (inv.Expression is not MemberAccessExpressionSyntax ma) continue;
+            if (inv.ArgumentList.Arguments.Count == 0) continue;
+            var firstArg = inv.ArgumentList.Arguments[0].Expression;
+            if (!IsFieldRef(firstArg, fieldName)) continue;
+
+            var calleeName = ma.Name.Identifier.ValueText;
+
+            // DataHandler.GetX
+            if (ma.Expression is IdentifierNameSyntax dh
+                && dh.Identifier.ValueText == "DataHandler"
+                && KnownGetters.TryGetValue(calleeName, out var f))
             {
-                return (f, $"DataHandler.{name}(this.{fieldName})");
+                return (f, $"DataHandler.{calleeName}(this.{fieldName})");
             }
-            if (firstArg is IdentifierNameSyntax fid && fid.Identifier.ValueText == fieldName)
+            // co-side: HasCond / AddCondAmount / RemoveCond / ZeroCondAmount / …
+            if (CondOwnerCondMethods.Contains(calleeName))
             {
-                return (f, $"DataHandler.{name}({fieldName})");
+                return ("conditions", $".{calleeName}(this.{fieldName})");
+            }
+            // ship-side: GetCOByID
+            if (ShipCOByIdMethods.Contains(calleeName))
+            {
+                return ("condowners", $".{calleeName}(this.{fieldName})");
             }
         }
         return ("", "untyped");
+    }
+
+    private static bool IsFieldRef(ExpressionSyntax expr, string fieldName)
+    {
+        return (expr is MemberAccessExpressionSyntax fma
+                    && fma.Expression is ThisExpressionSyntax
+                    && fma.Name.Identifier.ValueText == fieldName)
+            || (expr is IdentifierNameSyntax fid && fid.Identifier.ValueText == fieldName);
     }
 
     /// <summary>

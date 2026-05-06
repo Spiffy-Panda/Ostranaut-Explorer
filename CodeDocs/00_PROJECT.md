@@ -74,6 +74,7 @@ The Builder CLI (`Program.cs`) is the orchestrator — it runs that whole pipeli
 - **v1.6 / PLAN-AST Phase 2** ✓ — `CondOwner.AddCommand` dispatcher recovered as `code-component` nodes with typed in-ports + produces/consumes/observes condition classification. `condowners.aUpdateCommands` strings emit `WiresTo` edges to the right component + resolved positional-arg targets.
 - **v1.7 / PLAN-AST Phase 3** ✓ — `code-component` nodes gain `runtimePorts[]` recovered from `dict.TryGetValue("KEY", out X)` / `dict["KEY"]` reads in their implementing classes. Each port's destination is field-flow-traced through the impl type to a typing endpoint (`co.HasCond`/`AddCondAmount` → `conditions/`, `ship.GetCOByID` → `condowners/`, `DataHandler.Get*` → known folder). New `RuntimeWiresTo` edge kind connects `guipropmaps/` entries to resolved data targets via populated dict-key static defaults; site renders dashed. 17 of 38 edges dangle into code-emitted conditions (`IsReadyPressureSense`, `IsReadyPumpAir`, ...) — exactly the visibility PLAN-AST set out to deliver.
 - **PLAN-AST Phase 3.1A** ✓ — closes the click-through hop. `BridgePhase2` retargets `RuntimeWiresTo` edges from `conditions/` to `conditions_simple/` when the name is found there, or synthesizes a `kind: "code-emitted"` node when it's missing from both. All 17 previously-dangling targets resolve cleanly (16 retargeted to `conditions_simple/`, 0 synthesized — the dangling names all live in `conditions_simple/` even though the AddCondAmount that drives them is code-side).
+- **PLAN-AST Phase 3.1B** ✓ — helper-class follow-into. `CodeComponent` gains `FollowIntoTypes: IReadOnlyList<string>` (allow-list keyed by command name; currently `["DestCheck"]` for `Destructable`). Pattern D (whole-array forwarding) now searches `[implType] ∪ FollowIntoTypes` for the called method, recursing with the helper class as the new `implType` so Pattern E's field-walk lands on the right type. Depth limit raised from 1 to 2 to accommodate the dispatcher → `Destructable.SetData` → `DestCheck.SetData` chain. `ResolveFieldUsage` widens its typing-endpoint vocabulary from `DataHandler.Get*` only to also include CondOwner cond-methods (→ `conditions/`) and `ship.GetCOByID` (→ `condowners/`), since `DestCheck`'s field consumers are `co.HasCond(this.strDamageCond)` etc. with no DataHandler involvement. Result: `Destructable[1/2/3]` newly typed (`conditions`/`loot`/`conditions`); 4,519 wires-to edges (was 1,638; +2,881).
 - **v2** — mod-overlay loader, VS Code language server (LSP), save inspector/editor, map explorer.
 
 Detail in `PROJECT-PITCH.md`. Active work in `PLAN.md`.
@@ -90,12 +91,12 @@ Detail in `PROJECT-PITCH.md`. Active work in `PLAN.md`.
 
 ## Status (current truth)
 
-All `Ostranauts.DataModel` types are real implementations. Latest real-data smoke test (Comment Mod overlay + `conditions_simple` synthesized + PLAN-AST Phases 1, 2, 2.1, 3 over 1,299 `.cs` files):
+All `Ostranauts.DataModel` types are real implementations. Latest real-data smoke test (Comment Mod overlay + `conditions_simple` synthesized + PLAN-AST Phases 1 / 2 / 2.1 / 3 / 3.1A-B over 1,299 `.cs` files):
 
 ```
 objects:     34,558   (31,152 data + 1,390 conditions_simple + 2,002 Phase 1 code + 14 Phase 2 components)
-references:  84,964   (~91 schema-derived rules + 5,304 Phase 1 literal edges
-                       + 1,638 Phase 2 wires-to + 118 Phase 2 produces/consumes/observes
+references:  87,845   (~91 schema-derived rules + 5,304 Phase 1 literal edges
+                       + 4,519 Phase 2/3.1B wires-to + 118 Phase 2 produces/consumes/observes
                        + 38 Phase 3 runtime-wires-to)
 candidates:     243   (auto-detected by RefCandidateDetector, 187 uncovered)
 warnings:        15
