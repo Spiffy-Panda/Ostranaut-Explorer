@@ -4,6 +4,24 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-06 — PLAN-EXPLORER slice 1: externalize code-side internal prose, add code-* folder mini-glossary
+
+First slice on the `claude-explorer` branch — the cheapest win on PLAN-EXPLORER's list. Five user-facing prose blocks on `code-method` / `code-class` / `code-component` detail pages (and the sidebar heading) read like DEV-LOG entries — *"Synthetic node from PLAN-AST Phase 1"*, *"a Roslyn AST walk over `decomp/Assembly-CSharp/`"*, *"PLAN-AST Phase 2/3"*, etc. Modders aren't the audience for that vocabulary. Rewritten to modder-pov: *"This page lists every reference this method body makes to data you can edit"* / *"a code-component is one entry in the game's command table"* / etc.
+
+Six exact-string swaps in `src/Ostranauts.Site/app.js`:
+- Sidebar heading (~line 165): *"Code (PLAN-AST)"* → *"Code"*; tooltip rewritten.
+- `renderCodeNodeDetail` blurb (~line 478): rewritten, branches on `code-method` vs `code-class`.
+- `renderCodeComponentDetail` blurb (~line 541): rewritten.
+- Runtime-ports muted-note (~line 555): drop *"(PLAN-AST Phase 3)"*.
+- `renderCodeRefsBlock` muted-note (~line 1038): drop *"(PLAN-AST Phase 1)"*; *"decompiled C#"* → *"the game's C# code"*.
+- `renderCodeEmittedHeader` blurb (~line 426): drop *"(PLAN-AST Phase 3)"* / *"Synthesized into the graph by Phase 3.1A"* — replaced with a generic *"the explorer surfaces it here"* clause.
+
+Companion: new `FOLDER_BLURBS` map + `folderBlurb()` helper, surfaced via `renderFolderIndex`. Seeds three entries (`code-method`, `code-class`, `code-component`) so a modder landing on `#/f/code-component` gets an anchor for what the folder *is*. Re-uses the existing `.page-blurb` styling — no CSS changes.
+
+Internal `// PLAN-AST Phase X` JS / C# comments deliberately untouched — those help agents + contributors reading the code, where the phase numbering is still the right vocabulary. The cleanup is strictly user-facing strings.
+
+Verified live: navigated to `code-component:Heater`, `code-method:CrewSim.Awake`, `audioemitters/FFWD` (data-side detail with code-refs block), `#/f/code-method`. All four blurbs read as the new copy; no console errors. Build: copied `app.js` to `build/` for the preview, no Builder rerun needed (presentation-only).
+
 ## 2026-05-06 — PLAN-AST Phase 3.1D: refactor runtime-port resolver onto a per-method def-use map
 
 The Phase 3 runtime-port resolver had a scope-bounding hack: when a `dict.TryGetValue("KEY", out X)` defined a local, the trace forward for consumers was bounded to the nearest enclosing `IfStatementSyntax` / `BlockSyntax` to dodge cross-key contamination (GasPump.SetData reuses one `string text` across five TryGetValue calls; only `strInput01` flows into a typing endpoint, the others go through `bool.Parse(text)` etc.). Worked, but a bespoke-per-pattern hack — and didn't compose into multi-hop alias chains.

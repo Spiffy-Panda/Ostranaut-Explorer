@@ -162,7 +162,7 @@ function renderFolderList() {
   if (codeFolderCounts.length > 0) {
     const heading = document.createElement('li');
     heading.className = 'folder-section-heading';
-    heading.innerHTML = `<span title="Synthetic graph nodes derived from decomp/Assembly-CSharp/ — see PLAN-AST.md">Code (PLAN-AST)</span>`;
+    heading.innerHTML = `<span title="Synthetic graph nodes derived from the game's C# code — these surface refs the data files alone can't see.">Code</span>`;
     folderListEl.appendChild(heading);
     for (const fc of codeFolderCounts) appendFolderRow(fc);
   }
@@ -324,6 +324,26 @@ function pageBlurb(key) {
   return body ? `<div class="page-blurb">${body}</div>` : '';
 }
 
+// Per-folder anchor copy for folders whose name doesn't tell a modder what's
+// inside. Currently seeded for the synthetic code-* folders; data folders rely
+// on their schema descriptions / per-folder _README.md fallback.
+const FOLDER_BLURBS = {
+  'code-method':
+    `<strong>code-method</strong> — one C# method in the game's source. The page lists every <code>strName</code> mention inside the method body, with file:line. ` +
+    `<em>Modder use:</em> when you've changed a strName and want to find the code that consumes the literal.`,
+  'code-class':
+    `<strong>code-class</strong> — one C# class with literal <code>strName</code> references in its field initializers. ` +
+    `Same shape as <code>code-method</code> but for class-level references that aren't inside a method (rare but real).`,
+  'code-component':
+    `<strong>code-component</strong> — one entry in the game's command table. The engine runs this when a condowner's <code>aUpdateCommands</code> line begins with <code>&lt;CommandName&gt;</code>. ` +
+    `The page lists which condowners wire to it, what positional args it takes (with the data folder each one targets), and which conditions it manipulates.`,
+};
+
+function folderBlurb(folder) {
+  const body = FOLDER_BLURBS[folder];
+  return body ? `<div class="page-blurb">${body}</div>` : '';
+}
+
 function highlightActiveTab(hash) {
   const tabs = document.querySelectorAll('#tabs a');
   let active = 'home';
@@ -428,9 +448,9 @@ function renderCodeEmittedHeader(folder, strName, props) {
       <strong>This condition isn't defined in <code>data/conditions/</code>.</strong>
       It's a code-emitted runtime signal — set / cleared by ${producerLink} via a dynamic
       <code>co.AddCondAmount(this.${escapeHtml(strName)}, …)</code>-style call whose first
-      arg is driven by a guipropmap config key (PLAN-AST Phase 3). Synthesized into the
-      graph by Phase 3.1A so the cross-link from the guipropmaps that name it lands here
-      instead of <em>"No object known."</em>
+      arg is driven by a guipropmap config key. The explorer surfaces it here so the
+      cross-link from the guipropmaps that name it lands on a real page instead of
+      <em>"No object known."</em>
     </p>
   `;
 }
@@ -476,9 +496,10 @@ function renderCodeNodeDetail(folder, strName, id, node) {
       <div class="file">${escapeHtml(fileLine)} · ${escapeHtml(kindLabel)}</div>
     </div>
     <p class="page-blurb">
-      Synthetic node from <strong>PLAN-AST Phase 1</strong>: a Roslyn AST walk over <code>decomp/Assembly-CSharp/</code>
-      promotes every method (and class with literal-bearing initializers) carrying at least one identifier-shaped
-      string literal into the graph. Each outgoing edge below is one literal whose value matches a known data <code>strName</code>.
+      This page lists every reference this ${escapeHtml(folder === 'code-class' ? 'class initializer' : 'method body')}
+      makes to data you can edit. Each row below is a hardcoded <code>strName</code> mention in the game's
+      C# code; click through to see what depends on that name elsewhere. Useful when you've changed a strName
+      and want to find what code expects it.
     </p>
     <div class="refs-block">
       <h3>String literals in body (${out.length})</h3>
@@ -539,10 +560,10 @@ function renderCodeComponentDetail(folder, strName, id, node) {
       <div class="file">implementing type: <code>${escapeHtml(implType)}</code> · arity ≥ ${escapeHtml(String(arity))} · dispatcher: ${escapeHtml(dispFile)}:${escapeHtml(String(dispLine))}</div>
     </div>
     <p class="page-blurb">
-      Synthetic node from <strong>PLAN-AST Phase 2</strong>: each entry in <code>CondOwner.AddCommand</code>'s dispatcher
-      becomes a code-component. <code>condowners</code> reach one of these via an <code>aUpdateCommands</code> string like
-      <code>"${escapeHtml(strName)},arg1,arg2"</code>; positional args resolved through <code>DataHandler.Get*</code>
-      become typed in-ports below.
+      A <code>code-component</code> is one entry in the game's command table — what the engine does when a
+      condowner's <code>aUpdateCommands</code> line begins with <code>&lt;${escapeHtml(strName)}&gt;</code>.
+      Below: which condowners wire to it, what positional args it accepts (with the data folder each one
+      targets), and which conditions the component manipulates.
     </p>
 
     <div class="refs-block">
@@ -552,7 +573,7 @@ function renderCodeComponentDetail(folder, strName, id, node) {
 
     <div class="refs-block">
       <h3>Runtime ports (${runtimePorts.length})
-        <span class="muted-note">— dict keys this component reads from its guipropmap at runtime (PLAN-AST Phase 3)</span>
+        <span class="muted-note">— dict keys this component reads from its guipropmap at runtime, i.e. the inputs you can set in panel UI in-game</span>
       </h3>
       ${renderRuntimePorts(runtimePorts)}
     </div>
@@ -1035,7 +1056,7 @@ function renderCodeRefsBlock(id) {
   return `
     <div class="code-refs-block">
       <h3>Code references (${codeEdges.length})
-        <span class="muted-note">— this strName appears as a hardcoded literal in decompiled C# (PLAN-AST Phase 1)</span>
+        <span class="muted-note">— this strName appears as a hardcoded literal in the game's C# code</span>
       </h3>
       <ul>${items}</ul>
     </div>
@@ -1225,6 +1246,7 @@ function renderFolderIndex(folder) {
       <h2>${escapeHtml(folder)}</h2>
       <div class="file">${list.length.toLocaleString()} objects</div>
     </div>
+    ${folderBlurb(folder)}
     <div class="folder-index">
       ${truncated ? `<p class="meta">showing first ${FOLDER_LIMIT.toLocaleString()} of ${list.length.toLocaleString()}</p>` : ''}
       <ul>
