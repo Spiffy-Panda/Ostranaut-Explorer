@@ -18,6 +18,14 @@
             "strAnti": {
                 "type": "string",
                 "description": "Antithetical condition — when this is added, an existing strAnti is removed first. Refers to entry within conditions.json (self-folder reference). (Per IVerifiable / JsonCond.GetVerifiables.)"
+            },
+            "nDisplaySelf": {
+                "type": "integer",
+                "description": "How visible this condition is on the player character (the 'self' / coPlayer side). 0 = invisible: the condition is active but never appears in the needs panel, in the mega-tooltip status modules, or in the character inspector's condition pills — `StatAtrophy`, `StatSocialization`, and other healthy-state stats use 0 so they only surface once a `Dc*` discomfort tier fires. 1 = visible-secondary: appears in the auxiliary status list (older / log-style bucket in `StatusModule`). 2 = visible-primary: appears in the main status list and chargen-trait displays (the standard 'this is a real condition' value). Sourced from position 3 of each `conditions_simple/` row. Engine references: `StatusModule.cs:111-117`, `CondOwner.cs:4068+`, `GUIChargenCareer.cs:387+`."
+            },
+            "nDisplayOther": {
+                "type": "integer",
+                "description": "Sibling of `nDisplaySelf` for the 'other' (non-player) side — controls visibility when this condition is held by someone the player is inspecting / interacting with rather than the player themselves. Same 0/1/2 semantics as `nDisplaySelf`. Engine references: `StatusModule.cs:130-134`, `CondOwner.cs:4068+`, `GUISocialStatus.cs:222`."
             }
         }
     }

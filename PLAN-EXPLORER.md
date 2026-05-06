@@ -65,14 +65,6 @@ every player-visible stat. Tracked in
 [notes/wiki-onboarding.md](notes/wiki-onboarding.md) under *User Interface
 → Cross-validation*.
 
-### `nDisplaySelf` schema description in Comment Mod · *next, small*
-
-Add a description for the `nDisplaySelf` field on `conditions/` schema in
-`comment_mod/data/schemas/conditions-schema.json` that names the 0/1/2/3
-semantics — *"0 = invisible in the needs panel even when active; 2 =
-always visible; 3 = pinned"*. Gates the lucky path of the
-[crew-exercise user story](notes/user-stories/crew-exercise-invisible-need.md).
-
 ---
 
 ## Site / UX

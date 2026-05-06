@@ -4,6 +4,21 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-06 — PLAN-EXPLORER slice 2: nDisplaySelf / nDisplayOther descriptions in conditions Comment Mod overlay
+
+Add `nDisplaySelf` and `nDisplayOther` descriptions to `comment_mod/data/schemas/conditions-schema.json`. Specifically calls out *"0 = invisible: never appears in the needs panel, in the mega-tooltip status modules, or in the character inspector's condition pills"* — the second clause is what [crew-exercise-invisible-need.md](notes/user-stories/crew-exercise-invisible-need.md) requires the description to make explicit. Without it, the lucky-path tester can't connect "F3 console says StatAtrophy is climbing" to "and that's why it never appears in the inspector pills."
+
+Semantics grounded in the decomp rather than the user story's speculative 0/1/2/3 framing:
+- `0` — invisible everywhere (no `== 0` matches in `StatusModule` / `GUIChargenCareer` / `CondOwner`'s display passes).
+- `1` — visible-secondary; matches the auxiliary list in `StatusModule.cs:115`.
+- `2` — visible-primary; matches `list` in `StatusModule.cs:111` and the chargen-trait visibility checks in `GUIChargenCareer.cs:387+`.
+
+`3` and higher show up only as data values without code branches; left out of the description rather than invented.
+
+Builder rerun after the overlay edit: 91 rules (unchanged — the description rides on a non-ref scalar field), 87,845 references. Numbers identical because the description doesn't introduce new edges; it only enriches the schema-inspector view.
+
+**Wiring caveat — descriptions on non-ref fields aren't yet in `graph.js`.** `GraphExporter.WriteGraphFile` only emits `description` for fields that became a `RefRule`. `nDisplaySelf` is integer + no folder mention, so today the description sits in the in-memory `SchemaCatalog` but never reaches the site's `ruleDescriptions` map. Slice 3 (UX 1.3 hover→inline) widens that pipe so all schema descriptions ride along, at which point this slice's content lights up on detail pages.
+
 ## 2026-05-06 — PLAN-EXPLORER slice 1: externalize code-side internal prose, add code-* folder mini-glossary
 
 First slice on the `claude-explorer` branch — the cheapest win on PLAN-EXPLORER's list. Five user-facing prose blocks on `code-method` / `code-class` / `code-component` detail pages (and the sidebar heading) read like DEV-LOG entries — *"Synthetic node from PLAN-AST Phase 1"*, *"a Roslyn AST walk over `decomp/Assembly-CSharp/`"*, *"PLAN-AST Phase 2/3"*, etc. Modders aren't the audience for that vocabulary. Rewritten to modder-pov: *"This page lists every reference this method body makes to data you can edit"* / *"a code-component is one entry in the game's command table"* / etc.
