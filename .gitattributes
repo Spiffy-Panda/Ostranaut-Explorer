@@ -1,0 +1,7 @@
+* text=auto
+
+# Windows shell scripts must keep CRLF endings — cmd.exe doesn't reliably
+# parse LF-only batch files (silent mis-parsing of REM lines, "X was
+# unexpected at this time" inside if-blocks).
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
