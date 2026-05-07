@@ -4,6 +4,20 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-07 — Room classification & ship-value reference (notes/rooms.md + rooms-reference.html)
+
+Room classification is mostly intuitive from the rooms.json table, but the *value math* — `fValueModifier` × per-installed-CO base price, plus an undocumented O2-pump ×3 bonus and an asymmetric wall-mounting rule — isn't, and the [wiki](https://ostranauts.wiki.gg/wiki/Ship_Building#Ship_Value) covers maybe 20% of it. Two new artifacts fix this.
+
+**[notes/rooms.md](notes/rooms.md) — modder-facing markdown reference.** Walks the two-stage classifier (geometry flood-fill in `Ship.cs:8800` → priority-ordered first-match `Matches()` in `Room.cs` / `RoomSpec.cs`), the per-room reqs/forbids decoded from `=chance×count` syntax, a meta-trigger glossary (`TIsRoomEngineering` / `TIsRoomWellnessOptionals01` / `TIsRoomRecreationOptionals` / `TIsRoomCargo` / `TIsRoomCargoExterior`, plus `TIsCanister` and `TIsShipBatteryInstalled` — all `bAND: false` aggregates the bare JSON doesn't hint at), and the five rooms that aren't a simple property-table read: Bridge Closed/Open paired by forbid-list, CargoRoomExterior as the only `bAllowVoid: true`, Reactor's priority-100 wins-everything behavior, the meta-trigger-using rooms, and Blank's `IsBlank` short-circuit.
+
+**[src/Ostranauts.Site/rooms-reference.html](src/Ostranauts.Site/rooms-reference.html) — self-contained static web page.** Single `window.ROOMS` source-of-truth array drives both the priority-ordered decision table (color-coded `nPriority` pills 100→0) and the foldout per-room `<details>` cards. Click a table row → corresponding card opens and scrolls into view; hash deep-links work (`#room-LuxuryQuarters`). Three stacked value-callouts walk the price story end-to-end: **green** = per-room `RoomValue = Σ co.GetBasePrice() × fValueModifier`; **blue** = the full `Ship.GetShipValue()` formula including the O2 pump ×3 (independent multiplicative bonus applied after per-room sum) and the explicit "no variety bonus despite the W-X-Y-ZZZZ rating string implying one"; **red** = wall-mounting asymmetry — walls themselves contribute $0 to ship sale (no `use` mapPoint, both branches of `Tile.AddToRoom` fall through), wall-mounted equipment is credited to whichever room contains its `use`-point tile, and items like `ItmCargoLift01` (55,752 base price) are stranded at $0 in ship sale because they have no use-point at all.
+
+**Style.** Reuses the existing dark-theme tokens from `style.css` (`--bg`, `--bg-elev`, `--accent`, `--warn`, `--bad`, `--good`) so the page integrates with the rest of the site. Three callout colors map to three roles: green = explainer, blue = formula, red = gotcha. No external scripts/CSS, works from `file://` like the other site pages. Mobile responsive (flow grid collapses 4 → 2×2 at <50rem).
+
+**Wiki gaps documented.** Drafted MediaWiki-style blurbs in chat for the two genuinely-hidden mechanics (Air Pump Bonus subsection + Ship Rating clarification noting the X count is descriptive only, not a value bonus). Not PR'd to the wiki itself; capture is in the chat transcript for now.
+
+Pre-push fair-use: factor 1 transformative (modder reference distilling JSON + decompiled behavior into one page), factor 2 our prose + tables, no verbatim C# excerpts, factor 3 short pseudo-code formulas only, factor 4 useless without owning the game. All four clear.
+
 ## 2026-05-07 — Design axis: DESIGN.md + PLAN-DESIGN.md + Claude Designer brief
 
 Open the **visual design** axis as a sibling to PLAN-EXPLORER and PLAN-AST. Adds three top-level docs and routes them through PLAN.md.

@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Room Classification Reference · Ostranaut Data Explorer</title>
+<style>
+:root {
+  --bg: #1a1d23;
+  --bg-elev: #242830;
+  --bg-elev-2: #2c3038;
+  --fg: #e6e6e6;
+  --muted: #8a8f99;
+  --accent: #6cb4ff;
+  --accent-dim: #4a85c2;
+  --border: #353a44;
+  --warn: #d9a73a;
+  --bad: #d95e5e;
+  --good: #6ad48a;
+
+  --pri-100: #d95e5e;
+  --pri-90:  #e08a6e;
+  --pri-80:  #d9a73a;
+  --pri-70:  #c5c060;
+  --pri-60:  #9bc26e;
+  --pri-50:  #6ad48a;
+  --pri-40:  #6ed1ff;
+  --pri-30:  #6cb4ff;
+  --pri-20:  #8c98e0;
+  --pri-10:  #b07ce0;
+  --pri-0:   #5a6070;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  min-height: 100vh;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, kbd, .mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875em;
+}
+code {
+  background: var(--bg-elev);
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+/* ── header ─────────────────────────────────────────────────── */
+header {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0.75rem 1.25rem;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+}
+header h1 { margin: 0; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.02em; }
+header .sub { color: var(--muted); font-weight: 400; margin-left: 0.5rem; font-size: 0.85rem; }
+header nav { margin-left: auto; display: flex; gap: 0.75rem; font-size: 0.85rem; }
+header nav a { color: var(--muted); }
+header nav a:hover { color: var(--accent); text-decoration: none; }
+
+main {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 1.75rem 1.25rem 4rem;
+}
+
+h2 {
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 2.25rem 0 0.875rem;
+  font-weight: 600;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+h3 { font-size: 1rem; margin: 1.25rem 0 0.5rem; font-weight: 600; }
+p { margin: 0 0 0.75rem; }
+
+/* ── flow callout ───────────────────────────────────────────── */
+.flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 50rem) { .flow { grid-template-columns: 1fr 1fr; } }
+.flow-step {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-dim);
+  border-radius: 4px;
+  padding: 0.75rem 0.875rem;
+}
+.flow-step .n {
+  color: var(--accent);
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+/* ── value-modifier callout ─────────────────────────────────── */
+.value-callout {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--good);
+  border-radius: 4px;
+  padding: 0.875rem 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+.value-callout .lbl {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--good);
+  margin-right: 0.5rem;
+}
+.value-callout .formula {
+  display: block;
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+  color: var(--fg);
+  white-space: pre-wrap;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+.value-callout ul { margin: 0.4rem 0 0; padding-left: 1.25rem; }
+.value-callout ul li { margin: 0.15rem 0; }
+
+/* ── decision-order table ───────────────────────────────────── */
+.priority-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+}
+.priority-table th, .priority-table td {
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.priority-table th {
+  background: var(--bg-elev);
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 600;
+  position: sticky; top: 53px; z-index: 5;
+}
+.priority-table tbody tr { cursor: pointer; transition: background 0.05s; }
+.priority-table tbody tr:hover { background: var(--bg-elev); }
+.priority-table tbody tr.is-active { background: rgba(108,180,255,0.10); }
+.priority-table .num { text-align: right; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+.priority-table .pri-pill {
+  display: inline-block;
+  min-width: 2.4rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  text-align: center;
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.priority-table .pri-100 { color: var(--pri-100); border-color: var(--pri-100); }
+.priority-table .pri-90  { color: var(--pri-90);  border-color: var(--pri-90); }
+.priority-table .pri-85, .priority-table .pri-80 { color: var(--pri-80); border-color: var(--pri-80); }
+.priority-table .pri-75, .priority-table .pri-70 { color: var(--pri-70); border-color: var(--pri-70); }
+.priority-table .pri-65, .priority-table .pri-60 { color: var(--pri-60); border-color: var(--pri-60); }
+.priority-table .pri-50, .priority-table .pri-45, .priority-table .pri-40 { color: var(--pri-50); border-color: var(--pri-50); }
+.priority-table .pri-35, .priority-table .pri-25, .priority-table .pri-20 { color: var(--pri-30); border-color: var(--pri-30); }
+.priority-table .pri-15, .priority-table .pri-10, .priority-table .pri-5  { color: var(--pri-10); border-color: var(--pri-10); }
+.priority-table .pri-0 { color: var(--pri-0); border-color: var(--pri-0); }
+.priority-table td.spec-name { font-family: ui-monospace, monospace; font-size: 0.85rem; color: var(--accent); }
+.priority-table td.friendly { color: var(--fg); }
+.pres-yes { color: var(--good); }
+.pres-no  { color: var(--bad); }
+
+/* ── room-card foldout list ─────────────────────────────────── */
+.room-list { display: flex; flex-direction: column; gap: 0.5rem; }
+details.room-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  scroll-margin-top: 4rem;
+}
+details.room-card[open] {
+  border-color: var(--accent-dim);
+  background: var(--bg-elev-2);
+}
+details.room-card > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.6rem 0.875rem;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto auto;
+  gap: 0.875rem;
+  align-items: center;
+  user-select: none;
+}
+details.room-card > summary::-webkit-details-marker { display: none; }
+details.room-card > summary::before {
+  content: "▸";
+  color: var(--muted);
+  font-size: 0.75rem;
+  transition: transform 0.1s;
+  width: 0.6rem; display: inline-block;
+}
+details.room-card[open] > summary::before { transform: rotate(90deg); }
+details.room-card .summary-name {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+details.room-card .summary-friendly {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-left: 0.5rem;
+}
+details.room-card .summary-meta {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-family: ui-monospace, monospace;
+}
+details.room-card .body {
+  padding: 0.5rem 1rem 1rem 2rem;
+  border-top: 1px solid var(--border);
+}
+details.room-card[open] .body { padding-top: 0.875rem; }
+details.room-card .row {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  font-size: 0.875rem;
+}
+details.room-card .row .k { color: var(--muted); font-size: 0.78rem; letter-spacing: 0.03em; text-transform: uppercase; padding-top: 2px; }
+details.room-card .row .v { word-break: break-word; }
+details.room-card .row .v .req-line { display: block; padding: 1px 0; }
+details.room-card .row .v code { white-space: normal; }
+details.room-card .row .none { color: var(--muted); font-style: italic; }
+details.room-card .note {
+  margin-top: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  background: rgba(217,167,58,0.06);
+  border-left: 2px solid var(--warn);
+  border-radius: 0 4px 4px 0;
+  font-size: 0.85rem;
+  color: var(--fg);
+}
+details.room-card .note.gotcha { background: rgba(217,94,94,0.06); border-left-color: var(--bad); }
+details.room-card .note .lbl {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--warn);
+  margin-right: 0.5rem;
+}
+details.room-card .note.gotcha .lbl { color: var(--bad); }
+.count-pill {
+  display: inline-block;
+  padding: 0 5px;
+  background: rgba(108,180,255,0.12);
+  color: var(--accent);
+  border-radius: 2px;
+  font-size: 0.75rem;
+  margin-right: 0.4rem;
+  font-family: ui-monospace, monospace;
+}
+.meta-pill {
+  display: inline-block;
+  padding: 0 5px;
+  background: rgba(176,124,224,0.14);
+  color: var(--pri-10);
+  border-radius: 2px;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  margin-left: 0.4rem;
+  font-weight: 600;
+}
+
+/* ── glossary tables ───────────────────────────────────────── */
+.glossary {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.glossary th, .glossary td {
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.glossary th {
+  background: var(--bg-elev);
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.glossary td.tname { font-family: ui-monospace, monospace; color: var(--accent); white-space: nowrap; }
+.glossary td .or { color: var(--muted); margin: 0 0.4rem; }
+
+/* ── oddballs ───────────────────────────────────────────────── */
+.oddball {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--warn);
+  border-radius: 4px;
+  padding: 0.875rem 1rem;
+  margin-bottom: 0.875rem;
+}
+.oddball h3 { margin-top: 0; }
+.oddball .tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--warn);
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+.muted { color: var(--muted); }
+.kbd-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0 0 1rem;
+}
+.kbd-hint kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 0.75rem;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Room Classification <span class="sub">data/rooms/rooms.json</span></h1>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="explorer.html">Explorer</a>
+    <a href="ship-viewer.html">Ship viewer</a>
+  </nav>
+</header>
+
+<main>
+
+<p>How the game decides what <em>kind</em> of room a given enclosed area is. Audience: modders editing
+<code>data/rooms/rooms.json</code> or the trigger definitions in <code>data/condtrigs/condtrigs.json</code>.</p>
+
+<h2>How it works</h2>
+
+<div class="flow">
+  <div class="flow-step">
+    <span class="n">1 · GEOMETRY</span>
+    Tiles flood-fill across non-wall, non-portal neighbors. Walls block; doors and airlock doors
+    (<code>IsPortal</code>) are the boundary markers. Result: a <code>Room</code> with a tile list and a
+    synthetic <code>Compartment</code> CondOwner.
+  </div>
+  <div class="flow-step">
+    <span class="n">2 · SORT</span>
+    Every entry in <code>rooms.json</code> is sorted by <code>nPriority</code> <strong>descending</strong>,
+    so high-priority specs are tested first.
+  </div>
+  <div class="flow-step">
+    <span class="n">3 · MATCH</span>
+    First spec whose <code>Matches()</code> returns <code>true</code> wins. Checks: pressurization gate,
+    tile-count bounds, all <code>aReqs</code> satisfied, no <code>aForbids</code> hit.
+  </div>
+  <div class="flow-step">
+    <span class="n">4 · LIVE</span>
+    Re-runs whenever an installed CondOwner enters or leaves the tile set. Mounting a Nav Station retags
+    the room immediately — no save/load needed.
+  </div>
+</div>
+
+<h2>What "Value ×" actually does</h2>
+
+<div class="value-callout">
+  <p style="margin:0 0 0.4rem"><span class="lbl">Sale-price multiplier</span>The room's <code>fValueModifier</code> multiplies the base price of every <em>installed</em> CondOwner inside it when the ship's sale value is computed. It is not a stat boost, an atmosphere buff, or a passive resource — it's strictly a price multiplier on the contents.</p>
+
+  <span class="formula">Room.CalculateRoomValue():
+RoomValue = Σ ( co.GetBasePrice() × fValueModifier ) for each installed co in room</span>
+
+  <ul>
+    <li><strong>Blank ×1.0</strong> — contents sell for their base price. No bonus, no penalty.</li>
+    <li><strong>LuxuryQuarters ×2.0</strong> — every installed bed, bin, chair, and light in that room sells for twice its base price.</li>
+    <li>Loose / uninstalled items are skipped: they're never added to the room's content list (<code>AddToRoom</code> requires <code>IsInstalled</code>), so they don't pick up the multiplier.</li>
+    <li>Walls, floors, and other "props" CondOwners that satisfy the room's flood-fill but aren't installed equipment are also excluded for the same reason.</li>
+    <li>The multiplier is the <em>only</em> thing the spec contributes to ship value — there's no flat bonus per room, just the per-item scaling.</li>
+  </ul>
+
+  <p style="margin:0.5rem 0 0">So when you mod a new room with <code>fValueModifier: 1.5</code>, you're saying "anything installed in this layout is worth 50% more when the ship sells." Source: <code>Room.cs:206</code> in the decompiled assembly.</p>
+</div>
+
+<h3 style="margin-top: 1.5rem;">The full ship-value formula</h3>
+
+<div class="value-callout" style="border-left-color: var(--accent-dim);">
+  <span class="formula">Ship.GetShipValue():
+shipValue   = ( Σ room.RoomValue across all rooms ) × o2PumpBonus
+o2PumpBonus = 3.0 if ship has any installed O2 pump, else 1.0</span>
+  <p style="margin: 0.5rem 0 0">That's the entire calculation (<a href="#" onclick="return false">Ship.cs:8632</a>). Two contributors: per-room contents multipliers (already inside <code>RoomValue</code>) and a flat ×3 bump for having any O2 pump. <strong>No variety bonus</strong> — the game does not count distinct room types or reward diversity directly. The "variety effect" is implicit: spreading installed items across specialized rooms means each item picks up a higher multiplier than it would in a single Blank box.</p>
+  <p style="margin: 0.5rem 0 0"><code>GetPartsValue()</code> is a separate "strip for parts" number — Σ <code>StatBasePrice × damage_state</code> across all installed COs, no room multiplier. Used for piecemeal sale, not whole-ship sale. Derelicts use <code>GetShipValue()</code> wrapped by a break-in factor and a deterministic-random per-ship modifier.</p>
+</div>
+
+<h3 style="margin-top: 1.5rem;">Walls and wall-mounted equipment</h3>
+
+<div class="value-callout" style="border-left-color: var(--bad);">
+  <p style="margin:0 0 0.4rem"><span class="lbl" style="color: var(--bad);">Asymmetric handling</span>Walls and wall-mounted equipment are routed to rooms differently — and a wall-mounted item's <em>use point</em>, not its actual position, decides which room credits its value.</p>
+
+  <span class="formula">Tile.AddToRoom(tile, co, addEffects):
+if (tile.room == null)                          // wall tile, no flood-fill room
+    pos  = co.GetPos("use", false)              // ← fall back to use-point
+    tile = ship.GetTileAtWorldCoords1(pos)
+    if (tile == null || tile.room == null) return  // still nothing → CO gets $0
+tile.room.AddToRoom(co, addEffects)</span>
+
+  <ul>
+    <li><strong>Walls themselves contribute $0 to ship sale value.</strong> <code>ItmWall1x1</code> is <code>IsInstalled</code> with <code>StatBasePrice: 21</code>, but its <code>mapPoints</code> array is empty. With no "use" point, both branches above fall through and the wall is never added to any room's <code>aCos</code>. Walls do show up in <code>GetPartsValue()</code> (which walks installed COs directly), but not in <code>GetShipValue()</code>.</li>
+    <li><strong>Wall-mounted equipment is credited to the room its <code>use</code> point lands in.</strong> A heavy lift rotor (<code>StatBasePrice: 56,774</code>) sits on a wall tile, but its <code>"use,0,-42"</code> point lands on the interior floor tile a crew member would stand on. Whichever room contains <em>that</em> tile is the room that multiplies the rotor.</li>
+    <li><strong>This means use-point routing is a value lever.</strong> Same heavy lift rotor whose use-point lands in a Blank room: <code>56,774 × 1.0</code>. Same rotor whose use-point lands inside a LuxuryQuarters' floor area: <code>56,774 × 2.0</code> = <code>113,548</code>. The rotor doesn't move; only the interior layout around its interaction tile changes.</li>
+    <li><strong>Equipment with a use-point that lands on another wall tile is worth $0</strong> in ship sale (the second <code>return</code> fires). External-only equipment with no path to an interior tile contributes only via <code>GetPartsValue()</code>.</li>
+  </ul>
+
+  <p style="margin: 0.5rem 0 0">So the real maximization play isn't just "stuff a valuable item into LuxuryQuarters" — it's: lay the high-multiplier room out so its enclosed area swallows the <em>interior interaction tiles</em> of the highest-base-price wall-mounted equipment (engines, rotors, weapons, RCS thrusters), while still satisfying that room's reqs and forbids and not tripping a higher-priority spec.</p>
+</div>
+
+<h2>Decision order</h2>
+
+<p class="kbd-hint">First match wins. Click a row to jump to its detail card; <kbd>Esc</kbd> to clear focus.</p>
+
+<table class="priority-table" id="priority-table">
+  <thead>
+    <tr>
+      <th class="num">Pri</th>
+      <th>Spec</th>
+      <th>Friendly</th>
+      <th class="num">Min tiles</th>
+      <th class="num">Value ×</th>
+      <th>Pressurized?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- rows populated by JS, single source of truth in window.ROOMS -->
+  </tbody>
+</table>
+
+<h2>Per-room reference</h2>
+
+<div class="room-list" id="room-list">
+  <!-- cards populated by JS, single source of truth in window.ROOMS -->
+</div>
+
+<h2>Trigger glossary</h2>
+
+<p>The <code>aReqs</code> / <code>aForbids</code> strings are <code>CondTrigger</code> references with
+<code>=chance×count</code> syntax, e.g. <code>TIsChairInstalled=1.0x4</code> = "≥4 installed chairs".
+A few are <strong>meta-triggers</strong> defined in <code>condtrigs.json</code> with <code>bAND: false</code>
+that OR over a sub-list:</p>
+
+<table class="glossary">
+  <thead>
+    <tr><th>Meta-trigger</th><th>Satisfied by any of</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="tname">TIsRoomEngineering</td><td>
+      <code>TIsCanister</code><span class="or">·</span>
+      <code>TIsChargerBattery04Installed</code><span class="or">·</span>
+      <code>TIsShipBatteryInstalled</code><span class="or">·</span>
+      <code>TIsRCSDistroInstalled</code>
+    </td></tr>
+    <tr><td class="tname">TIsRoomWellnessOptionals01</td><td>
+      <code>TIsFridge01Installed</code><span class="or">·</span>
+      <code>TIsSinkInstalled</code><span class="or">·</span>
+      <code>TIsTreadmillInstalled</code><span class="or">·</span>
+      <code>TIsStrengthTrainerInstalled</code>
+    </td></tr>
+    <tr><td class="tname">TIsRoomRecreationOptionals</td><td>
+      <code>TIsTerminalInstalled</code><span class="or">·</span>
+      <code>TIsTVInstalled</code><span class="or">·</span>
+      <code>TIsBartopInstalled</code>
+    </td></tr>
+    <tr><td class="tname">TIsRoomCargo</td><td>
+      <code>TIsStorageBinInstalled</code><span class="or">·</span>
+      <code>TIsRackInstalled</code>
+    </td></tr>
+    <tr><td class="tname">TIsRoomCargoExterior</td><td>
+      <code>TIsCargoWeb01Installed</code><span class="or">·</span>
+      <code>TIsStorageBinInstalled</code>
+    </td></tr>
+    <tr><td class="tname">TIsCanister</td><td>
+      <code>TIsRTAInstalled</code><span class="or">·</span>
+      <code>TIsCanister01Installed</code><span class="or">·</span>
+      <code>TIsCanisterLH02Installed</code><span class="or">·</span>
+      <code>TIsCanisterLHe02Installed</code>
+    </td></tr>
+    <tr><td class="tname">TIsShipBatteryInstalled</td><td>
+      <code>TIsBattery02Installed</code><span class="or">·</span>
+      <code>TIsBattery02bInstalled</code><span class="or">·</span>
+      <code>TIsBattery02cInstalled</code>
+    </td></tr>
+  </tbody>
+</table>
+
+<p style="margin-top: 1rem;">Plain (non-meta) triggers used in <code>rooms.json</code> bind directly to a CondOwner test:</p>
+
+<table class="glossary">
+  <thead>
+    <tr><th>Trigger</th><th>Requires (<code>aReqs</code>)</th><th>Forbids</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="tname">TIsReactorIC</td><td><code>IsReactorIC</code></td><td class="muted">—</td></tr>
+    <tr><td class="tname">TIsNavStationInstalled</td><td><code>IsNavStation</code>, <code>IsInstalled</code></td><td><code>IsDamaged</code></td></tr>
+    <tr><td class="tname">TIsTowingBraceInstalled</td><td><code>IsEquipmentTowing</code>, <code>IsInstalled</code></td><td><code>IsDamaged</code></td></tr>
+    <tr><td class="tname">TIsDockSysInstalled</td><td><code>IsDockSys</code>, <code>IsInstalled</code></td><td class="muted">—</td></tr>
+    <tr><td class="tname">TIsBedInstalled</td><td><code>IsCushion</code>, <code>IsSheet</code>, <code>IsInstalled</code></td><td><code>IsDamaged</code>, <code>IsSlotted</code>, <code>IsInContainer</code>, <code>IsCarried</code></td></tr>
+    <tr><td class="tname">TIsToilet</td><td><code>IsContainer</code>, <code>IsOpening10cmUp</code>, <code>IsWaterproof</code>, <code>IsInstalled</code></td><td class="muted">—</td></tr>
+    <tr><td class="tname">TIsSinkInstalled</td><td><code>IsSink</code>, <code>IsInstalled</code></td><td><code>IsDamaged</code></td></tr>
+    <tr><td class="tname">TIsTableInstalled</td><td><code>IsTable</code>, <code>IsInstalled</code></td><td class="muted">—</td></tr>
+    <tr><td class="tname">TIsChairInstalled</td><td><code>IsChair</code>, <code>IsInstalled</code></td><td><code>IsDamaged</code></td></tr>
+    <tr><td class="tname">TIsFridge01Installed</td><td><code>IsFridge01</code>, <code>IsInstalled</code></td><td class="muted">—</td></tr>
+    <tr><td class="tname">TIsStorageBinInstalled</td><td><code>IsStorageBin</code>, <code>IsInstalled</code></td><td><code>IsDamaged</code></td></tr>
+    <tr><td class="tname">TIsLightSourceInstalled</td><td><code>IsLightSource</code>, <code>IsInstalled</code></td><td><code>IsDamaged</code></td></tr>
+    <tr><td class="tname">TIsHatchInstalled</td><td><code>IsHatch</code>, <code>IsInstalled</code></td><td><code>IsDamaged</code></td></tr>
+    <tr><td class="tname">TIsRCSDistroInstalled</td><td><code>IsRCSReg</code>, <code>IsInstalled</code></td><td class="muted">—</td></tr>
+    <tr><td class="tname">TIsRTAInstalled</td><td><code>IsRTA</code>, <code>IsInstalled</code></td><td><code>IsDamaged</code></td></tr>
+  </tbody>
+</table>
+
+<h2>Pairs and oddballs</h2>
+
+<p>Most rooms are exactly what the JSON says. Five cases need extra context that a naive read of the
+JSON won't surface:</p>
+
+<div class="oddball">
+  <h3><span class="tag">Pair</span>Bridge (Closed) vs Bridge (Open)</h3>
+  <p>Both require <em>only</em> <code>TIsNavStationInstalled</code>. The classifier between them is the
+  forbid list: <code>BridgeRoom</code> (90, ×1.5) forbids RCS distro, recreation, wellness, toilet,
+  reactor, and bed; <code>BridgeArea</code> (80, ×1.3) forbids nothing.</p>
+  <p>A "clean" bridge gets the closed bonus; a Nav Station co-located with anything else falls through to
+  Open. This <strong>forbids-as-purity-tier</strong> pattern is unique to the Bridge pair — no other room
+  types share <code>aReqs</code> and split on <code>aForbids</code>. Copy this pattern when modding a new
+  specialized room with a graceful fallback.</p>
+</div>
+
+<div class="oddball">
+  <h3><span class="tag">Oddball</span>CargoRoomExterior — only <code>bAllowVoid: true</code></h3>
+  <p>The pressurization gate is binary: a spec wants either a void or a pressurized room, and an
+  unpressurized enclosed area can <em>only</em> be CargoRoomExterior or Blank. If you mod a new
+  void-permitting room, you must explicitly set <code>bAllowVoid: true</code> or the spec will never match.</p>
+</div>
+
+<div class="oddball">
+  <h3><span class="tag">Gotcha</span>Reactor priority 100, no forbids</h3>
+  <p>First-hit-wins plus no forbid list means an IC reactor turns <em>any</em> 4+-tile pressurized room
+  into a Reactor regardless of what else is installed. Bed + reactor → Reactor (not Quarters). Nav Station
+  + reactor → Reactor (not Bridge). For a coexisting "engineering bay with a reactor" classification you
+  need a higher-priority spec that requires <em>both</em> the reactor and the engineering items.</p>
+</div>
+
+<div class="oddball">
+  <h3><span class="tag">Hidden</span>Meta-trigger expansion — five rooms hide their real requirements</h3>
+  <p>Reading the JSON literally, <code>Engineering</code> requires <code>TIsRoomEngineering</code>. That's
+  not enough for a modder — the actual requirement is <em>any one of</em> four sub-triggers. Same for
+  WellnessRoom, Recreation, CargoRoom, CargoRoomExterior. A site that auto-renders <code>rooms.json</code>
+  without resolving meta-triggers will look correct but be useless to a modder asking "what do I install
+  to get a Wellness Room?" The cross-reference resolver should follow <code>aTriggers</code> on
+  <code>bAND: false</code> triggers and render the OR-set.</p>
+</div>
+
+<div class="oddball">
+  <h3><span class="tag">Edge case</span>Blank — fallback, not a match</h3>
+  <p><code>IsBlank</code> is short-circuited inside <code>Matches()</code>, so Blank's <code>aReqs</code>,
+  <code>aForbids</code>, and <code>nMinTileSize</code> are dead fields. The row is just a holder for
+  <code>strNameFriendly</code> / <code>strIconName</code> / <code>fValueModifier</code>. Blank is assigned
+  via the fallback <code>_roomSpec ??= dictRoomSpec["Blank"]</code> at the end of
+  <code>CreateRoomSpecs()</code>, never picked by the priority loop.</p>
+</div>
+
+<h2>Modding notes</h2>
+
+<ul>
+  <li>New room specs go into <code>comment_mod/data/rooms/</code> (or a v2 mod overlay) on top of
+    <code>data/rooms/rooms.json</code>. Specs are loaded into <code>DataHandler.dictRoomSpec</code> keyed
+    by <code>strName</code>; collisions last-wins.</li>
+  <li>New <code>aReqs</code> / <code>aForbids</code> triggers must already exist in
+    <code>data/condtrigs/condtrigs.json</code>. You can't inline a CondTrigger inside a RoomSpec.</li>
+  <li><code>nPriority</code> ties resolve by <code>OrderByDescending</code> alone, which is unstable.
+    Give every new spec a unique priority to avoid load-order surprises.</li>
+  <li>The <code>aReqs</code> / <code>aForbids</code> strings are parsed through the same <code>Loot</code>
+    machinery used elsewhere — a synthetic <code>Loot</code> with <code>strType="trigger"</code>. Same
+    <code>=chance×count</code> syntax as loot-table entries.</li>
+</ul>
+
+<p class="muted" style="margin-top: 2rem; font-size: 0.8rem;">
+Generated from <code>data/rooms/rooms.json</code>, <code>data/condtrigs/condtrigs.json</code>, and the
+decompiled classifier in <code>decomp/Assembly-CSharp/Room.cs</code> /
+<code>Ostranauts/Ships/Rooms/RoomSpec.cs</code>.
+</p>
+
+</main>
+
+<script>
+// Single source of truth for both the priority table and the foldout cards.
+// `reqs` and `forbids` are arrays of {trigger, count, meta?, expand?, note?}.
+window.ROOMS = [
+  {
+    name: "Reactor", friendly: "Reactor room", priority: 100, minTiles: 4, value: 1.6, void: false,
+    reqs: [{trigger: "TIsReactorIC", count: 1, expand: "anything with the IsReactorIC condition"}],
+    forbids: [],
+    note: {kind: "gotcha", lbl: "Wins everything",
+      text: "Priority 100 + no forbids = an IC reactor turns any 4+-tile pressurized room into a Reactor, no matter what else is installed. If you mod a reactor into a bridge or a galley, you lose that classification."},
+  },
+  {
+    name: "BridgeRoom", friendly: "Bridge (Closed)", priority: 90, minTiles: 4, value: 1.5, void: false,
+    reqs: [{trigger: "TIsNavStationInstalled", count: 1}],
+    forbids: [
+      {trigger: "TIsRCSDistroInstalled"},
+      {trigger: "TIsRoomRecreationOptionals", meta: true, expand: "terminal / TV / bartop"},
+      {trigger: "TIsRoomWellnessOptionals01", meta: true, expand: "fridge / sink / treadmill / strength trainer"},
+      {trigger: "TIsToilet"},
+      {trigger: "TIsReactorIC"},
+      {trigger: "TIsBedInstalled"},
+    ],
+    note: {kind: "info", lbl: "Pair",
+      text: "Same trigger as BridgeArea (80) — the forbid list is what distinguishes them. Clean bridge → Closed (×1.5); Nav Station + anything from the forbid list → Open (×1.3)."},
+  },
+  {
+    name: "TowingRoom", friendly: "Towing Room", priority: 85, minTiles: 2, value: 1.6, void: false,
+    reqs: [{trigger: "TIsTowingBraceInstalled", count: 1}],
+    forbids: [],
+    note: {kind: "info", lbl: "Smallest", text: "The 2-tile minimum is unique. Any pressurized room ≥2 tiles with a towing brace becomes Towing (unless a reactor outranks it)."},
+  },
+  {
+    name: "BridgeArea", friendly: "Bridge (Open)", priority: 80, minTiles: 4, value: 1.3, void: false,
+    reqs: [{trigger: "TIsNavStationInstalled", count: 1}],
+    forbids: [],
+    note: {kind: "info", lbl: "Fallback Bridge",
+      text: "The 'mixed-function' bridge — gets picked when a Nav Station shares a room with anything from BridgeRoom's forbid list. Lower modifier (1.3 vs 1.5) is the cost of the mix."},
+  },
+  {
+    name: "Airlock", friendly: "Airlock", priority: 75, minTiles: 3, value: 1.5, void: false,
+    reqs: [{trigger: "TIsDockSysInstalled", count: 1}],
+    forbids: [
+      {trigger: "TIsRCSDistroInstalled"}, {trigger: "TIsShipBatteryInstalled", meta: true},
+      {trigger: "TIsRoomRecreationOptionals", meta: true}, {trigger: "TIsRoomWellnessOptionals01", meta: true},
+      {trigger: "TIsToilet"}, {trigger: "TIsReactorIC"}, {trigger: "TIsNavStationInstalled"}, {trigger: "TIsBedInstalled"},
+    ],
+    note: {kind: "info", lbl: "No fallback",
+      text: "A docking system in a room with anything else from the forbid list falls through to Blank — there's no 'Airlock-Open' tier."},
+  },
+  {
+    name: "Engineering", friendly: "Engineering Room", priority: 70, minTiles: 4, value: 1.4, void: false,
+    reqs: [{trigger: "TIsRoomEngineering", count: 1, meta: true, expand: "canister / charger / ship battery / RCS distributor"}],
+    forbids: [],
+    note: {kind: "info", lbl: "Cheapest industrial", text: "One canister or one battery is enough."},
+  },
+  {
+    name: "WellnessRoom", friendly: "Wellness Room", priority: 65, minTiles: 4, value: 1.9, void: false,
+    reqs: [{trigger: "TIsRoomWellnessOptionals01", count: 2, meta: true, expand: "two of: fridge / sink / treadmill / strength trainer"}],
+    forbids: [{trigger: "TIsToilet"}, {trigger: "TIsReactorIC"}, {trigger: "TIsBedInstalled"}],
+    note: {kind: "info", lbl: "Count > 1 on a meta",
+      text: "The ×2 stacks the meta-trigger's fCount, so two distinct items work as well as two of the same."},
+  },
+  {
+    name: "Recreation", friendly: "Recreational Room", priority: 60, minTiles: 10, value: 1.9, void: false,
+    reqs: [
+      {trigger: "TIsTableInstalled", count: 1},
+      {trigger: "TIsFridge01Installed", count: 1},
+      {trigger: "TIsRoomRecreationOptionals", count: 1, meta: true, expand: "terminal / TV / bartop"},
+    ],
+    forbids: [{trigger: "TIsReactorIC"}],
+  },
+  {
+    name: "LuxuryQuarters", friendly: "Luxury Quarters", priority: 50, minTiles: 12, value: 2.0, void: false,
+    reqs: [
+      {trigger: "TIsBedInstalled", count: 1},
+      {trigger: "TIsStorageBinInstalled", count: 2},
+      {trigger: "TIsChairInstalled", count: 1},
+      {trigger: "TIsLightSourceInstalled", count: 1},
+    ],
+    forbids: [
+      {trigger: "TIsToilet"}, {trigger: "TIsReactorIC"},
+      {trigger: "TIsCanister", meta: true}, {trigger: "TIsRTAInstalled"},
+      {trigger: "TIsShipBatteryInstalled", meta: true}, {trigger: "TIsHatchInstalled"},
+    ],
+    note: {kind: "info", lbl: "Highest value",
+      text: "×2.0 is the top of the table. The TIsHatchInstalled forbid is unusual — putting a hatch in the room demotes it to BasicQuarters even with everything else present."},
+  },
+  {
+    name: "Bathroom", friendly: "Bathroom", priority: 45, minTiles: 4, value: 1.8, void: false,
+    reqs: [{trigger: "TIsToilet", count: 1}, {trigger: "TIsSinkInstalled", count: 1}],
+    forbids: [],
+    note: {kind: "info", lbl: "Capability-based",
+      text: "TIsToilet checks IsContainer + IsOpening10cmUp + IsWaterproof + IsInstalled — modded toilets just need those conds, not a specific item identity."},
+  },
+  {
+    name: "Galley", friendly: "Galley", priority: 40, minTiles: 6, value: 1.8, void: false,
+    reqs: [
+      {trigger: "TIsTableInstalled", count: 1},
+      {trigger: "TIsChairInstalled", count: 4},
+      {trigger: "TIsFridge01Installed", count: 1},
+    ],
+    forbids: [{trigger: "TIsToilet"}, {trigger: "TIsReactorIC"}, {trigger: "TIsBedInstalled"}],
+  },
+  {
+    name: "BasicQuarters", friendly: "Basic Quarters", priority: 35, minTiles: 8, value: 1.8, void: false,
+    reqs: [
+      {trigger: "TIsBedInstalled", count: 1},
+      {trigger: "TIsStorageBinInstalled", count: 1},
+      {trigger: "TIsLightSourceInstalled", count: 1},
+    ],
+    forbids: [{trigger: "TIsToilet"}, {trigger: "TIsReactorIC"}, {trigger: "TIsCanister", meta: true}],
+    note: {kind: "info", lbl: "Distinguishing trip-line",
+      text: "Differs from LuxuryQuarters mainly by not forbidding TIsHatchInstalled and needing only one storage bin."},
+  },
+  {
+    name: "Passenger2", friendly: "Passenger Room Medium", priority: 25, minTiles: 32, value: 1.6, void: false,
+    reqs: [{trigger: "TIsChairInstalled", count: 8}],
+    forbids: [{trigger: "TIsToilet"}, {trigger: "TIsSinkInstalled"}, {trigger: "TIsReactorIC"}, {trigger: "TIsCanister", meta: true}],
+    note: {kind: "info", lbl: "Largest minimum", text: "32-tile minimum. Only Passenger1 (16/4) and Passenger2 (32/8) differ; priority 25 > 20 means a room with 8 chairs in 32 tiles hits Medium first."},
+  },
+  {
+    name: "Passenger1", friendly: "Passenger Room Small", priority: 20, minTiles: 16, value: 1.4, void: false,
+    reqs: [{trigger: "TIsChairInstalled", count: 4}],
+    forbids: [{trigger: "TIsToilet"}, {trigger: "TIsSinkInstalled"}, {trigger: "TIsReactorIC"}, {trigger: "TIsCanister", meta: true}],
+  },
+  {
+    name: "GasCargoRoom", friendly: "Gas Cargo Room", priority: 15, minTiles: 12, value: 1.2, void: false,
+    reqs: [{trigger: "TIsCanister", count: 6, meta: true, expand: "RTA + canister types together"}],
+    forbids: [],
+    note: {kind: "info", lbl: "Engineering vs GasCargo",
+      text: "1–5 canisters ≥4 tiles → Engineering (×1.4); 6+ canisters ≥12 tiles → GasCargo (×1.2). Engineering wins on priority, so the real discriminator is the tile count + canister count threshold."},
+  },
+  {
+    name: "CargoRoom", friendly: "Cargo Room", priority: 10, minTiles: 6, value: 1.2, void: false,
+    reqs: [{trigger: "TIsRoomCargo", count: 6, meta: true, expand: "storage bin / rack"}],
+    forbids: [],
+  },
+  {
+    name: "CargoRoomExterior", friendly: "Cargo Space (Exterior)", priority: 5, minTiles: 6, value: 1.05, void: true,
+    reqs: [{trigger: "TIsRoomCargoExterior", count: 20, meta: true, expand: "cargo web / storage bin"}],
+    forbids: [],
+    note: {kind: "gotcha", lbl: "Only void-allowed spec",
+      text: "The only spec with bAllowVoid: true. Every other spec's Matches() returns false on a vacuum room, so an unpressurized area can never be anything except this or Blank."},
+  },
+  {
+    name: "Blank", friendly: "(no specialization)", priority: 0, minTiles: null, value: 1.0, void: false,
+    reqs: [], forbids: [],
+    note: {kind: "gotcha", lbl: "Special-cased",
+      text: "Matches() short-circuits on IsBlank, so Blank is never picked by the priority loop. The fallback _roomSpec ??= dictRoomSpec[\"Blank\"] at the end of CreateRoomSpecs() is what assigns it."},
+  },
+];
+
+(function render() {
+  const tbody = document.querySelector("#priority-table tbody");
+  const list  = document.getElementById("room-list");
+  const cardById = {};
+
+  for (const r of window.ROOMS) {
+    // ── priority-table row ────────────────────────────────────
+    const tr = document.createElement("tr");
+    tr.dataset.spec = r.name;
+    tr.innerHTML = `
+      <td class="num"><span class="pri-pill pri-${r.priority}">${r.priority}</span></td>
+      <td class="spec-name">${r.name}</td>
+      <td class="friendly">${r.friendly}</td>
+      <td class="num">${r.minTiles == null ? "—" : r.minTiles}</td>
+      <td class="num">${r.value.toFixed(r.value === Math.floor(r.value) ? 1 : 2)}</td>
+      <td class="${r.void ? "pres-no" : "pres-yes"}">${r.void ? "void only" : "yes"}</td>
+    `;
+    tr.addEventListener("click", () => {
+      const card = cardById[r.name];
+      if (!card) return;
+      card.open = true;
+      card.scrollIntoView({behavior: "smooth", block: "start"});
+      document.querySelectorAll(".priority-table tr.is-active").forEach(x => x.classList.remove("is-active"));
+      tr.classList.add("is-active");
+    });
+    tbody.appendChild(tr);
+
+    // ── room card ─────────────────────────────────────────────
+    const card = document.createElement("details");
+    card.className = "room-card";
+    card.id = "room-" + r.name;
+    cardById[r.name] = card;
+
+    const minTilesText = r.minTiles == null ? "any size" : `≥${r.minTiles} tiles`;
+    const presText = r.void ? "void only" : "pressurized";
+
+    const fmtTriggerLine = (t) => {
+      const cnt = t.count && t.count > 1 ? `<span class="count-pill">×${t.count}</span>` : "";
+      const meta = t.meta ? `<span class="meta-pill">META</span>` : "";
+      const expand = t.expand ? ` <span class="muted">— ${t.expand}</span>` : "";
+      return `<span class="req-line">${cnt}<code>${t.trigger}</code>${meta}${expand}</span>`;
+    };
+
+    const reqsHtml = r.reqs.length
+      ? r.reqs.map(fmtTriggerLine).join("")
+      : `<span class="none">none</span>`;
+    const forbidsHtml = r.forbids.length
+      ? r.forbids.map(fmtTriggerLine).join("")
+      : `<span class="none">none</span>`;
+
+    const noteHtml = r.note
+      ? `<div class="note ${r.note.kind === "gotcha" ? "gotcha" : ""}">
+          <span class="lbl">${r.note.lbl}</span>${r.note.text}
+        </div>`
+      : "";
+
+    card.innerHTML = `
+      <summary>
+        <span class="summary-name">${r.name}</span>
+        <span><span class="summary-friendly">${r.friendly}</span></span>
+        <span class="summary-meta">pri ${r.priority}</span>
+        <span class="summary-meta">${minTilesText}</span>
+        <span class="summary-meta">×${r.value.toFixed(r.value === Math.floor(r.value) ? 1 : 2)}</span>
+      </summary>
+      <div class="body">
+        <div class="row"><span class="k">Pressurization</span><span class="v">${presText}</span></div>
+        <div class="row"><span class="k">Requires</span><span class="v">${reqsHtml}</span></div>
+        <div class="row"><span class="k">Forbids</span><span class="v">${forbidsHtml}</span></div>
+        ${noteHtml}
+      </div>
+    `;
+    list.appendChild(card);
+  }
+
+  // Allow deep-linking to a specific room via #room-Reactor etc.
+  if (location.hash) {
+    const target = document.querySelector(location.hash);
+    if (target && target.tagName === "DETAILS") target.open = true;
+  }
+
+  // Esc clears the active row highlight.
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      document.querySelectorAll(".priority-table tr.is-active").forEach(x => x.classList.remove("is-active"));
+    }
+  });
+})();
+</script>
+</body>
+</html>
