@@ -51,6 +51,10 @@ CLAUDE.local.md
 # Each is a one-off reflection — keep them out of the repo to avoid noise.
 /skill-extractions/
 
+# Playwright MCP working directory — per-session snapshots and console
+# captures used for visual verification. Not redistributable.
+/.playwright-mcp/
+
 # OS
 .DS_Store
 Thumbs.db

@@ -9,7 +9,7 @@ matches the axis you're touching.
 
 ---
 
-## The two plans
+## The three plans
 
 - **[PLAN-EXPLORER.md](PLAN-EXPLORER.md)** — modder-facing JSON browser.
   Schema overlay coverage (parser/library), site UX (newcomer onboarding,
@@ -22,11 +22,18 @@ matches the axis you're touching.
   pipeline with one that recovers `aUpdateCommands` wiring,
   code-emitted condition producers, and runtime-wired ports as real
   graph edges.
+- **[PLAN-DESIGN.md](PLAN-DESIGN.md)** — visual design axis. Wireframes →
+  high-fi → integration of design output back into
+  `src/Ostranauts.Site/`. Driven by the principles in
+  [DESIGN.md](DESIGN.md) and the component catalog in
+  [notes/ux/newcomer-onboarding.md](notes/ux/newcomer-onboarding.md).
+  Independent of the other two plans — runs alongside whichever
+  EXPLORER / AST work is shipping component logic.
 
-The two are independent and ship on their own schedules. PLAN-AST Phase 2
-may obsolete a couple of items in PLAN-EXPLORER (notably the recent
-`comment_mod/data/conditions/` overlay shims), but neither blocks the
-other.
+The three are independent and ship on their own schedules. PLAN-AST Phase
+2 may obsolete a couple of items in PLAN-EXPLORER (notably the recent
+`comment_mod/data/conditions/` overlay shims), but no plan blocks
+another.
 
 ---
 

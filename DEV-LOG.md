@@ -4,6 +4,20 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-07 — Design axis: DESIGN.md + PLAN-DESIGN.md + Claude Designer brief
+
+Open the **visual design** axis as a sibling to PLAN-EXPLORER and PLAN-AST. Adds three top-level docs and routes them through PLAN.md.
+
+**[DESIGN.md](DESIGN.md) — principles, not specs.** Eight invariants (beginner-first density; dismissibility-not-absence; don't gate on hover; plain language first, jargon second; stable visual vocabulary; color is never the sole carrier; provenance is honest, not punitive; the detail page is the dominant surface) plus the seven distinct UI element classes the design must keep separable, the three accent tones (banner blue / inline note neutral / Edit-this callout yellow), the static-site constraints (no Tailwind/shadcn/React; plain CSS only; `file://`-runnable), and the accessibility floor. Distilled from `notes/ux/newcomer-onboarding.md` §2 and the 11 user-story journeys.
+
+**[PLAN-DESIGN.md](PLAN-DESIGN.md) — three-phase plan.** Phase 1 wireframes for 10 page-and-state targets; phase 2 high-fi (design tokens spec + renders + a `style.css` candidate + folder-name → palette-index table for the 30 folders); phase 3 integration into `src/Ostranauts.Site/style.css` with screenshot-pair verification per slice.
+
+**[notes/design/claude-designer-brief.md](notes/design/claude-designer-brief.md) — paste-able prompt.** Self-contained brief embedding the audience definition, the 12-component catalog, the detail-page hierarchy, the folder list, the 8 principles, and the 11 user-story walks. Designer also has read access to the public repo, so the brief links to `notes/ux/newcomer-onboarding.md` and `notes/user-stories/` rather than fully embedding them.
+
+PLAN.md updated to "three plans" routing. .gitignore now excludes `.playwright-mcp/` (per-session working dir for the visual-verification screenshot tool). [notes/screenshots/](notes/screenshots/) seeded with two PNGs of the current explorer landing — the verification path is `mcp__plugin_playwright_playwright__browser_take_screenshot` with repo-root-relative `notes/screenshots/<name>.png`; `mcp__Claude_Preview__preview_screenshot` returns to chat only and won't help here.
+
+Pre-push fair-use check: factor 1 transformative (modder-tooling design plan), factor 2 our writing not game prose, factor 3 no game-data excerpts, factor 4 no substitution risk. All four clear.
+
 ## 2026-05-06 — PLAN-EXPLORER slice 8: Thresh-derived panel + strType dispatch tooltip (UX 1.4/1.8); 1.11 deferred
 
 Two stretch components ship; one defers.
