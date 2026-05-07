@@ -43,6 +43,10 @@
 .claude/settings.local.json
 .claude/skills/
 
+# Per-user local override of CLAUDE.md (machine paths, toolchain quirks).
+# CLAUDE.md is shared; CLAUDE.local.md is the local-only sibling.
+CLAUDE.local.md
+
 # Per-session retrospective notes the skill-extraction skill writes here.
 # Each is a one-off reflection — keep them out of the repo to avoid noise.
 /skill-extractions/
