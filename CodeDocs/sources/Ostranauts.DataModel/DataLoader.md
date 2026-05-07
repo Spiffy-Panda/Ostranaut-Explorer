@@ -37,6 +37,7 @@ Hardcoded skip list in `SkippedFolders`:
 
 - `schemas/` — `SchemaLoader`'s job, not a data folder.
 - `strings/`, `tsv/`, `ai_training/` — non-JSON-array shapes per the v1 scope decision.
+- `glossary/` — UX 1.1 alias cards; the Builder's `WriteGlossary` helper handles them separately. Skipped here so the cards don't generate "entry missing strName" warnings (cards key on `dataTerm`, not `strName`).
 
 Any other top-level folder is in scope. The decision was deliberately not driven by an allowlist — the data tree is allowed to grow.
 

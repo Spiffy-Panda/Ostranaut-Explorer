@@ -9,8 +9,11 @@ namespace Ostranauts.DataModel;
 public static class DataLoader
 {
     /// <summary>
-    /// Folders under <c>data/</c> that aren't JSON-array-of-objects and must be skipped.
-    /// `schemas/` is also skipped here — that's <see cref="SchemaLoader"/>'s job.
+    /// Folders under <c>data/</c> that aren't JSON-array-of-objects-with-strName
+    /// and must be skipped. <c>schemas/</c> belongs to <see cref="SchemaLoader"/>;
+    /// <c>glossary/</c> is the UX 1.1 alias-card payload (its own loader in the
+    /// Builder); <c>strings/</c> / <c>tsv/</c> / <c>ai_training/</c> are
+    /// non-object data not relevant to the graph.
     /// </summary>
     private static readonly HashSet<string> SkippedFolders = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -18,6 +21,7 @@ public static class DataLoader
         "strings",
         "tsv",
         "ai_training",
+        "glossary",
     };
 
     private static readonly JsonDocumentOptions ParseOptions = new()
