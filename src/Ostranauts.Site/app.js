@@ -172,8 +172,12 @@ function renderFolderList() {
 
   const appendFolderRow = ({ folder, count }) => {
     const li = document.createElement('li');
+    li.classList.add(folderClass(folder));
     if (folder === currentFolder) li.classList.add('active');
-    li.innerHTML = `<span>${folder}</span><span class="count">${count}</span>`;
+    // .swatch is the hifi folder-index dot — small-area cue tied to the
+    // frequency-ranked palette (fNN). Anchored visually to the row so the
+    // color↔folder vocabulary is reinforced every time a user scans the rail.
+    li.innerHTML = `<span class="swatch"></span><span class="folder-name">${folder}</span><span class="count">${count}</span>`;
     li.addEventListener('click', () => { window.location.hash = `#/f/${encodeURIComponent(folder)}`; });
     folderListEl.appendChild(li);
   };

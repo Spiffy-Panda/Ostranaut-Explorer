@@ -392,13 +392,43 @@ aside#folders {
   padding: 0.25rem 1rem;
   cursor: pointer;
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 0.55rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.8125rem;
 }
+#folder-list li .folder-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 #folder-list li:hover { background: rgba(108,180,255,0.08); }
 #folder-list li.active { background: rgba(108,180,255,0.18); color: var(--accent); }
 #folder-list .count { color: var(--muted); }
+
+/* Hi-fi folder swatch — 9px square that picks up the fNN palette of the row.
+   In dark mode the prototype uses the *light-mode* L≈0.84 fills so the rail
+   reads like a strip of indicator lights against the dark ground (the
+   "indicator-light strip" pattern, the only place the dark override
+   inverts). Falls back to var(--pal-NN) (the dim L≈0.32 fill) if the user
+   ever switches to light mode. */
+#folder-list li .swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1px solid rgba(0,0,0,0.7);
+  background: var(--badge-color, var(--muted));
+  flex: none;
+}
+#folder-list li.f01 .swatch { background: oklch(0.84 0.085 30); }
+#folder-list li.f02 .swatch { background: oklch(0.84 0.085 60); }
+#folder-list li.f03 .swatch { background: oklch(0.86 0.090 95); }
+#folder-list li.f04 .swatch { background: oklch(0.86 0.090 130); }
+#folder-list li.f05 .swatch { background: oklch(0.84 0.085 165); }
+#folder-list li.f06 .swatch { background: oklch(0.84 0.085 200); }
+#folder-list li.f07 .swatch { background: oklch(0.84 0.085 235); }
+#folder-list li.f08 .swatch { background: oklch(0.83 0.085 270); }
+#folder-list li.f09 .swatch { background: oklch(0.83 0.085 300); }
+#folder-list li.f10 .swatch { background: oklch(0.84 0.085 330); }
+#folder-list li.f11 .swatch { background: oklch(0.83 0.075 0); }
+#folder-list li.f12 .swatch { background: oklch(0.86 0.040 90); }
+#folder-list li .swatch { box-shadow: 0 0 4px rgba(255,255,255,0.05); }
 
 /* PLAN-AST synthetic-folder section — visually separated from data folders.
    Heading is non-clickable (no hover), borrowing the upper-aside heading

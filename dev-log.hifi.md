@@ -11,6 +11,14 @@ commits are in flight on `claude-hifi-proto-implement`.
 
 ---
 
+## 2026-05-07 — slice 3 · folder list left-rail swatches (indicator-light strip)
+
+Adds a 9px square swatch before each row in `#folder-list`, picking up the row's `fNN` class. `app.js` now adds the `folderClass(folder)` class to each `li` and emits a `<span class="swatch">` + `<span class="folder-name">` + `<span class="count">` triple inside.
+
+**Indicator-light dark-mode override.** Per HANDOFF "Folder palette doctrine" rule 6, the folder index swatches in dark mode use the *light-mode* L≈0.84 fills, not the dim L≈0.32 dark-mode fills used everywhere else. The reasoning: vertical row strips against the dark ground read like indicator lights / status LEDs, exactly the metaphor for a left rail. CSS hardcodes the bright `oklch(0.84 0.085 …)` values per `#folder-list li.fNN .swatch` rather than going through `var(--pal-NN)` so the override is local and explicit.
+
+Verified in preview: all 11 named folders (`conditions` f01 coral, `items` f02 peach, `interactions` f03 sand, … `condowners` f11 dusty pink) resolve to the correct OKLCH fill; everything past the top-11 falls through to `f12` parchment. Folder rows still reorder via `folderCounts`; click still routes to `#/f/<folder>`.
+
 ## 2026-05-07 — slice 2 · frequency-ranked folder palette + dark-theme activation
 
 Replaces the hashed 12-color folder palette with the hifi prototype's **frequency-ranked v0.18.2 mapping**: 11 most-populated folders each take one of `f01`..`f11` (conditions=01, items=02, interactions=03, condtrigs=04, condrules=05, slots=06, loot=07, lifeevents=08, installables=09, rooms=10, condowners=11), everything else falls through to `f12` parchment. `app.js` now emits `class="folder-badge fNN"` instead of inline `--badge-color: <hash>`. CSS sets `--badge-color: var(--pal-NN-edge)` per fNN class, so the existing `.folder-badge` rule keeps working without any structural change. Selector also broadened from `.refs-block .folder-badge, .detail-head .folder-badge` to plain `.folder-badge` (was missing `.thresh-panel` badges; now applies anywhere).
