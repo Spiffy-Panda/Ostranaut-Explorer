@@ -842,16 +842,22 @@ section#detail {
 .folder-badge.f10 { --badge-color: var(--pal-10-edge); }
 .folder-badge.f11 { --badge-color: var(--pal-11-edge); }
 .folder-badge.f12 { --badge-color: var(--pal-12-edge); }
-/* UX 1.5 — strType badge: shared visual treatment regardless of value (only
-   ~7 enum values; distinguishes by text), distinct from folder badges. */
-.refs-block .strtype-badge {
+/* UX 1.5 — strType badge: monochrome dashed treatment per hifi spec.
+   strTypes are a different axis from folders (engine dispatch, ~7 enum
+   values), so they never compete with folder color. The dashed border is
+   the visual distinguisher from the folder-badge solid edge — same kind
+   of badge shape, different border style for at-a-glance kind. Selector
+   is global so any badge anywhere on the page picks it up (matches the
+   slice-2 broadening for .folder-badge). */
+.strtype-badge {
   display: inline-block;
-  background: rgba(108,180,255,0.12);
-  color: var(--accent);
+  background: var(--paper-2);
+  color: var(--ink);
+  border: var(--bw) dashed var(--ink-2);
   padding: 0 0.4rem;
-  border-radius: 2px;
+  border-radius: var(--r-1);
   font-size: 0.6875rem;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.02em;
   margin-right: 0.05rem;
 }

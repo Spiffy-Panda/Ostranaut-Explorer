@@ -11,6 +11,12 @@ commits are in flight on `claude-hifi-proto-implement`.
 
 ---
 
+## 2026-05-07 — slice 7 · strType badge: monochrome dashed (hifi spec)
+
+`.strtype-badge` switched to the hifi monochrome+dashed treatment so it never competes visually with folder-badge color. Background `--paper-2`, color `--ink`, **dashed** `--bw` border in `--ink-2`, `--r-1` radius. Selector also broadened from `.refs-block` scope to global so badges anywhere on the page pick it up — same broadening as slice 2 did for `.folder-badge`.
+
+Reasoning per HANDOFF "Component contracts": strTypes are a different axis from folders (engine dispatch, ~7 enum values total). Giving them color would compete with folder color and conflate two orthogonal categorisations; the dashed border is the kind cue.
+
 ## 2026-05-07 — slice 6 · filter pills (hifi pill states)
 
 `.filter-pill` now consumes the hifi pill vocabulary (HANDOFF "Component contracts" `.pill`):
