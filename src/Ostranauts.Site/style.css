@@ -856,8 +856,14 @@ section#detail {
   margin-right: 0.05rem;
 }
 
-/* UX 1.6 — filter pills row above ref panels. Pill = button. Active pill is
-   filled; inactive is outlined. */
+/* UX 1.6 — filter pills row above ref panels. Maps to the hifi pill
+   states (HANDOFF "Component contracts" .pill):
+     default   paper bg, ink border
+     hover     paper-2 bg
+     active    INVERTED — ink bg, paper text. Loudest "this filter is on" cue.
+     focus     2px banner-edge outline (light) / amber (dark)
+     clear     dashed border, ink-2 text
+   The strType italics flag is a content variant, not a state. */
 .refs-block .filter-pills {
   display: flex;
   flex-wrap: wrap;
@@ -866,21 +872,25 @@ section#detail {
   align-items: center;
 }
 .filter-pill {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  border-radius: 999px;
-  padding: 0.1rem 0.55rem;
+  background: var(--paper);
+  border: var(--bw) solid var(--ink);
+  color: var(--ink);
+  border-radius: var(--r-pill);
+  padding: 0.1rem 0.6rem;
   font-size: 0.75rem;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  transition: background 0.1s, color 0.1s, border-color 0.1s, box-shadow 0.1s;
 }
-.filter-pill:hover { color: var(--fg); border-color: var(--accent); }
+.filter-pill:hover { background: var(--paper-2); }
+.filter-pill:focus-visible {
+  outline: 2px solid var(--accent-callout-edge);
+  outline-offset: 2px;
+}
 .filter-pill.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--bg);
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
 }
 .filter-pill .pill-count {
   display: inline-block;
@@ -889,8 +899,13 @@ section#detail {
   font-size: 0.7rem;
 }
 .filter-pill.strtype { font-style: italic; }
-.filter-pill.clear { color: var(--bad); border-style: dashed; }
-.filter-status { color: var(--muted); font-size: 0.75rem; margin-left: 0.4rem; }
+.filter-pill.clear {
+  color: var(--ink-2);
+  border-style: dashed;
+  background: transparent;
+}
+.filter-pill.clear:hover { background: var(--paper-2); color: var(--ink); }
+.filter-status { color: var(--ink-3); font-size: 0.75rem; margin-left: 0.4rem; }
 
 /* UX 1.7 — labeled DSL meta-chips. Render as small clickable tags within
    the per-edge metadata block; click pins a primer popover. */

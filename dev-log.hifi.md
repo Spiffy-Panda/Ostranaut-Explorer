@@ -11,6 +11,22 @@ commits are in flight on `claude-hifi-proto-implement`.
 
 ---
 
+## 2026-05-07 — slice 6 · filter pills (hifi pill states)
+
+`.filter-pill` now consumes the hifi pill vocabulary (HANDOFF "Component contracts" `.pill`):
+
+- **default** · `--paper` bg, `var(--bw)` solid `--ink` border, `var(--r-pill)` radius
+- **hover** · `--paper-2` bg
+- **active** · INVERTED — `--ink` bg, `--paper` text. The strongest "this filter is on" cue, replaces the previous accent-blue fill
+- **focus-visible** · 2px amber outline + 2px offset (the only place this far that uses focus rings — they'll spread as more components migrate)
+- **clear** · dashed border, `--ink-2` text on transparent. Hover settles to paper-2
+
+`.filter-status` and `.pill-count` switched from `--muted` (legacy) to `--ink-3`.
+
+The strType italic flag (`.filter-pill.strtype`) is a content variant, not a state — kept as-is.
+
+Pills don't render on detail pages with single-folder ref sets (StatGrav etc.), so visual proof requires a multi-folder page; the rule is in place and verified to load without errors.
+
 ## 2026-05-07 — slice 5 · detail-head folder edge (per fNN palette)
 
 The detail-head card now carries the folder identity as a 6px colored left edge — the loudest folder cue on the page per the hifi spec. `app.js` adds `folderClass(folder)` to the five folder-scoped detail-head call sites: object-detail (line 492), code-class/code-method (667/731), folder-detail (2104), and schema-folder (2185). Schema overview, health/coverage, llm-candidates etc. are not folder-scoped and stay class="detail-head" (transparent edge, identical inset).
