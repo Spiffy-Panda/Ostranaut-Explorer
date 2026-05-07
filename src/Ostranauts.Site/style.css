@@ -1,3 +1,141 @@
+/* ============================================================
+   Hi-fi token foundation · ported from
+   notes/design/hifi-prototype/explorer.css
+   ------------------------------------------------------------
+   Inert until components consume them. Coexists with the legacy
+   tokens (--bg/--fg/--accent/etc.) below; legacy components
+   continue to work, new/migrated components reach for the hifi
+   tokens. Migration plan: PLAN-DESIGN.md Phase 3.
+   ------------------------------------------------------------
+   Light mode is the default per prototype; dark mode is opt-in
+   via [data-theme="dark"] on <html>. The live site currently
+   sets data-theme="dark" in explorer.html so we render against
+   the dark vocabulary while migrating.
+   ============================================================ */
+
+:root {
+
+  /* === paper, ink === */
+  --paper:    #f4f1ea;
+  --paper-2:  #ece8de;
+  --paper-3:  #e3dfd2;
+  --ink:      #1a1a1a;
+  --ink-2:    #4a4a4a;
+  --ink-3:    #8a8a82;
+  --line:     #1a1a1a;
+  --rule:     #c9c4b6;
+  --note:     #c0392b; /* spec-doc / annotation only · not for production UI */
+
+  /* === folder palette · 12 hues, frequency-ranked v0.18.2 ===
+     fills sit at L≈0.84 / C≈0.085 (legible black-on, even weight)
+     edges sit at L≈0.50 / C≈0.10 (small-area accents) */
+  --pal-01:      oklch(0.84 0.085 30);   --pal-01-edge: oklch(0.55 0.110 30);   /* coral       · conditions   */
+  --pal-02:      oklch(0.84 0.085 60);   --pal-02-edge: oklch(0.55 0.110 60);   /* peach       · items        */
+  --pal-03:      oklch(0.86 0.090 95);   --pal-03-edge: oklch(0.58 0.110 95);   /* sand        · interactions */
+  --pal-04:      oklch(0.86 0.090 130);  --pal-04-edge: oklch(0.55 0.110 130);  /* moss        · condtrigs    */
+  --pal-05:      oklch(0.84 0.085 165);  --pal-05-edge: oklch(0.52 0.090 165);  /* sage        · condrules    */
+  --pal-06:      oklch(0.84 0.085 200);  --pal-06-edge: oklch(0.50 0.090 200);  /* mist        · slots        */
+  --pal-07:      oklch(0.84 0.085 235);  --pal-07-edge: oklch(0.50 0.100 235);  /* sky         · loot         */
+  --pal-08:      oklch(0.83 0.085 270);  --pal-08-edge: oklch(0.50 0.100 270);  /* periwinkle  · lifeevents   */
+  --pal-09:      oklch(0.83 0.085 300);  --pal-09-edge: oklch(0.50 0.100 300);  /* lilac       · installables */
+  --pal-10:      oklch(0.84 0.085 330);  --pal-10-edge: oklch(0.50 0.100 330);  /* mauve       · rooms        */
+  --pal-11:      oklch(0.83 0.075 0);    --pal-11-edge: oklch(0.50 0.090 0);    /* dusty pink  · condowners   */
+  --pal-12:      oklch(0.86 0.040 90);   --pal-12-edge: oklch(0.55 0.050 90);   /* parchment   · everything else */
+
+  /* === semantic accents · reserved, never used for folders === */
+  --accent-banner-bg:    oklch(0.93 0.040 240);
+  --accent-banner-edge:  oklch(0.40 0.150 240);
+  --accent-mismatch-bg:  oklch(0.91 0.010 90);
+  --accent-mismatch-edge: var(--ink-3);
+  --accent-callout-bg:   oklch(0.93 0.070 90);
+  --accent-callout-edge: var(--ink);
+
+  /* === fonts === */
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-ui:   "Lexend", "IBM Plex Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-hand: "Caveat", "Comic Sans MS", cursive;
+
+  /* === type scale · base 14, ratio 1.2 === */
+  --fs-1: 10px;  --fs-2: 11px;  --fs-3: 12px;  --fs-4: 13px;
+  --fs-5: 14px;  --fs-6: 17px;  --fs-7: 20px;  --fs-8: 24px;
+  --fs-9: 32px;
+
+  /* === spacing · 4-base, 8 steps === */
+  --sp-1:  4px;   --sp-2:  8px;   --sp-3: 12px;   --sp-4: 16px;
+  --sp-5: 24px;   --sp-6: 32px;   --sp-7: 48px;   --sp-8: 64px;
+
+  /* === radii / borders / shadow === */
+  --r-0: 0;       --r-1: 2px;     --r-2: 4px;     --r-pill: 999px;
+  --bw:    1.5px;  /* default border weight */
+  --bw-2:  2px;
+  --shadow-1: 2px 2px 0 var(--line);
+  --shadow-2: 3px 3px 0 var(--line);
+  --shadow-3: 4px 4px 0 var(--line);
+
+  /* dark-only tokens · null in light mode, declared so refs don't break */
+  --plasma:        transparent;
+  --rust:          var(--ink-3);
+  --rust-edge:     var(--ink-2);
+}
+
+/* ============================================================
+   DARK THEME · Industrial cyberpunk (hifi tokens)
+   ------------------------------------------------------------
+   cold hydraulic blues; warning amber as primary action color;
+   plasma cyan rationed (ONE live readout per page); rust patina
+   decorative only, never interactive; condensation-white ink.
+   ============================================================ */
+
+[data-theme="dark"] {
+  --paper:    #14171b;
+  --paper-2:  #1c2026;
+  --paper-3:  #252a31;
+  --ink:      #C4CDD4;
+  --ink-2:    #8a96a1;
+  --ink-3:    #5a6571;
+  --line:     #2d333b;
+  --rule:     #2d333b;
+  --note:     #c0392b;
+
+  --pal-01:      oklch(0.32 0.045 30);   --pal-01-edge: oklch(0.58 0.080 30);
+  --pal-02:      oklch(0.33 0.045 60);   --pal-02-edge: oklch(0.60 0.080 60);
+  --pal-03:      oklch(0.34 0.045 95);   --pal-03-edge: oklch(0.62 0.080 95);
+  --pal-04:      oklch(0.34 0.045 130);  --pal-04-edge: oklch(0.60 0.075 130);
+  --pal-05:      oklch(0.33 0.045 165);  --pal-05-edge: oklch(0.58 0.070 165);
+  --pal-06:      oklch(0.33 0.050 200);  --pal-06-edge: oklch(0.60 0.080 200);
+  --pal-07:      oklch(0.33 0.050 235);  --pal-07-edge: oklch(0.60 0.080 235);
+  --pal-08:      oklch(0.33 0.050 270);  --pal-08-edge: oklch(0.60 0.080 270);
+  --pal-09:      oklch(0.33 0.045 300);  --pal-09-edge: oklch(0.60 0.075 300);
+  --pal-10:      oklch(0.33 0.045 330);  --pal-10-edge: oklch(0.60 0.075 330);
+  --pal-11:      oklch(0.32 0.040 0);    --pal-11-edge: oklch(0.58 0.070 0);
+  --pal-12:      oklch(0.32 0.025 90);   --pal-12-edge: oklch(0.55 0.045 90);
+
+  --accent-banner-bg:    #18222b;
+  --accent-banner-edge:  #4a7a96;
+  --accent-mismatch-bg:  #1a1d21;
+  --accent-mismatch-edge: #4a5560;
+  --accent-callout-bg:   #2a1f0a;
+  --accent-callout-edge: #d18a2c;
+
+  --plasma:        #38e0e6;
+  --plasma-glow:   0 0 8px rgba(56,224,230,0.55), 0 0 1px rgba(56,224,230,0.9);
+  --amber:         #d18a2c;
+  --amber-soft:    #b97a25;
+  --rust:          #8a4a2e;
+  --rust-edge:     #6b3a23;
+
+  --shadow-1: 0 1px 0 #000, 0 0 0 1px #2d333b;
+  --shadow-2: 0 2px 0 #000, 0 0 0 1px #2d333b;
+  --shadow-3: 0 0 0 1.5px #2d333b, 0 4px 0 rgba(0,0,0,0.6);
+
+  color-scheme: dark;
+}
+
+/* ============================================================
+   Legacy tokens (pre-hifi). Existing components still consume
+   these; migrating components reach for the hifi tokens above.
+   ============================================================ */
+
 :root {
   --bg: #1a1d23;
   --bg-elev: #242830;
