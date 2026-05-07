@@ -11,6 +11,34 @@ commits are in flight on `claude-hifi-proto-implement`.
 
 ---
 
+## 2026-05-07 — slice 12 · print stylesheet (~80 lines)
+
+`@media print { … }` block at the end of `style.css`. Discharges HANDOFF Open question #6 / Things-next #1.
+
+- **Token override.** All hifi + legacy + accent tokens collapse to a
+  black-on-white research-doc palette regardless of `[data-theme]` —
+  prints land on paper-readable values even when the user is reading
+  in dark mode.
+- **Suppressed chrome.** `header`, `#tabs`, `aside#folders`,
+  `.theme-toggle`, `.copy-ref`, `.explainer-dismiss`,
+  `.strtype-dispatch-trigger/-close`, `.filter-pills`,
+  `#search-results`, `.meta-chip` — all `display:none`. Interactive
+  affordances add nothing to a printed snapshot.
+- **Folder colors → monochrome.** `.detail-head` and `.folder-badge`
+  edges fall back to black; the *thickness* of the left rule still
+  distinguishes "this card is folder-scoped" from "this is content"
+  (HANDOFF rule "color is never sole carrier of meaning"). `strtype-
+  badge` keeps its dashed border but in black.
+- **Layout.** `main` becomes block-flow (no grid sidebar), `section#detail`
+  loses padding/overflow — main content takes full page width.
+- **Page-break hygiene.** Avoid splitting any of `.detail-head`,
+  `.prefix-explainer`, `.folder-mismatch-note`, `.edit-this-callout`,
+  `.thresh-panel`, or `.refs-block .group` mid-card.
+
+Verified the rule registers in the live stylesheet (`hasPrint: true`,
+293 total rules). Visual proof requires DevTools "emulate print media"
+which the preview tool can't drive; the rule is in place.
+
 ## 2026-05-07 — slice 11 · theme toggle + light-mode legacy aliases
 
 Light mode now reachable. New `theme-toggle.js` (adapted from `notes/design/hifi-prototype/theme-toggle.js`) sits in `<head>` **before** the stylesheet — synchronously sets `data-theme` from localStorage / `prefers-color-scheme` / default-dark *before* CSS variables resolve, so first paint is correct (no flash). On `DOMContentLoaded`, mounts a pill button into `<header>` (`◐ Light` / `◑ Dark` glyph + label, amber focus ring matching the rest of the system). Click flips the attribute and persists to `localStorage["ostranauts-explorer-theme"]`.

@@ -219,6 +219,80 @@
 .theme-toggle .glyph { font-size: 0.95rem; line-height: 1; }
 .theme-toggle .label { letter-spacing: 0.02em; }
 
+/* ============================================================
+   PRINT · suppress chrome, force monochrome on folder colors
+   ------------------------------------------------------------
+   The page prints as a research-doc snapshot of one detail page.
+   - topbar / tabs / folder rail / theme toggle / search dropdown
+     are interactive chrome and add nothing to a printed reference;
+     suppressed.
+   - folder colors reduce to grayscale, but the .detail-head edge
+     and .folder-badge border-left thickness stay (HANDOFF rule:
+     "color is never sole carrier of meaning"). Black ink stripes
+     still distinguish kinds.
+   - Force light vocabulary regardless of toggle so prints land on
+     paper-readable values; user-toggle only affects screen.
+   - Page-break: avoid splitting a detail-head, refs-block group,
+     or the thresh-panel mid-card.
+   ============================================================ */
+
+@media print {
+  :root, [data-theme="dark"], [data-theme="light"] {
+    --paper:    #ffffff;
+    --paper-2:  #ffffff;
+    --paper-3:  #f3f3f3;
+    --ink:      #000000;
+    --ink-2:    #333333;
+    --ink-3:    #666666;
+    --line:     #000000;
+    --rule:     #999999;
+    --bg:       #ffffff;
+    --bg-elev:  #ffffff;
+    --fg:       #000000;
+    --muted:    #555555;
+    --border:   #999999;
+    --accent:           #000000;
+    --accent-banner-bg: #ffffff;
+    --accent-banner-edge: #000000;
+    --accent-mismatch-bg: #ffffff;
+    --accent-mismatch-edge: #555555;
+    --accent-callout-bg: #ffffff;
+    --accent-callout-edge: #000000;
+    --warn: #000000;
+    --bad:  #000000;
+  }
+
+  html, body { background: #ffffff; color: #000000; }
+
+  /* suppress interactive chrome */
+  header, #tabs, aside#folders,
+  .copy-ref, .explainer-dismiss, .strtype-dispatch-trigger,
+  .strtype-dispatch-close, .filter-pills, .theme-toggle,
+  #search-results, .meta-chip { display: none !important; }
+
+  /* main content takes full width */
+  main { display: block !important; }
+  section#detail { padding: 0; overflow: visible; }
+
+  /* folder edges drop to black; edge thickness still distinguishes kinds */
+  .detail-head { border-left-color: #000 !important; }
+  .folder-badge { border-left-color: #000 !important; --badge-color: #000 !important; }
+  .strtype-badge { border-color: #000 !important; }
+
+  /* page-break hygiene */
+  .detail-head, .prefix-explainer, .folder-mismatch-note,
+  .edit-this-callout, .thresh-panel { page-break-inside: avoid; }
+  .refs-block .group { page-break-inside: avoid; }
+  h2, h3 { page-break-after: avoid; }
+
+  /* hide the trailing crumb-style hover help cursor */
+  * { cursor: default !important; }
+
+  /* ensure links print as-rendered (no underline-on-print accidents) */
+  a { color: inherit; text-decoration: none; }
+  a[href^="#/"]::after { content: ""; }
+}
+
 * { box-sizing: border-box; }
 
 html, body {
