@@ -461,7 +461,25 @@ section#detail {
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.75rem;
   margin-bottom: 1rem;
+  /* hifi: 6px folder-edge applied via .detail-head.fNN below; the page
+     identity at a glance, locked to the frequency-ranked palette. The
+     base rule reserves the inset so non-fNN heads (schema overview,
+     coverage, etc.) line up with folder-scoped heads. */
+  padding-left: 0.85rem;
+  border-left: 6px solid transparent;
 }
+.detail-head.f01 { border-left-color: var(--pal-01-edge); }
+.detail-head.f02 { border-left-color: var(--pal-02-edge); }
+.detail-head.f03 { border-left-color: var(--pal-03-edge); }
+.detail-head.f04 { border-left-color: var(--pal-04-edge); }
+.detail-head.f05 { border-left-color: var(--pal-05-edge); }
+.detail-head.f06 { border-left-color: var(--pal-06-edge); }
+.detail-head.f07 { border-left-color: var(--pal-07-edge); }
+.detail-head.f08 { border-left-color: var(--pal-08-edge); }
+.detail-head.f09 { border-left-color: var(--pal-09-edge); }
+.detail-head.f10 { border-left-color: var(--pal-10-edge); }
+.detail-head.f11 { border-left-color: var(--pal-11-edge); }
+.detail-head.f12 { border-left-color: var(--pal-12-edge); }
 .detail-head .copy-ref {
   position: absolute;
   top: 0;

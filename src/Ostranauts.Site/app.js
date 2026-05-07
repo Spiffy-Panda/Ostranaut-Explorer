@@ -489,7 +489,7 @@ function renderObjectDetail(folder, strName) {
   const props = (window.NODE_PROPS ?? {})[id];
   const isCodeEmitted = props && props.kind === 'code-emitted';
   const html = `
-    <div class="detail-head">
+    <div class="detail-head ${folderClass(folder)}">
       <div class="crumbs">${escapeHtml(folder)}</div>
       <h2>${escapeHtml(strName)}</h2>
       <div class="file">${escapeHtml(node.file)}</div>
@@ -664,7 +664,7 @@ function renderCodeNodeDetail(folder, strName, id, node) {
   const kindLabel = folder === 'code-class' ? 'class (initializer literals)' : 'method (body literals)';
 
   detailEl.innerHTML = `
-    <div class="detail-head">
+    <div class="detail-head ${folderClass(folder)}">
       <div class="crumbs">${escapeHtml(folder)}</div>
       <h2>${escapeHtml(formatCodeName(folder, strName))}</h2>
       <div class="file">${escapeHtml(fileLine)} · ${escapeHtml(kindLabel)}</div>
@@ -728,7 +728,7 @@ function renderCodeComponentDetail(folder, strName, id, node) {
   }
 
   detailEl.innerHTML = `
-    <div class="detail-head">
+    <div class="detail-head ${folderClass(folder)}">
       <div class="crumbs">${escapeHtml(folder)}</div>
       <h2>${escapeHtml(strName)}</h2>
       <div class="file">implementing type: <code>${escapeHtml(implType)}</code> · arity ≥ ${escapeHtml(String(arity))} · dispatcher: ${escapeHtml(dispFile)}:${escapeHtml(String(dispLine))}</div>
@@ -2101,7 +2101,7 @@ function renderFolderIndex(folder) {
   const truncated = list.length > FOLDER_LIMIT;
 
   detailEl.innerHTML = `
-    <div class="detail-head">
+    <div class="detail-head ${folderClass(folder)}">
       <div class="crumbs">folder</div>
       <h2>${escapeHtml(folder)}</h2>
       <div class="file">${list.length.toLocaleString()} objects</div>
@@ -2182,7 +2182,7 @@ function renderSchemaDetail(folder) {
   const shapes = [...byShape.keys()].sort();
 
   const html = `
-    <div class="detail-head">
+    <div class="detail-head ${folderClass(folder)}">
       <div class="crumbs"><a href="#/schemas">schemas</a></div>
       <h2>${escapeHtml(folder)}</h2>
       <div class="file">${rules.length} rules · grouped by FieldShape</div>

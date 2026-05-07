@@ -11,6 +11,14 @@ commits are in flight on `claude-hifi-proto-implement`.
 
 ---
 
+## 2026-05-07 — slice 5 · detail-head folder edge (per fNN palette)
+
+The detail-head card now carries the folder identity as a 6px colored left edge — the loudest folder cue on the page per the hifi spec. `app.js` adds `folderClass(folder)` to the five folder-scoped detail-head call sites: object-detail (line 492), code-class/code-method (667/731), folder-detail (2104), and schema-folder (2185). Schema overview, health/coverage, llm-candidates etc. are not folder-scoped and stay class="detail-head" (transparent edge, identical inset).
+
+CSS adds the per-fNN `border-left-color` (12 rules) plus a transparent base `border-left: 6px solid transparent` and `padding-left: 0.85rem` so non-fNN heads still line up flush with folder-scoped ones — no layout shift between page kinds.
+
+Verified on `#/o/conditions/StatGrav`: `border-left-color` resolves to `oklch(0.58 0.08 30)` (coral, the dark-mode edge for f01 conditions), 6px solid, 0.85rem padding-left.
+
 ## 2026-05-07 — slice 4 · semantic accents (banner / mismatch / callout)
 
 Maps the three shipped accent components to the hifi semantic-accent
