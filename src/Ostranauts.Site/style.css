@@ -440,8 +440,8 @@ aside#folders {
   font-size: 0.8125rem;
 }
 #folder-list li .folder-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-#folder-list li:hover { background: rgba(108,180,255,0.08); }
-#folder-list li.active { background: rgba(108,180,255,0.18); color: var(--accent); }
+#folder-list li:hover { background: var(--paper-3); }
+#folder-list li.active { background: var(--paper-3); color: var(--ink); font-weight: 600; }
 #folder-list .count { color: var(--muted); }
 
 /* Hi-fi folder swatch — 9px square that picks up the fNN palette of the row.
@@ -643,9 +643,9 @@ section#detail {
   margin-top: 1.25rem;
   padding: 0.55rem 0.75rem 0.65rem;
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--accent-banner-edge);
   border-radius: 0 4px 4px 0;
-  background: rgba(108,180,255,0.04);
+  background: var(--accent-banner-bg);
 }
 .thresh-panel h3 {
   font-size: 0.875rem;
@@ -671,7 +671,7 @@ section#detail {
 .thresh-panel .thresh-incount,
 .thresh-panel .thresh-meta { color: var(--muted); font-size: 0.75rem; }
 .thresh-panel .thresh-overflow { font-style: italic; color: var(--muted); }
-.thresh-panel.thresh-empty { border-left-color: var(--warn); background: rgba(255,210,128,0.04); }
+.thresh-panel.thresh-empty { border-left-color: var(--accent-callout-edge); background: var(--accent-callout-bg); }
 .thresh-panel.thresh-empty h3 { color: var(--warn); }
 
 /* UX 1.8 — strType dispatch trigger + popover. Trigger is the small `?` next

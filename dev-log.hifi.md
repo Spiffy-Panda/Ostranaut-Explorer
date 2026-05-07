@@ -11,6 +11,14 @@ commits are in flight on `claude-hifi-proto-implement`.
 
 ---
 
+## 2026-05-07 — slice 10 · detail-page polish (thresh-panel + folder-list active state)
+
+`.thresh-panel` now consumes `--accent-banner-bg` + `--accent-banner-edge` directly instead of the hardcoded `rgba(108,180,255,…)` blue tint — same look in dark mode, but light mode (slice 11) will get the correct light-mode coolant blue automatically. The `.thresh-empty` warn variant similarly switches to `--accent-callout-bg` + `--accent-callout-edge` (amber) to keep the warn semantic without the legacy yellow rgbas.
+
+`#folder-list li:hover` and `.active` switch from the legacy accent-blue tint to `--paper-3` + bold weight on active. The active row's color cue is already carried by the swatch + bold name; a colored left rule here would compete with the `.detail-head.fNN` 6px edge on the right side of the page.
+
+Verified: thresh-panel resolves to `bg rgb(24,34,43)` (banner-bg) + `border-left rgb(74,122,150)` (banner-edge) in dark mode.
+
 ## 2026-05-07 — slice 9 · topbar + tabs + legacy-token aliasing
 
 Two-part slice: hifi-vocabulary the topbar/tabs and unify the rest of the site against the hifi palette in one move.
