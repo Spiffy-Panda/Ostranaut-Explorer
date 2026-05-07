@@ -535,21 +535,23 @@ section#detail {
 
 /* UX 1.2 — per-prefix explainer banner. Dismissible, sits above the Fields
    block. Tone is "about this kind of thing", not "here's what to do" — that
-   distinction matters for the visual hierarchy on a busy detail page. */
+   distinction matters for the visual hierarchy on a busy detail page. Maps
+   to the hifi *banner* semantic accent (pedagogical context, coolant blue
+   in dark mode). See HANDOFF "Semantic accents". */
 .prefix-explainer {
   position: relative;
   margin: 0.6rem 0 0.4rem;
   padding: 0.6rem 2rem 0.7rem 0.85rem;
-  background: rgba(108,180,255,0.06);
+  background: var(--accent-banner-bg);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--accent-banner-edge);
   border-radius: 4px;
   font-size: 0.875rem;
   line-height: 1.45;
 }
 .prefix-explainer .explainer-title {
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-banner-edge);
   margin-bottom: 0.25rem;
 }
 .prefix-explainer .explainer-body { color: var(--fg); }
@@ -684,14 +686,16 @@ section#detail {
 
 /* UX 1.10 — "Edit this" callout. Strongest visual emphasis on the page when
    it appears: the modder came here to do an edit, this is the destination
-   not the journey. Distinct accent color (warn) so it doesn't compete with
-   the explainer banner's accent-blue. */
+   not the journey. Maps to the hifi *callout* semantic accent (primary
+   action, amber edge in dark, hard ink shadow in light). The amber-on-dark
+   copy-path button is the single point of brightest visual emphasis in
+   dark mode — don't compete with it. See HANDOFF "Semantic accents". */
 .edit-this-callout {
   margin: 0.6rem 0 0.8rem;
   padding: 0.65rem 0.9rem 0.7rem;
-  background: rgba(255,210,128,0.06);
-  border: 1px solid var(--warn);
-  border-left: 4px solid var(--warn);
+  background: var(--accent-callout-bg);
+  border: 1px solid var(--accent-callout-edge);
+  border-left: 4px solid var(--accent-callout-edge);
   border-radius: 4px;
   font-size: 0.875rem;
   line-height: 1.45;
@@ -704,21 +708,26 @@ section#detail {
 }
 .edit-this-callout .callout-label {
   font-weight: 600;
-  color: var(--warn);
+  color: var(--accent-callout-edge);
   font-size: 0.95rem;
 }
 .edit-this-callout .callout-copy-path {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--muted);
+  background: var(--accent-callout-edge);
+  border: 1px solid var(--accent-callout-edge);
+  color: var(--paper);
   border-radius: 3px;
-  padding: 0.05rem 0.45rem;
-  font-size: 0.7rem;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
   cursor: pointer;
   font-family: inherit;
 }
-.edit-this-callout .callout-copy-path:hover { color: var(--fg); border-color: var(--warn); }
-.edit-this-callout .callout-copy-path.copied { color: var(--good, #aed581); }
+.edit-this-callout .callout-copy-path:hover {
+  background: #e89a3a;
+  border-color: #e89a3a;
+  box-shadow: 0 0 12px rgba(209,138,44,0.4);
+}
+.edit-this-callout .callout-copy-path.copied { background: var(--good, #aed581); border-color: var(--good, #aed581); color: var(--paper); }
 .edit-this-callout .callout-body {
   color: var(--fg);
   margin-bottom: 0.35rem;
@@ -744,39 +753,45 @@ section#detail {
 .edit-this-callout + .callout-sub {
   margin: -0.55rem 0 0.6rem;
   padding: 0.4rem 0.9rem;
-  background: rgba(255,210,128,0.04);
-  border: 1px solid var(--border);
+  background: var(--accent-callout-bg);
+  border: 1px solid var(--accent-callout-edge);
   border-top: 0;
   border-radius: 0 0 4px 4px;
   font-size: 0.8125rem;
-  color: var(--muted);
+  color: var(--ink-2);
   font-style: italic;
+  opacity: 0.85;
 }
 
-/* UX 1.9 — folder-mismatch inline note. Smaller / quieter than the explainer
-   banner — addresses a specific page-local question, not a general concept.
-   Always visible (no dismiss); shows up only when the prefix↔folder mapping
-   actually disagrees. */
+/* UX 1.9 — folder-mismatch inline note. Maps to the hifi *mismatch*
+   semantic accent (neutral observation, dashed gunmetal in dark). Use when
+   the data has a quirk worth flagging (comma suffix, prefix↔folder
+   mismatch, synthesized strType) — never alarming, never instructive,
+   "fwiw, this is what's going on." Dashed border distinguishes it from
+   the solid-bordered banner so kind reads at a glance. */
 .folder-mismatch-note {
   margin: 0.4rem 0 0.6rem;
   padding: 0.5rem 0.75rem;
-  background: rgba(255,210,128,0.06);
-  border-left: 3px solid var(--warn);
-  border-radius: 0 3px 3px 0;
+  background: var(--accent-mismatch-bg);
+  border: 1px dashed var(--accent-mismatch-edge);
+  border-radius: 3px;
   font-size: 0.8125rem;
   line-height: 1.4;
-  color: var(--fg);
+  color: var(--ink);
+  font-style: italic;
 }
 .folder-mismatch-note strong {
   display: block;
-  color: var(--warn);
+  color: var(--ink);
   margin-bottom: 0.15rem;
+  font-style: normal;
 }
 .folder-mismatch-note code {
   font-size: 0.75rem;
-  background: rgba(0,0,0,0.2);
+  background: rgba(196,205,212,0.08);
   padding: 0 0.25rem;
   border-radius: 2px;
+  font-style: normal;
 }
 
 /* UX 1.5 — folder badge: stable per-folder color via fNN class set in JS.

@@ -11,6 +11,31 @@ commits are in flight on `claude-hifi-proto-implement`.
 
 ---
 
+## 2026-05-07 — slice 4 · semantic accents (banner / mismatch / callout)
+
+Maps the three shipped accent components to the hifi semantic-accent
+vocabulary (HANDOFF "Semantic accents"):
+
+- **`.prefix-explainer`** (UX 1.2) → **banner** · `--accent-banner-bg` (`#18222b`
+  coolant blue) + `--accent-banner-edge` (`#4a7a96`) for both 3px left rule
+  and the title color. Pedagogical context, "this is the kind of thing you're
+  looking at." Solid border so it visually distinguishes from mismatch.
+- **`.folder-mismatch-note`** (UX 1.9) → **mismatch** · `--accent-mismatch-bg`
+  (`#1a1d21`) + **dashed** `--accent-mismatch-edge` (`#4a5560`) gunmetal,
+  italic body text. Neutral observation, "fwiw, this is what's going on" —
+  never alarming, never instructive.
+- **`.edit-this-callout`** (UX 1.10) → **callout** · `--accent-callout-bg`
+  (`#2a1f0a`) + amber `--accent-callout-edge` (`#d18a2c`). The copy-path
+  button now renders as **amber-on-dark** (the single point of brightest
+  visual emphasis in dark mode per HANDOFF; hover adds the subtle amber
+  glow `box-shadow: 0 0 12px rgba(209,138,44,0.4)`).
+- **`.callout-sub`** (the trailing "or use the JSON path" sub-row) tracks
+  the callout into the amber palette + adds 0.85 opacity so it reads as
+  secondary to the action above.
+
+Verified in preview: `.prefix-explainer` resolves to `bg rgb(24,34,43)` and
+`edge rgb(74,122,150)` — exact `#18222b` / `#4a7a96` matches.
+
 ## 2026-05-07 — slice 3 · folder list left-rail swatches (indicator-light strip)
 
 Adds a 9px square swatch before each row in `#folder-list`, picking up the row's `fNN` class. `app.js` now adds the `folderClass(folder)` class to each `li` and emits a `<span class="swatch">` + `<span class="folder-name">` + `<span class="count">` triple inside.
