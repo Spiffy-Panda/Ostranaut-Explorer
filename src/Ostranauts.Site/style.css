@@ -79,6 +79,26 @@
 }
 
 /* ============================================================
+   Legacy tokens (pre-hifi). Existing components still consume
+   these; migrating components reach for the hifi tokens above.
+   In dark mode (data-theme="dark") the [data-theme="dark"] block
+   below redefines these to alias the hifi tokens, so unmigrated
+   components inherit the hifi vocabulary without per-rule edits.
+   ============================================================ */
+
+:root {
+  --bg: #1a1d23;
+  --bg-elev: #242830;
+  --fg: #e6e6e6;
+  --muted: #8a8f99;
+  --accent: #6cb4ff;
+  --accent-dim: #4a85c2;
+  --border: #353a44;
+  --warn: #d9a73a;
+  --bad: #d95e5e;
+}
+
+/* ============================================================
    DARK THEME · Industrial cyberpunk (hifi tokens)
    ------------------------------------------------------------
    cold hydraulic blues; warning amber as primary action color;
@@ -128,24 +148,23 @@
   --shadow-2: 0 2px 0 #000, 0 0 0 1px #2d333b;
   --shadow-3: 0 0 0 1.5px #2d333b, 0 4px 0 rgba(0,0,0,0.6);
 
-  color-scheme: dark;
-}
-
-/* ============================================================
-   Legacy tokens (pre-hifi). Existing components still consume
-   these; migrating components reach for the hifi tokens above.
-   ============================================================ */
-
-:root {
-  --bg: #1a1d23;
-  --bg-elev: #242830;
-  --fg: #e6e6e6;
-  --muted: #8a8f99;
-  --accent: #6cb4ff;
-  --accent-dim: #4a85c2;
-  --border: #353a44;
-  --warn: #d9a73a;
+  /* Legacy-token aliases — point the pre-hifi tokens at their hifi
+     equivalents so unmigrated components inherit the hifi vocabulary
+     without per-rule edits. Removes the slight visual mismatch between
+     migrated components (--paper #14171b) and legacy ones (--bg
+     #1a1d23). When light mode lands (slice 11), these aliases will need
+     companion definitions in :root or a [data-theme="light"] block. */
+  --bg: var(--paper);
+  --bg-elev: var(--paper-2);
+  --fg: var(--ink);
+  --muted: var(--ink-3);
+  --border: var(--line);
+  --accent: var(--accent-banner-edge);
+  --accent-dim: var(--ink-2);
+  --warn: var(--accent-callout-edge);
   --bad: #d95e5e;
+
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -179,8 +198,8 @@ header {
   align-items: center;
   gap: 1.5rem;
   padding: 0.75rem 1.25rem;
-  background: var(--bg-elev);
-  border-bottom: 1px solid var(--border);
+  background: var(--paper-2);
+  border-bottom: var(--bw) solid var(--ink-2);
   flex: 0 0 auto;
 }
 
@@ -189,11 +208,12 @@ header h1 {
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+  color: var(--ink);
 }
 
 .status {
   margin: 0;
-  color: var(--muted);
+  color: var(--ink-3);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.8125rem;
   white-space: nowrap;
@@ -325,16 +345,22 @@ header h1 {
 
 /* ─── tabs ─────────────────────────────────────────────────── */
 
+/* Page tabs · hifi treatment per HANDOFF "Page shell"
+     - Active tab inverts to body (--paper) bg, with bottom-border the same
+       paper color so it visually "fuses" into the page below.
+     - Inactive tabs sit on the recessed panel (--paper-2) with --ink-3 text.
+     - Active indicator color is amber in dark mode (matches the focus-ring
+       and callout vocabulary). */
 #tabs {
   display: flex;
   gap: 0;
-  background: var(--bg-elev);
-  border-bottom: 1px solid var(--border);
+  background: var(--paper-2);
+  border-bottom: var(--bw) solid var(--ink-2);
   padding: 0 1rem;
   flex: 0 0 auto;
 }
 #tabs a {
-  color: var(--muted);
+  color: var(--ink-3);
   padding: 0.5rem 0.9rem;
   border-bottom: 2px solid transparent;
   font-size: 0.8125rem;
@@ -343,15 +369,24 @@ header h1 {
   white-space: nowrap;
 }
 #tabs a:hover {
-  color: var(--fg);
-  background: rgba(108, 180, 255, 0.05);
+  color: var(--ink);
+  background: var(--paper-3);
   text-decoration: none;
 }
 #tabs a.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-  background: var(--bg);
+  color: var(--ink);
+  background: var(--paper);
+  border-bottom-color: var(--paper);
   cursor: default;
+  position: relative;
+  font-weight: 600;
+}
+[data-theme="dark"] #tabs a.active::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 2px;
+  background: var(--accent-callout-edge);
 }
 
 /* page-intro blurb that appears at the top of each non-Explorer page */

@@ -11,6 +11,20 @@ commits are in flight on `claude-hifi-proto-implement`.
 
 ---
 
+## 2026-05-07 — slice 9 · topbar + tabs + legacy-token aliasing
+
+Two-part slice: hifi-vocabulary the topbar/tabs and unify the rest of the site against the hifi palette in one move.
+
+**Topbar + tabs (visible).** `header` and `#tabs` migrate to `--paper-2` / `--ink` / `--ink-2`. Active tab inverts to `--paper` (body bg) with bottom-border the same paper color so it visually fuses into the page below — the prototype's signature page-tab fusion. Hover sits on `--paper-3`. In dark mode the active tab gets a 2px amber `::before` indicator strip at the top, matching the HANDOFF rule that the active-tab cue shifts from spec-doc red (light) to amber (dark).
+
+**Legacy-token aliasing (invisible-but-load-bearing).** Moved the legacy `:root { --bg/--fg/--accent/etc. }` block to come **before** the `[data-theme="dark"]` block, then redefined the legacy tokens inside `[data-theme="dark"]` to point at their hifi equivalents (`--bg → var(--paper)`, `--fg → var(--ink)`, `--accent → var(--accent-banner-edge)`, `--warn → var(--accent-callout-edge)`, etc.). Source-order specificity means the dark-theme aliases now win when the attribute is set. Net effect: every unmigrated component that still consumes `--bg`/`--fg`/etc. (~150 references) automatically inherits the hifi vocabulary without per-rule edits. Removes the slight mismatch between migrated tokens (`#14171b`) and legacy tokens (`#1a1d23`).
+
+`index.html` (empty-data demo) and `rooms-reference.html` also pinned to `data-theme="dark"` so the aliases activate there too.
+
+When light mode lands in slice 11, the `[data-theme="light"]` block needs to set companion alias values; otherwise legacy components in light mode would fall through to the original legacy-`:root` values (which are dark-coloured and would look broken on light paper).
+
+Verified: `--bg` resolves to `#14171b` (matches `--paper`), `--fg` to `#C4CDD4` (matches `--ink`), body bg = active-tab bg = `rgb(20,23,27)`. No console errors.
+
 ## 2026-05-07 — slice 8 · search dropdown migrated to hifi tokens
 
 `#search` input + `#search-results` dropdown + glossary cards now consume hifi tokens end-to-end.
