@@ -152,8 +152,9 @@
      equivalents so unmigrated components inherit the hifi vocabulary
      without per-rule edits. Removes the slight visual mismatch between
      migrated components (--paper #14171b) and legacy ones (--bg
-     #1a1d23). When light mode lands (slice 11), these aliases will need
-     companion definitions in :root or a [data-theme="light"] block. */
+     #1a1d23). Companion light-mode aliases live in [data-theme="light"]
+     below so flipping the toggle doesn't strand legacy components on
+     dark hex values atop a paper bg. */
   --bg: var(--paper);
   --bg-elev: var(--paper-2);
   --fg: var(--ink);
@@ -166,6 +167,57 @@
 
   color-scheme: dark;
 }
+
+/* ============================================================
+   LIGHT THEME · paper-and-ink vocabulary (hifi default values)
+   ------------------------------------------------------------
+   The hifi :root block defines the light-mode hifi tokens
+   already (--paper #f4f1ea, --ink #1a1a1a, etc.). This block
+   exists to alias the legacy --bg/--fg/--accent/etc. tokens to
+   their light-mode equivalents so unmigrated components don't
+   render dark text on dark bg over a cream paper page when the
+   user toggles to light.
+   ============================================================ */
+
+[data-theme="light"] {
+  --bg: var(--paper);
+  --bg-elev: var(--paper-2);
+  --fg: var(--ink);
+  --muted: var(--ink-3);
+  --border: var(--rule);
+  --accent: var(--accent-banner-edge);
+  --accent-dim: var(--ink-2);
+  --warn: oklch(0.55 0.150 80);
+  --bad: var(--note);
+
+  color-scheme: light;
+}
+
+/* ============================================================
+   Theme toggle button · injected by theme-toggle.js into <header>
+   ============================================================ */
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--bw) solid var(--ink);
+  border-radius: var(--r-pill);
+  padding: 0.2rem 0.65rem;
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+.theme-toggle:hover { background: var(--paper-2); }
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent-callout-edge);
+  outline-offset: 2px;
+}
+.theme-toggle .glyph { font-size: 0.95rem; line-height: 1; }
+.theme-toggle .label { letter-spacing: 0.02em; }
 
 * { box-sizing: border-box; }
 

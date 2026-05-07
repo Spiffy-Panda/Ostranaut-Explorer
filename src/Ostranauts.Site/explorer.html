@@ -1,16 +1,15 @@
 <!doctype html>
-<!--
-  data-theme="dark" activates the dark-mode hifi palette
-  (notes/design/hifi-prototype/explorer.css :root + [data-theme="dark"]).
-  The live site has always rendered against a dark vocabulary; pinning the
-  attribute here makes the hifi tokens resolve to their dark values until a
-  user-facing toggle ships in slice 11.
--->
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ostranaut Data Explorer</title>
+  <!-- Theme toggle script is loaded BEFORE the stylesheet so the
+       data-theme attribute is set before CSS variables resolve, avoiding
+       a flash of incorrect theme. The script reads localStorage for a
+       user preference; falls back to prefers-color-scheme; finally to
+       "dark" via the :root + [data-theme="dark"] cascade. -->
+  <script src="theme-toggle.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>

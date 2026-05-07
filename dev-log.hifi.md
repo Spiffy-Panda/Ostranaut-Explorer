@@ -11,6 +11,16 @@ commits are in flight on `claude-hifi-proto-implement`.
 
 ---
 
+## 2026-05-07 — slice 11 · theme toggle + light-mode legacy aliases
+
+Light mode now reachable. New `theme-toggle.js` (adapted from `notes/design/hifi-prototype/theme-toggle.js`) sits in `<head>` **before** the stylesheet — synchronously sets `data-theme` from localStorage / `prefers-color-scheme` / default-dark *before* CSS variables resolve, so first paint is correct (no flash). On `DOMContentLoaded`, mounts a pill button into `<header>` (`◐ Light` / `◑ Dark` glyph + label, amber focus ring matching the rest of the system). Click flips the attribute and persists to `localStorage["ostranauts-explorer-theme"]`.
+
+`[data-theme="light"]` block added with companion legacy-token aliases — `--bg → var(--paper)` (#f4f1ea), `--fg → var(--ink)` (#1a1a1a), `--accent → var(--accent-banner-edge)` light pedagogical blue, `--warn → oklch(0.55 0.150 80)` (custom darker amber that reads on light bg, since the prototype's light-mode `--accent-callout-edge` resolves to plain `var(--ink)` which would lose the warn semantic). Without these aliases legacy components would render dark text on dark backgrounds floating above the cream paper page.
+
+Removed the hardcoded `data-theme="dark"` from `explorer.html`, `index.html`, `rooms-reference.html` — script handles initial value now.
+
+Verified the round-trip: load → light (matches host preference, body bg `rgb(244,241,234)`, button labelled "Dark"); click → dark (body `rgb(20,23,27)`, localStorage `"dark"`, button "Light"); reload → dark (persists). All hifi tokens (`--bg`, `--fg`, `--accent`, `--warn`, `--border`) resolve to their light values when `[data-theme="light"]` is active. No console errors.
+
 ## 2026-05-07 — slice 10 · detail-page polish (thresh-panel + folder-list active state)
 
 `.thresh-panel` now consumes `--accent-banner-bg` + `--accent-banner-edge` directly instead of the hardcoded `rgba(108,180,255,…)` blue tint — same look in dark mode, but light mode (slice 11) will get the correct light-mode coolant blue automatically. The `.thresh-empty` warn variant similarly switches to `--accent-callout-bg` + `--accent-callout-edge` (amber) to keep the warn semantic without the legacy yellow rgbas.
