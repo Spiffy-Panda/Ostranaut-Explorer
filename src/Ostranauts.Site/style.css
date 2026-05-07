@@ -749,12 +749,13 @@ section#detail {
   border-radius: 2px;
 }
 
-/* UX 1.5 — folder badge: stable per-folder color via inline --badge-color
-   set in JS. Pill shape with a colored left bar so the visual works on its
-   own AND combines with text label for accessibility (color is never sole
-   carrier of meaning). */
-.refs-block .folder-badge,
-.detail-head .folder-badge {
+/* UX 1.5 — folder badge: stable per-folder color via fNN class set in JS.
+   Pill shape with a colored left bar so the visual works on its own AND
+   combines with text label for accessibility (color is never sole carrier
+   of meaning). The fNN→pal-NN-edge mapping is the hifi frequency-ranked
+   palette (v0.18.2); folders past the top 11 fall through to f12 parchment.
+   See notes/design/hifi-prototype/HANDOFF.md "Folder palette doctrine". */
+.folder-badge {
   display: inline-block;
   border-left: 3px solid var(--badge-color, var(--muted));
   background: rgba(255,255,255,0.04);
@@ -766,6 +767,18 @@ section#detail {
   letter-spacing: 0.02em;
   margin-right: 0.05rem;
 }
+.folder-badge.f01 { --badge-color: var(--pal-01-edge); }
+.folder-badge.f02 { --badge-color: var(--pal-02-edge); }
+.folder-badge.f03 { --badge-color: var(--pal-03-edge); }
+.folder-badge.f04 { --badge-color: var(--pal-04-edge); }
+.folder-badge.f05 { --badge-color: var(--pal-05-edge); }
+.folder-badge.f06 { --badge-color: var(--pal-06-edge); }
+.folder-badge.f07 { --badge-color: var(--pal-07-edge); }
+.folder-badge.f08 { --badge-color: var(--pal-08-edge); }
+.folder-badge.f09 { --badge-color: var(--pal-09-edge); }
+.folder-badge.f10 { --badge-color: var(--pal-10-edge); }
+.folder-badge.f11 { --badge-color: var(--pal-11-edge); }
+.folder-badge.f12 { --badge-color: var(--pal-12-edge); }
 /* UX 1.5 — strType badge: shared visual treatment regardless of value (only
    ~7 enum values; distinguishes by text), distinct from folder badges. */
 .refs-block .strtype-badge {

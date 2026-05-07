@@ -11,6 +11,16 @@ commits are in flight on `claude-hifi-proto-implement`.
 
 ---
 
+## 2026-05-07 — slice 2 · frequency-ranked folder palette + dark-theme activation
+
+Replaces the hashed 12-color folder palette with the hifi prototype's **frequency-ranked v0.18.2 mapping**: 11 most-populated folders each take one of `f01`..`f11` (conditions=01, items=02, interactions=03, condtrigs=04, condrules=05, slots=06, loot=07, lifeevents=08, installables=09, rooms=10, condowners=11), everything else falls through to `f12` parchment. `app.js` now emits `class="folder-badge fNN"` instead of inline `--badge-color: <hash>`. CSS sets `--badge-color: var(--pal-NN-edge)` per fNN class, so the existing `.folder-badge` rule keeps working without any structural change. Selector also broadened from `.refs-block .folder-badge, .detail-head .folder-badge` to plain `.folder-badge` (was missing `.thresh-panel` badges; now applies anywhere).
+
+**Why frequency-ranked, not hashed.** Hashing distributes visual diversity uniformly across folders regardless of how often a user sees them; ranking puts the most-distinguishable hues on the folders the user encounters most. (HANDOFF "Folder palette doctrine" rule 1.) Stability rule: don't reuse fNN classes across game versions — bump the palette version if v0.19.x reshuffles counts.
+
+`explorer.html` now sets `data-theme="dark"` on `<html>` so the dark hifi tokens (cold blues, condensation white) resolve. The live site has always rendered dark; pinning the attribute keeps that until a user-facing toggle ships in slice 11.
+
+Verified: `getComputedStyle` on `.folder-badge.f07` shows `border-left-color: oklch(0.6 0.08 235)` (sky blue, dark-mode edge) and the same for f05 sage. No console errors.
+
 ## 2026-05-07 — slice 1 · hifi token foundation in style.css (inert)
 
 Ports the entire token system from `notes/design/hifi-prototype/explorer.css` to the top of `src/Ostranauts.Site/style.css`: paper/ink, the 12-color frequency-ranked folder palette (`--pal-01`..`--pal-12` + `-edge` companions, OKLCH), three semantic accents (banner/mismatch/callout), font/type/spacing/radius/border/shadow scales, plus the `[data-theme="dark"]` override block (industrial cyberpunk: condensation-white ink, coolant blues, amber action color, plasma cyan + rust patina). Legacy tokens (`--bg`/`--fg`/`--accent`/etc.) preserved verbatim below the new block so existing components are untouched. New tokens are inert until components consume them in later slices. Verified via preview: legacy `--bg` resolves to `#1a1d23` (unchanged), new `--paper` resolves to `#f4f1ea`, no console errors. No DOM/HTML changes; no app.js changes.

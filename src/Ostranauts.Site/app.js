@@ -1890,19 +1890,32 @@ function renderFolderMismatchNote(folder, strName) {
   return '';
 }
 
-// UX 1.5 — stable folder color vocabulary. Hash the folder name into a
-// 12-color palette so loot=X-color, condowners=Y-color across the whole site.
-const FOLDER_PALETTE = [
-  '#6cb4ff', '#ff8a65', '#9ccc65', '#ba68c8', '#ffd54f', '#4dd0e1',
-  '#f06292', '#aed581', '#7986cb', '#ffb74d', '#4db6ac', '#dce775',
-];
-function folderColor(folder) {
-  let h = 0;
-  for (let i = 0; i < folder.length; i++) h = ((h << 5) - h + folder.charCodeAt(i)) | 0;
-  return FOLDER_PALETTE[Math.abs(h) % FOLDER_PALETTE.length];
+// UX 1.5 — stable folder color vocabulary, hifi palette v0.18.2.
+// Frequency-ranked (NOT hashed): the 11 most-populated folders each get one
+// of the 12 named OKLCH hues; everything else maps to f12 (parchment / catch-
+// all). Ranking is fixed to v0.18.2 strName counts — if a future game
+// version reshuffles, bump the palette version and add new fNN classes
+// rather than reusing existing ones (would silently break older docs).
+// See notes/design/hifi-prototype/HANDOFF.md "Folder palette doctrine".
+const FOLDER_FREQ_RANK = {
+  conditions:   1,
+  items:        2,
+  interactions: 3,
+  condtrigs:    4,
+  condrules:    5,
+  slots:        6,
+  loot:         7,
+  lifeevents:   8,
+  installables: 9,
+  rooms:        10,
+  condowners:   11,
+};
+function folderClass(folder) {
+  const r = FOLDER_FREQ_RANK[folder] ?? 12;
+  return 'f' + String(r).padStart(2, '0');
 }
 function renderFolderBadge(folder) {
-  return `<span class="folder-badge" style="--badge-color:${folderColor(folder)}" data-folder="${escapeAttr(folder)}" title="folder: ${escapeAttr(folder)}">${escapeHtml(folder)}</span>`;
+  return `<span class="folder-badge ${folderClass(folder)}" data-folder="${escapeAttr(folder)}" title="folder: ${escapeAttr(folder)}">${escapeHtml(folder)}</span>`;
 }
 // UX 1.5 — strType badge surfaces the engine's enum-tag dispatch on Loot,
 // Pledges, etc. Pulls from the node's properties; renders only when present.
