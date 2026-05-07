@@ -211,14 +211,19 @@ header h1 {
 #search {
   width: 100%;
   padding: 0.4rem 0.75rem;
-  background: var(--bg);
-  color: var(--fg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--bw) solid var(--ink);
+  border-radius: var(--r-1);
   font-size: 0.875rem;
   font-family: inherit;
 }
-#search:focus { outline: none; border-color: var(--accent-dim); }
+#search:focus {
+  outline: 2px solid var(--accent-callout-edge);
+  outline-offset: 2px;
+  border-color: var(--ink);
+}
+#search::placeholder { color: var(--ink-3); }
 
 #search-results {
   position: absolute;
@@ -230,9 +235,9 @@ header h1 {
   margin: 0;
   padding: 0.25rem 0;
   list-style: none;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  background: var(--paper-2);
+  border: var(--bw) solid var(--ink);
+  border-radius: var(--r-1);
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
   z-index: 10;
 }
@@ -244,33 +249,35 @@ header h1 {
   gap: 1rem;
 }
 #search-results li:hover,
-#search-results li.active { background: rgba(108,180,255,0.12); }
+#search-results li.active { background: var(--paper-3); }
 #search-results .name {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.8125rem;
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-#search-results .folder { color: var(--muted); font-size: 0.75rem; }
+#search-results .folder { color: var(--ink-3); font-size: 0.75rem; }
 #search-results .empty {
-  color: var(--muted);
+  color: var(--ink-3);
   font-style: italic;
   cursor: default;
   text-align: center;
 }
 
 /* UX 1.1 — glossary cards in the search dropdown. Distinct from strName-match
-   rows: full-width block instead of name|folder line, accent-tinted background
-   so a modder registers "this is a concept, not an object." */
+   rows: full-width block instead of name|folder line. Uses the *banner*
+   semantic accent (pedagogical context — "this is a concept, not an object")
+   per HANDOFF "Semantic accents". */
 #search-results li.glossary-card {
   display: block;
   padding: 0.55rem 0.75rem;
-  border-left: 3px solid var(--accent);
-  background: rgba(108,180,255,0.04);
+  border-left: 3px solid var(--accent-banner-edge);
+  background: var(--accent-banner-bg);
   margin: 0.15rem 0;
 }
-#search-results li.glossary-card:hover { background: rgba(108,180,255,0.10); }
+#search-results li.glossary-card:hover { background: var(--paper-3); }
 #search-results .glossary-card .card-head {
   display: flex;
   gap: 0.5rem;
@@ -281,19 +288,19 @@ header h1 {
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--accent);
-  border: 1px solid var(--accent);
-  border-radius: 2px;
+  color: var(--accent-banner-edge);
+  border: 1px solid var(--accent-banner-edge);
+  border-radius: var(--r-1);
   padding: 0 0.25rem;
 }
 #search-results .glossary-card .card-name {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--fg);
+  color: var(--ink);
 }
 #search-results .glossary-card .card-summary {
   font-size: 0.8125rem;
-  color: var(--fg);
+  color: var(--ink);
   line-height: 1.4;
   margin-bottom: 0.3rem;
 }
@@ -302,16 +309,16 @@ header h1 {
   font-size: 0.8125rem;
 }
 #search-results .glossary-card .cta-label {
-  color: var(--muted);
+  color: var(--ink-3);
   margin-right: 0.25rem;
 }
-#search-results .glossary-card .card-cta .folder { color: var(--muted); }
-#search-results .glossary-card .card-cta .name { color: var(--accent); font-weight: 500; }
+#search-results .glossary-card .card-cta .folder { color: var(--ink-3); }
+#search-results .glossary-card .card-cta .name { color: var(--accent-banner-edge); font-weight: 500; }
 #search-results .glossary-card .hint-line,
 #search-results .glossary-card .wiki {
   display: block;
   font-size: 0.75rem;
-  color: var(--muted);
+  color: var(--ink-3);
   margin-top: 0.2rem;
   font-style: italic;
 }

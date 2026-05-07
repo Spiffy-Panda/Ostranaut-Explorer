@@ -11,6 +11,16 @@ commits are in flight on `claude-hifi-proto-implement`.
 
 ---
 
+## 2026-05-07 — slice 8 · search dropdown migrated to hifi tokens
+
+`#search` input + `#search-results` dropdown + glossary cards now consume hifi tokens end-to-end.
+
+- **`#search`** — `--paper` bg, `--bw` solid `--ink` border, `--ink` text, `--ink-3` placeholder. Focus ring is 2px amber outline + 2px offset (matching the slice-6 filter-pill focus pattern; same focus vocabulary across all interactive components).
+- **`#search-results`** — `--paper-2` bg + `--bw` `--ink` border. Hover/active row: `--paper-3` (replaces previous accent-blue tint).
+- **`.glossary-card`** — uses the **banner** semantic accent (`--accent-banner-bg`, `--accent-banner-edge`) for the bg + 3px left rule + label color. The "this is a concept, not an object" framing is exactly the pedagogical-context use the banner accent is reserved for. Card name/summary in `--ink`, meta and CTA labels in `--ink-3`.
+
+Verified: input bg resolves to `#14171b`, glossary-card bg `#18222b`, edge `#4a7a96`. 3 glossary cards visible on search "condition".
+
 ## 2026-05-07 — slice 7 · strType badge: monochrome dashed (hifi spec)
 
 `.strtype-badge` switched to the hifi monochrome+dashed treatment so it never competes visually with folder-badge color. Background `--paper-2`, color `--ink`, **dashed** `--bw` border in `--ink-2`, `--r-1` radius. Selector also broadened from `.refs-block` scope to global so badges anywhere on the page pick it up — same broadening as slice 2 did for `.folder-badge`.
