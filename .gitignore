@@ -60,6 +60,11 @@ CLAUDE.local.md
 # folder contents and "paraphrase, don't paste" usage rule.
 /prose-extraction/Discord/
 
+# Designer-handoff archives. We unpack them into per-handoff folders (kept
+# only on the design branches that integrate them) and the zip is redundant
+# once extracted.
+/notes/*.zip
+
 # OS
 .DS_Store
 Thumbs.db
