@@ -55,6 +55,11 @@ CLAUDE.local.md
 # captures used for visual verification. Not redistributable.
 /.playwright-mcp/
 
+# Verbatim Discord chat exports kept locally for context. Not redistributable
+# (factor 3 of the fair-use check in CLAUDE.md). See CLAUDE.local.md for the
+# folder contents and "paraphrase, don't paste" usage rule.
+/prose-extraction/Discord/
+
 # OS
 .DS_Store
 Thumbs.db

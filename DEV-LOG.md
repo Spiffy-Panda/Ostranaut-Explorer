@@ -4,6 +4,18 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-07 — mod-npc-vendor user story (aInverse response-menu misread)
+
+Captures a Discord-observed modding misread as a user-story scoring scenario. A modder built a humanoid vendor (`IsTraderNPC=1`), opened `interactions.json` to verify, saw `GUITradeAllowOKLGFixer` ("Browse the OKLG Black Market") listed in `GUITrade.aInverse`, and concluded the black-market branch was attached to their NPC. It isn't — `aInverse` is the response-branch list on the *interaction definition*, not on the NPC, and entries are CTTest-gated at runtime per `Interaction.cs:684–779`. `IsOKLGFixer` has exactly two grant paths in base-game data: `CONDTraderNPCOKLGFixer` (a static loot bundle the modder would have to pull deliberately) and `CONDPLOT_NewOKLGFixer_FixerConds` (applied by the New OKLG Fixer plot, whose selection predicate `CTPLOT_NewOKLGFixer_FixerNew_Make` hard-requires `CareerCriminal` or `CareerCriminalPast`). A vanilla vendor never qualifies; the branch is filtered out before the player ever sees it.
+
+**[notes/user-stories/mod-npc-vendor.md](notes/user-stories/mod-npc-vendor.md)** — walks the misread, traces the gate, and proposes the explorer surfaces needed to short-circuit the wasted half-hour: response-menu framing banner on every `aInverse`, per-row gate pill summarising the target's `CTTestUs` / `CTTestThem`, and a derived "How is this granted?" section on Condition detail pages that breaks grants out into static-template vs. plot-driven (with the plot path's selection predicate summarised inline). Acceptance is "phew, I don't have to fix anything" in under 3 minutes — a misread-prevention test rather than an edit-enabling one.
+
+**[PLAN.md](PLAN.md)** — routes the new story under EXPLORER between `mod-hygiene-station` and `mod-starter-ship`. Carrier line names the three explorer-side proposals plus a schema-overlay enrichment to fold the base-schema's chat → chat-reply example and `,[us],[them]` role-suppressor mechanic into our `aInverse` gloss in `comment_mod/data/schemas/interactions-schema.json` (the overlay's current description is correct but loses both load-bearing details).
+
+**[.gitignore](.gitignore)** — excludes `/prose-extraction/Discord/` (verbatim Discord chat exports kept locally for context). Source material for this and future user stories lives there; the rule against quoting verbatim or naming individual users in tracked files is documented in CLAUDE.local.md.
+
+Pre-push fair-use: factor 1 transformative (modder-tooling user story explaining an interaction-system pattern), factor 2 our prose + identifier names + one ~10-line `aInverse` snippet, factor 3 single representative excerpt, factor 4 no substitution risk. All four clear.
+
 ## 2026-05-07 — Room classification & ship-value reference (notes/rooms.md + rooms-reference.html)
 
 Room classification is mostly intuitive from the rooms.json table, but the *value math* — `fValueModifier` × per-installed-CO base price, plus an undocumented O2-pump ×3 bonus and an asymmetric wall-mounting rule — isn't, and the [wiki](https://ostranauts.wiki.gg/wiki/Ship_Building#Ship_Value) covers maybe 20% of it. Two new artifacts fix this.
