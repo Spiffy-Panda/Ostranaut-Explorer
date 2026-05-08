@@ -78,12 +78,14 @@ overrides** — every entry is additive.
 - **Bucket-as-installable** — buckets carry
   `IsOversized + IsRigid + IsCrate`, mirroring `ItmCrate01`. Game
   treats them as drag-only by virtue of `IsOversized`. No new tag.
-- **Standalone kiosk** — ships its own
+- **Standalone kiosk, debug-spawnable** — ships its own
   `ItmSacksKiosk01` with `aInteractions: [ACTKioskUseNPC,
-  GUITradeSacksKiosk]`. Modeled on `ItmKioskSupplies01` (carries
-  `IsKioskNPC + IsTraderNPC` so `TIsTradeKiosk` fires;
-  `IsInstalled + IsLocked + IsIndestructable` for fixture behavior).
-  Sprite aliases `ItmKioskSupplies01`.
+  GUITradeSacksKiosk]`. Carries `IsKioskNPC + IsTraderNPC` so
+  `TIsTradeKiosk` fires; `IsOversized + IsRigid + IsCrate-style
+  mapSlotEffects` so `spawn` can place it on the floor and the
+  player can drag it. Notably *not* installed (`IsInstalled` is
+  fixture-only and breaks `spawn`). Sprite aliases
+  `ItmKioskSupplies01`.
 - **Self-contained trade chain** —
   `GUITradeSacksKiosk` interaction (mirrors vanilla `GUITradeKiosk`'s
   full us/them chain: `aInverse: [GUITradeCheckOKLGLicensed,
@@ -125,8 +127,18 @@ repo) for the full data-trail.
   ship/station layout would require editing `data/ships/*.json`
   (out of scope for v1). Use `spawn ItmSacksKiosk01` in the debug
   console (BackQuote, after `unlockdebug` if needed) to bring it
-  next to the player. The self-reference wrapper makes `spawn`
-  work; without it the command silently no-ops.
+  next to the player. Two things have to be true for spawn to work:
+  the self-reference loot wrapper (so `spawn` resolves the name)
+  and a non-`IsInstalled` profile (so the engine can place it at
+  the player's feet rather than trying to instantiate an
+  already-installed fixture).
+- **Kiosk lands on the floor as a drag-able crate-shaped object,
+  not a wall fixture.** It still functions as a trade kiosk —
+  `TIsTradeKiosk` fires, the action menu shows "Trade Sacks &
+  Buckets" — but visually it's an oversized object you push into
+  position rather than something pre-mounted on a wall. v2 (placing
+  the kiosk via ship-layout JSON edits) is where the wall-mounted
+  fixture form factor comes back.
 - **Dismantle integration deferred.** v1 does not yield buckets from
   dismantle — buckets are bought from the kiosk. Adding
   `ItmBucket<Suffix>=0.05x1` to dismantle loot tables is a separate
