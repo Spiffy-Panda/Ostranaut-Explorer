@@ -22,23 +22,28 @@ condowners, gated by 12 new `TIsFitContainer*` condtrigs:
 
 | Suffix             | Source item             | Sack capacity | Bucket capacity |
 |--------------------|-------------------------|--------------:|----------------:|
-| `Trash`            | `ItmScrapTrash`         |          4×4  |            8×8  |
-| `PartsMechSmall`   | `ItmPartsMechSmall01`   |          4×4  |            8×8  |
-| `ScrapSteel`       | `ItmScrapSteel`         |          4×4  |            8×8  |
-| `PartsElecSmall`   | `ItmPartsElecSmall01`   |          4×4  |            8×8  |
-| `ComponentMobo`    | `ItmComponentMobo01`    |          4×4  |            8×8  |
-| `ScrapAluminum`    | `ItmScrapAluminum`      |          4×4  |            8×8  |
-| `ComponentMotor`   | `ItmComponentMotor01`   |          4×4  |            8×8  |
-| `HeatSink`         | `ItmHeatSink01`         |          4×4  |            8×8  |
-| `ScrapCarbonFiber` | `ItmScrapCarbonFiber`   |          4×4  |            8×8  |
-| `PartsScreen`      | `ItmPartsScreen01`      |          4×4  |            8×8  |
-| `ScrapPlastic`     | `ItmScrapPlastic`       |          4×4  |            8×8  |
-| `ScrapClothDirty`  | `ItmScrapClothDirty`    |          4×4  |            8×8  |
+| `Trash`            | `ItmScrapTrash`         |          8×8  |          16×16  |
+| `PartsMechSmall`   | `ItmPartsMechSmall01`   |          8×8  |          16×16  |
+| `ScrapSteel`       | `ItmScrapSteel`         |          8×8  |          16×16  |
+| `PartsElecSmall`   | `ItmPartsElecSmall01`   |          8×8  |          16×16  |
+| `ComponentMobo`    | `ItmComponentMobo01`    |          8×8  |          16×16  |
+| `ScrapAluminum`    | `ItmScrapAluminum`      |          8×8  |          16×16  |
+| `ComponentMotor`   | `ItmComponentMotor01`   |          8×8  |          16×16  |
+| `HeatSink`         | `ItmHeatSink01`         |          8×8  |          16×16  |
+| `ScrapCarbonFiber` | `ItmScrapCarbonFiber`   |          8×8  |          16×16  |
+| `PartsScreen`      | `ItmPartsScreen01`      |          8×8  |          16×16  |
+| `ScrapPlastic`     | `ItmScrapPlastic`       |          8×8  |          16×16  |
+| `ScrapClothDirty`  | `ItmScrapClothDirty`    |          8×8  |          16×16  |
 
-Sacks are 4×4 (parity with the vanilla 16-slot backpack — same
-capacity, single-type). Buckets are 8×8 (4× the backpack — "modders
-should aim overpowered to demonstrate the mechanic"; can be tuned down
-if upstreamed).
+Sacks are 8×8 = 64 slots (**4×** the vanilla 16-slot backpack).
+Buckets are 16×16 = 256 slots (**16×** the backpack). Both go past
+vanilla's largest grid container (`ItmDolly02` at 6×6 = 36); above
+~6×6 vanilla switches to `IsInfiniteContainer` rather than larger
+grids, so bucket grids of 16×16 are uncharted UI territory — the
+in-game inventory grid may not render that many cells cleanly. If
+the UI breaks, the fix is dialing the dimensions back to 6×6 / 8×8
+or switching the bucket to `IsInfiniteContainer + strContainerCT`
+(the kiosk uses that pattern for unlimited typed storage).
 
 ## Files
 
