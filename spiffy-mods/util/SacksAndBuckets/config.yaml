@@ -66,57 +66,88 @@ sprite_gen:
 #     generated; this list mirrors what's there)
 #   * 2 self-emit loot wrappers (sack + bucket, in loot_self_reference.json)
 #   * 2 stock lines in ItmSacksKioskInv aLoots (sack + bucket)
-#   * 2 generated sprite PNGs (sack + bucket, blended from base + source)
+#   * 2 generated sprite PNGs (sack + bucket, blended from base + sprite_source)
 #
-# `source` names the vanilla item the bucket holds; the sprite generator
-# uses <source>.png from sources_dir as the material overlay.
+# Field meanings:
+#   suffix         -- appended to ItmSack / ItmBucket; also the strName
+#                     suffix of the fit-gate (TIsFitContainer<suffix>).
+#   source         -- the vanilla *condowner* strName this container is
+#                     "for". Documentary; not used by generators.
+#   sprite_source  -- the vanilla *strImg* (sprite name) we composite as
+#                     the material overlay. Read by emit_sprites.py:
+#                     looks for <sprite_source>.png in sources_dir.
+#                     Five of these differ from `source` because the
+#                     source CO's strItemDef points at a *shared*
+#                     ItemDef -- e.g. ItmScrapTrash uses ItmTrash02 art,
+#                     ItmScrapCarbonFiber uses ItmTrash01 art, etc.
+#                     If you can't find <sprite_source>.png in your
+#                     game install, run:
+#                       grep '"strName":"<source>"' data/condowners/*
+#                     and follow strItemDef -> data/items/items.json's
+#                     strImg to find the canonical sprite name.
+#   gate           -- TIsFitContainer<suffix> condtrig the sack/bucket
+#                     points its strContainerCT at.
+#   noun           -- plural noun used in strNameFriendly / strDesc.
 items:
   - suffix: Trash
     source: ItmScrapTrash
+    sprite_source: ItmTrash02            # ItmScrapTrash.strItemDef = ItmTrash02
     gate: TIsFitContainerTrash
     noun: trash
   - suffix: PartsMechSmall
     source: ItmPartsMechSmall01
+    sprite_source: ItmPartsMechSmall01
     gate: TIsFitContainerPartsMechSmall
     noun: small mech parts
   - suffix: ScrapSteel
     source: ItmScrapSteel
+    sprite_source: ItmScrapMetal01       # shared steel/metal sprite
     gate: TIsFitContainerScrapSteel
     noun: steel scrap
   - suffix: PartsElecSmall
     source: ItmPartsElecSmall01
+    sprite_source: ItmPartsElecSmall01
     gate: TIsFitContainerPartsElecSmall
     noun: small elec parts
   - suffix: ComponentMobo
     source: ItmComponentMobo01
+    sprite_source: ItmComponentMobo01
     gate: TIsFitContainerComponentMobo
     noun: motherboards
   - suffix: ScrapAluminum
     source: ItmScrapAluminum
+    sprite_source: ItmScrapMetal02       # shared aluminum/metal sprite
     gate: TIsFitContainerScrapAluminum
     noun: aluminum scrap
   - suffix: ComponentMotor
     source: ItmComponentMotor01
+    sprite_source: ItmComponentMotor01
     gate: TIsFitContainerComponentMotor
     noun: small motors
   - suffix: HeatSink
     source: ItmHeatSink01
+    sprite_source: ItmHeatSink01
     gate: TIsFitContainerHeatSink
     noun: heat sinks
   - suffix: ScrapCarbonFiber
     source: ItmScrapCarbonFiber
+    sprite_source: ItmTrash01            # shared trash sprite -- vanilla
+                                         # uses Trash01 art for carbon scrap
     gate: TIsFitContainerScrapCarbonFiber
     noun: carbon fiber scrap
   - suffix: PartsScreen
     source: ItmPartsScreen01
+    sprite_source: ItmPartsScreen01
     gate: TIsFitContainerPartsScreen
     noun: screen fragments
   - suffix: ScrapPlastic
     source: ItmScrapPlastic
+    sprite_source: ItmScrapPlastic01     # numbered variant
     gate: TIsFitContainerScrapPlastic
     noun: plastic scrap
   - suffix: ScrapClothDirty
     source: ItmScrapClothDirty
+    sprite_source: ItmScrapClothDirty
     gate: TIsFitContainerScrapClothDirty
     noun: dirty cloth scraps
 

@@ -9,9 +9,14 @@ Source PNGs are read from sprite_gen.sources_dir (you stage them by
 copying from your game install or extracting via UABE / AssetStudio --
 the script doesn't fetch from the game install since extraction tooling
 and asset paths vary by Ostranauts version). Expected filenames:
-  <sack_base>.png   e.g. ItmBackpack02.png
-  <bucket_base>.png e.g. ItmCrate01.png
-  <source>.png      e.g. ItmScrapTrash.png, ItmPartsMechSmall01.png, ...
+  <sack_base>.png        e.g. ItmBackpack02.png
+  <bucket_base>.png      e.g. ItmCrate01.png
+  <sprite_source>.png    one per item -- this is the strImg name of the
+                         vanilla item, not the strName. They diverge for
+                         5 of the 12: ItmScrapTrash uses ItmTrash02 art,
+                         ItmScrapSteel uses ItmScrapMetal01, etc. The
+                         per-item sprite_source field in config.yaml
+                         spells out which file to expect.
 
 Material is centered on the base by default; configurable via
 material_offset_x / material_offset_y in config.yaml.
@@ -102,12 +107,15 @@ def main() -> int:
     skipped: list[str] = []
     for item in cfg["items"]:
         suffix = item["suffix"]
-        source = item["source"]
-        material_path = sources_dir / f"{source}.png"
+        # sprite_source is the vanilla strImg (the actual sprite filename);
+        # `source` (the strName) is documentary only since 5 of 12 items
+        # use a shared/aliased ItemDef whose strImg differs from the strName.
+        sprite_name = item.get("sprite_source") or item["source"]
+        material_path = sources_dir / f"{sprite_name}.png"
         material = load_or_none(material_path)
 
         if material is None:
-            msg = f"missing material {source}.png; "
+            msg = f"missing material {sprite_name}.png; "
             if warn_missing:
                 print(f"warning: {msg}using base alone for ItmSack{suffix} / ItmBucket{suffix}", file=sys.stderr)
                 sack_out = sack_base.copy().convert("RGBA")

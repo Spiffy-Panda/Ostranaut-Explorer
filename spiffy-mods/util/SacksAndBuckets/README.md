@@ -34,9 +34,31 @@ and asset paths vary by Ostranauts version.
 Expected filenames in `sources_dir/`:
 
 - The two base container sprites: `ItmBackpack02.png`, `ItmCrate01.png`.
-- One material sprite per item type, named after the source item, e.g.
-  `ItmScrapTrash.png`, `ItmPartsMechSmall01.png`, `ItmComponentMobo01.png`,
-  ... -- one per row of `config.yaml`'s `items:` list.
+- One material sprite per item type, named after the **vanilla
+  `strImg`** (sprite name), not the condowner's `strName`. These
+  diverge for 5 of the 12 items because vanilla aliases shared art
+  through `strItemDef`. The mapping:
+
+  | condowner strName     | sprite to stage           |
+  |-----------------------|---------------------------|
+  | `ItmScrapTrash`       | **`ItmTrash02.png`**      |
+  | `ItmPartsMechSmall01` | `ItmPartsMechSmall01.png` |
+  | `ItmScrapSteel`       | **`ItmScrapMetal01.png`** |
+  | `ItmPartsElecSmall01` | `ItmPartsElecSmall01.png` |
+  | `ItmComponentMobo01`  | `ItmComponentMobo01.png`  |
+  | `ItmScrapAluminum`    | **`ItmScrapMetal02.png`** |
+  | `ItmComponentMotor01` | `ItmComponentMotor01.png` |
+  | `ItmHeatSink01`       | `ItmHeatSink01.png`       |
+  | `ItmScrapCarbonFiber` | **`ItmTrash01.png`**      |
+  | `ItmPartsScreen01`    | `ItmPartsScreen01.png`    |
+  | `ItmScrapPlastic`     | **`ItmScrapPlastic01.png`**|
+  | `ItmScrapClothDirty`  | `ItmScrapClothDirty.png`  |
+
+  The per-item `sprite_source` field in [config.yaml](config.yaml)
+  records which file each row expects. To verify yourself for any
+  vanilla strName: grep its CO entry in `data/condowners/*.json` for
+  `strItemDef`, then look that ItemDef up in `data/items/items.json`
+  and read its `strImg`. That's the sprite filename.
 
 Materials should have **transparent backgrounds**. The script resizes
 them to `material_scale` of the base's longer edge (default 0.667 = 2/3),
