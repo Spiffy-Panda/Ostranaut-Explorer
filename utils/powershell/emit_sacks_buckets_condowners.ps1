@@ -33,8 +33,8 @@ function Sack-Entry($k) {
     strType          = "Item"
     strLoot          = $null
     strContainerCT   = $k.gate
-    nContainerHeight = 4
-    nContainerWidth  = 4
+    nContainerHeight = 8
+    nContainerWidth  = 8
     aInteractions    = @("Inventory","EquipItem","DropItem","PickupItem")
     aStartingConds   = @(
       "IsBurnable=1.0x1.0",
@@ -77,8 +77,8 @@ function Bucket-Entry($k) {
     strType          = "Item"
     strLoot           = $null
     strContainerCT   = $k.gate
-    nContainerHeight = 8
-    nContainerWidth  = 8
+    nContainerHeight = 16
+    nContainerWidth  = 16
     aInteractions    = @("Inventory","DropItem","PickupItem")
     aStartingConds   = @(
       "IsContainer=1.0x1.0",
