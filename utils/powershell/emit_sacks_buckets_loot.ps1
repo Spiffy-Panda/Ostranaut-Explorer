@@ -1,4 +1,4 @@
-# Emits spiffy-mods/sacks-and-buckets/loot/loot.json by reading vanilla
+# Emits spiffy-mods/sacks-and-buckets/data/loot/loot.json by reading vanilla
 # supply-kiosk loot tables (ItmSupplyKioskInv, *BCERInv, *BCRSInv) verbatim
 # and appending 24 sack/bucket stock lines to each aLoots array.
 # The mod overrides each table by strName at load time.
@@ -7,7 +7,7 @@
 $ErrorActionPreference = "Stop"
 $repoRoot   = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $srcLootFile = Join-Path $repoRoot "data/loot/loot.json"
-$outFile     = Join-Path $repoRoot "spiffy-mods/sacks-and-buckets/loot/loot.json"
+$outFile     = Join-Path $repoRoot "spiffy-mods/sacks-and-buckets/data/loot/loot.json"
 
 $targetTables = @("ItmSupplyKioskInv","ItmSupplyKioskBCERInv","ItmSupplyKioskBCRSInv")
 

@@ -217,9 +217,9 @@ scrap-only if upstreamed).
 | File (new)                                                                            | Contents                                                                                                                                |
 |---------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
 | [spiffy-mods/sacks-and-buckets/README.md](../../spiffy-mods/sacks-and-buckets/README.md) | Mod overview, install notes, caveats.                                                                                                  |
-| [spiffy-mods/sacks-and-buckets/condtrigs/condtrigs.json](../../spiffy-mods/sacks-and-buckets/condtrigs/condtrigs.json) | 12 new `TIsFitContainer*` fit-gates — one per item type. Sack and bucket of the same item share the gate.                              |
-| [spiffy-mods/sacks-and-buckets/condowners/condowners.json](../../spiffy-mods/sacks-and-buckets/condowners/condowners.json) | 24 container CO entries (12 sacks at 4×4 grid + 12 buckets at 8×8 grid). Sacks alias `ItmBackpack02` art; buckets alias `ItmCrate01`. |
-| [spiffy-mods/sacks-and-buckets/loot/loot.json](../../spiffy-mods/sacks-and-buckets/loot/loot.json) | Full vanilla-copy of `ItmSupplyKioskInv` / `*BCERInv` / `*BCRSInv` tables with 24 sack/bucket lines appended each. Mod load order replaces vanilla by `strName`. |
+| [spiffy-mods/sacks-and-buckets/data/condtrigs/condtrigs.json](../../spiffy-mods/sacks-and-buckets/data/condtrigs/condtrigs.json) | 12 new `TIsFitContainer*` fit-gates — one per item type. Sack and bucket of the same item share the gate.                              |
+| [spiffy-mods/sacks-and-buckets/data/condowners/condowners.json](../../spiffy-mods/sacks-and-buckets/data/condowners/condowners.json) | 24 container CO entries (12 sacks at 4×4 grid + 12 buckets at 8×8 grid). Sacks alias `ItmBackpack02` art; buckets alias `ItmCrate01`. |
+| [spiffy-mods/sacks-and-buckets/data/loot/loot.json](../../spiffy-mods/sacks-and-buckets/data/loot/loot.json) | Full vanilla-copy of `ItmSupplyKioskInv` / `*BCERInv` / `*BCRSInv` tables with 24 sack/bucket lines appended each. Mod load order replaces vanilla by `strName`. |
 
 **No edits to base-game `data/`.** Every behaviour is achievable via
 the mod's overlay alone — the supply-kiosk integration uses
