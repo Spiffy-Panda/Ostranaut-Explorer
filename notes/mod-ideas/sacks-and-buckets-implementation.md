@@ -208,7 +208,7 @@ existing condowner entry.
 
 ## Files that need modifying
 
-The mod is a sibling root tree under `spiffy-mods/sacks-and-buckets/`,
+The mod is a sibling root tree under `spiffy-mods/SacksAndBuckets/`,
 with filenames mirroring base-game `data/<folder>/<file>.json` so the
 mod loader matches them up by name. v1 ships the full 12-item cohort
 (per "modders aim overpowered to demonstrate the mechanic"; trim to
@@ -216,10 +216,10 @@ scrap-only if upstreamed).
 
 | File (new)                                                                            | Contents                                                                                                                                |
 |---------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| [spiffy-mods/sacks-and-buckets/README.md](../../spiffy-mods/sacks-and-buckets/README.md) | Mod overview, install notes, caveats.                                                                                                  |
-| [spiffy-mods/sacks-and-buckets/data/condtrigs/condtrigs.json](../../spiffy-mods/sacks-and-buckets/data/condtrigs/condtrigs.json) | 12 new `TIsFitContainer*` fit-gates — one per item type. Sack and bucket of the same item share the gate.                              |
-| [spiffy-mods/sacks-and-buckets/data/condowners/condowners.json](../../spiffy-mods/sacks-and-buckets/data/condowners/condowners.json) | 24 container CO entries (12 sacks at 4×4 grid + 12 buckets at 8×8 grid). Sacks alias `ItmBackpack02` art; buckets alias `ItmCrate01`. |
-| [spiffy-mods/sacks-and-buckets/data/loot/loot.json](../../spiffy-mods/sacks-and-buckets/data/loot/loot.json) | Full vanilla-copy of `ItmSupplyKioskInv` / `*BCERInv` / `*BCRSInv` tables with 24 sack/bucket lines appended each. Mod load order replaces vanilla by `strName`. |
+| [spiffy-mods/SacksAndBuckets/README.md](../../spiffy-mods/SacksAndBuckets/README.md) | Mod overview, install notes, caveats.                                                                                                  |
+| [spiffy-mods/SacksAndBuckets/data/condtrigs/condtrigs.json](../../spiffy-mods/SacksAndBuckets/data/condtrigs/condtrigs.json) | 12 new `TIsFitContainer*` fit-gates — one per item type. Sack and bucket of the same item share the gate.                              |
+| [spiffy-mods/SacksAndBuckets/data/condowners/condowners.json](../../spiffy-mods/SacksAndBuckets/data/condowners/condowners.json) | 24 container CO entries (12 sacks at 4×4 grid + 12 buckets at 8×8 grid). Sacks alias `ItmBackpack02` art; buckets alias `ItmCrate01`. |
+| [spiffy-mods/SacksAndBuckets/data/loot/loot.json](../../spiffy-mods/SacksAndBuckets/data/loot/loot.json) | Full vanilla-copy of `ItmSupplyKioskInv` / `*BCERInv` / `*BCRSInv` tables with 24 sack/bucket lines appended each. Mod load order replaces vanilla by `strName`. |
 
 **No edits to base-game `data/`.** Every behaviour is achievable via
 the mod's overlay alone — the supply-kiosk integration uses
@@ -244,7 +244,7 @@ flow, add one more file (also in the mod tree):
 
 | File                                                  | Contents                                                                                                |
 |-------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
-| `spiffy-mods/sacks-and-buckets/installables/installables_dismantle.json` | Override targeted dismantle entries' `strLootOut` to point at a new loot table that yields the bucket. |
+| `spiffy-mods/SacksAndBuckets/installables/installables_dismantle.json` | Override targeted dismantle entries' `strLootOut` to point at a new loot table that yields the bucket. |
 
 This is independent of the kiosk path and can ship later.
 

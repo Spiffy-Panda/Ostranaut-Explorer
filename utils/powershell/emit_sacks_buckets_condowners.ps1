@@ -1,11 +1,11 @@
-# Emits spiffy-mods/sacks-and-buckets/data/condowners/condowners.json.
+# Emits spiffy-mods/SacksAndBuckets/data/condowners/condowners.json.
 # One-shot generator for 24 container CO entries (12 sacks + 12 buckets)
 # templated against the (suffix, source-item, fit-gate, contents-noun) table.
 # Run: pwsh ./utils/powershell/emit_sacks_buckets_condowners.ps1
 
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$outFile  = Join-Path $repoRoot "spiffy-mods/sacks-and-buckets/data/condowners/condowners.json"
+$outFile  = Join-Path $repoRoot "spiffy-mods/SacksAndBuckets/data/condowners/condowners.json"
 
 # (suffix, source item, fit-gate, plural noun for description)
 $kinds = @(

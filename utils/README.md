@@ -28,8 +28,8 @@ Generators that emit mod artifacts under `spiffy-mods/`. Anchor to repo root via
 
 | Script | Purpose |
 |---|---|
-| `emit_sacks_buckets_condowners.ps1` | Generates `spiffy-mods/sacks-and-buckets/data/condowners/condowners.json`. Templates 24 container CO entries (12 sacks at 4×4 grid + 12 buckets at 8×8 grid) from a single (suffix, source-item, fit-gate, contents-noun) table. Re-run after table edits. |
-| `emit_sacks_buckets_loot.ps1` | Generates `spiffy-mods/sacks-and-buckets/data/loot/loot.json` by reading the three vanilla supply-kiosk loot tables (`ItmSupplyKioskInv`, `*BCERInv`, `*BCRSInv`) and appending 24 sack/bucket stock lines to each `aLoots`. Re-sync after a vanilla content update — the mod's loot.json is a full-copy override by `strName`, so it goes stale when vanilla changes. |
+| `emit_sacks_buckets_condowners.ps1` | Generates `spiffy-mods/SacksAndBuckets/data/condowners/condowners.json`. Templates 24 container CO entries (12 sacks at 4×4 grid + 12 buckets at 8×8 grid) from a single (suffix, source-item, fit-gate, contents-noun) table. Re-run after table edits. |
+| `emit_sacks_buckets_loot.ps1` | Generates `spiffy-mods/SacksAndBuckets/data/loot/loot.json` by reading the three vanilla supply-kiosk loot tables (`ItmSupplyKioskInv`, `*BCERInv`, `*BCRSInv`) and appending 24 sack/bucket stock lines to each `aLoots`. Re-sync after a vanilla content update — the mod's loot.json is a full-copy override by `strName`, so it goes stale when vanilla changes. |
 
 ## Common usage
 
