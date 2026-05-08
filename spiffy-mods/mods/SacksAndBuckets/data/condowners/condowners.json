@@ -1,0 +1,1330 @@
+[
+  {
+    "strName": "ItmSackTrash",
+    "strNameShort": "Sack: Trash",
+    "strNameFriendly": "Sack of Trash",
+    "strDesc": "A reinforced canvas sack, sized and stitched for one job: holding trash and nothing else. Single-type by construction.",
+    "strItemDef": "ItmSackTrash",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerTrash",
+    "nContainerHeight": 8,
+    "nContainerWidth": 8,
+    "aInteractions": [
+      "Inventory",
+      "EquipItem",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsBurnable=1.0x1.0",
+      "IsContainer=1.0x1",
+      "IsBackpack=1.0x1.0",
+      "IsFlexible=1.0x1.0",
+      "IsSheet=1.0x1.0",
+      "IsTempInsulator=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "StatMass=1.0x2.0",
+      "StatBasePrice=1.0x200.0",
+      "StatDamageMax=1.0x4",
+      "StatDismantleProgressMax=1.0x30",
+      "IsCategoryTextiles=1.0x1.0"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTClothesDestroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "ItmSackTrash",
+    "strAudioEmitter": "ItmBackpackSound",
+    "mapSlotEffects": [
+      "back",
+      "Backpack02Full",
+      "heldL",
+      "HeldBackpack02FullL",
+      "heldR",
+      "HeldBackpack02FullR",
+      "drag",
+      "Backpack02Full"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmBucketTrash",
+    "strNameShort": "Bucket: Trash",
+    "strNameFriendly": "Bucket of Trash",
+    "strDesc": "An oversized industrial bucket built for bulk salvage. Stays put -- drag it to where you want it. Accepts trash only.",
+    "strItemDef": "ItmBucketTrash",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerTrash",
+    "nContainerHeight": 16,
+    "nContainerWidth": 16,
+    "aInteractions": [
+      "Inventory",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsContainer=1.0x1.0",
+      "IsCrate=1.0x1.0",
+      "IsOversized=1.0x1.0",
+      "IsRigid=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "IsWaterproof=1.0x1.0",
+      "StatBasePrice=1.0x400.0",
+      "StatDamageMax=1.0x10",
+      "StatDismantleProgressMax=1.0x20",
+      "StatMass=1.0x15.0",
+      "IsCategoryTools=1.0x1"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTCrate01Destroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "paperdoll/held/portCrate01",
+    "strAudioEmitter": "ItmPlasticBoxSound",
+    "mapSlotEffects": [
+      "heldL",
+      "HeldItmCrate01L",
+      "heldR",
+      "HeldItmCrate01R",
+      "drag",
+      "Blank"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmSackPartsMechSmall",
+    "strNameShort": "Sack: PartsMechSmall",
+    "strNameFriendly": "Sack of Small Mech Parts",
+    "strDesc": "A reinforced canvas sack, sized and stitched for one job: holding small mech parts and nothing else. Single-type by construction.",
+    "strItemDef": "ItmSackPartsMechSmall",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerPartsMechSmall",
+    "nContainerHeight": 8,
+    "nContainerWidth": 8,
+    "aInteractions": [
+      "Inventory",
+      "EquipItem",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsBurnable=1.0x1.0",
+      "IsContainer=1.0x1",
+      "IsBackpack=1.0x1.0",
+      "IsFlexible=1.0x1.0",
+      "IsSheet=1.0x1.0",
+      "IsTempInsulator=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "StatMass=1.0x2.0",
+      "StatBasePrice=1.0x200.0",
+      "StatDamageMax=1.0x4",
+      "StatDismantleProgressMax=1.0x30",
+      "IsCategoryTextiles=1.0x1.0"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTClothesDestroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "ItmSackPartsMechSmall",
+    "strAudioEmitter": "ItmBackpackSound",
+    "mapSlotEffects": [
+      "back",
+      "Backpack02Full",
+      "heldL",
+      "HeldBackpack02FullL",
+      "heldR",
+      "HeldBackpack02FullR",
+      "drag",
+      "Backpack02Full"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmBucketPartsMechSmall",
+    "strNameShort": "Bucket: PartsMechSmall",
+    "strNameFriendly": "Bucket of Small Mech Parts",
+    "strDesc": "An oversized industrial bucket built for bulk salvage. Stays put -- drag it to where you want it. Accepts small mech parts only.",
+    "strItemDef": "ItmBucketPartsMechSmall",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerPartsMechSmall",
+    "nContainerHeight": 16,
+    "nContainerWidth": 16,
+    "aInteractions": [
+      "Inventory",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsContainer=1.0x1.0",
+      "IsCrate=1.0x1.0",
+      "IsOversized=1.0x1.0",
+      "IsRigid=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "IsWaterproof=1.0x1.0",
+      "StatBasePrice=1.0x400.0",
+      "StatDamageMax=1.0x10",
+      "StatDismantleProgressMax=1.0x20",
+      "StatMass=1.0x15.0",
+      "IsCategoryTools=1.0x1"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTCrate01Destroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "paperdoll/held/portCrate01",
+    "strAudioEmitter": "ItmPlasticBoxSound",
+    "mapSlotEffects": [
+      "heldL",
+      "HeldItmCrate01L",
+      "heldR",
+      "HeldItmCrate01R",
+      "drag",
+      "Blank"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmSackScrapSteel",
+    "strNameShort": "Sack: ScrapSteel",
+    "strNameFriendly": "Sack of Steel Scrap",
+    "strDesc": "A reinforced canvas sack, sized and stitched for one job: holding steel scrap and nothing else. Single-type by construction.",
+    "strItemDef": "ItmSackScrapSteel",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerScrapSteel",
+    "nContainerHeight": 8,
+    "nContainerWidth": 8,
+    "aInteractions": [
+      "Inventory",
+      "EquipItem",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsBurnable=1.0x1.0",
+      "IsContainer=1.0x1",
+      "IsBackpack=1.0x1.0",
+      "IsFlexible=1.0x1.0",
+      "IsSheet=1.0x1.0",
+      "IsTempInsulator=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "StatMass=1.0x2.0",
+      "StatBasePrice=1.0x200.0",
+      "StatDamageMax=1.0x4",
+      "StatDismantleProgressMax=1.0x30",
+      "IsCategoryTextiles=1.0x1.0"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTClothesDestroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "ItmSackScrapSteel",
+    "strAudioEmitter": "ItmBackpackSound",
+    "mapSlotEffects": [
+      "back",
+      "Backpack02Full",
+      "heldL",
+      "HeldBackpack02FullL",
+      "heldR",
+      "HeldBackpack02FullR",
+      "drag",
+      "Backpack02Full"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmBucketScrapSteel",
+    "strNameShort": "Bucket: ScrapSteel",
+    "strNameFriendly": "Bucket of Steel Scrap",
+    "strDesc": "An oversized industrial bucket built for bulk salvage. Stays put -- drag it to where you want it. Accepts steel scrap only.",
+    "strItemDef": "ItmBucketScrapSteel",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerScrapSteel",
+    "nContainerHeight": 16,
+    "nContainerWidth": 16,
+    "aInteractions": [
+      "Inventory",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsContainer=1.0x1.0",
+      "IsCrate=1.0x1.0",
+      "IsOversized=1.0x1.0",
+      "IsRigid=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "IsWaterproof=1.0x1.0",
+      "StatBasePrice=1.0x400.0",
+      "StatDamageMax=1.0x10",
+      "StatDismantleProgressMax=1.0x20",
+      "StatMass=1.0x15.0",
+      "IsCategoryTools=1.0x1"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTCrate01Destroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "paperdoll/held/portCrate01",
+    "strAudioEmitter": "ItmPlasticBoxSound",
+    "mapSlotEffects": [
+      "heldL",
+      "HeldItmCrate01L",
+      "heldR",
+      "HeldItmCrate01R",
+      "drag",
+      "Blank"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmSackPartsElecSmall",
+    "strNameShort": "Sack: PartsElecSmall",
+    "strNameFriendly": "Sack of Small Elec Parts",
+    "strDesc": "A reinforced canvas sack, sized and stitched for one job: holding small elec parts and nothing else. Single-type by construction.",
+    "strItemDef": "ItmSackPartsElecSmall",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerPartsElecSmall",
+    "nContainerHeight": 8,
+    "nContainerWidth": 8,
+    "aInteractions": [
+      "Inventory",
+      "EquipItem",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsBurnable=1.0x1.0",
+      "IsContainer=1.0x1",
+      "IsBackpack=1.0x1.0",
+      "IsFlexible=1.0x1.0",
+      "IsSheet=1.0x1.0",
+      "IsTempInsulator=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "StatMass=1.0x2.0",
+      "StatBasePrice=1.0x200.0",
+      "StatDamageMax=1.0x4",
+      "StatDismantleProgressMax=1.0x30",
+      "IsCategoryTextiles=1.0x1.0"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTClothesDestroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "ItmSackPartsElecSmall",
+    "strAudioEmitter": "ItmBackpackSound",
+    "mapSlotEffects": [
+      "back",
+      "Backpack02Full",
+      "heldL",
+      "HeldBackpack02FullL",
+      "heldR",
+      "HeldBackpack02FullR",
+      "drag",
+      "Backpack02Full"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmBucketPartsElecSmall",
+    "strNameShort": "Bucket: PartsElecSmall",
+    "strNameFriendly": "Bucket of Small Elec Parts",
+    "strDesc": "An oversized industrial bucket built for bulk salvage. Stays put -- drag it to where you want it. Accepts small elec parts only.",
+    "strItemDef": "ItmBucketPartsElecSmall",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerPartsElecSmall",
+    "nContainerHeight": 16,
+    "nContainerWidth": 16,
+    "aInteractions": [
+      "Inventory",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsContainer=1.0x1.0",
+      "IsCrate=1.0x1.0",
+      "IsOversized=1.0x1.0",
+      "IsRigid=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "IsWaterproof=1.0x1.0",
+      "StatBasePrice=1.0x400.0",
+      "StatDamageMax=1.0x10",
+      "StatDismantleProgressMax=1.0x20",
+      "StatMass=1.0x15.0",
+      "IsCategoryTools=1.0x1"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTCrate01Destroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "paperdoll/held/portCrate01",
+    "strAudioEmitter": "ItmPlasticBoxSound",
+    "mapSlotEffects": [
+      "heldL",
+      "HeldItmCrate01L",
+      "heldR",
+      "HeldItmCrate01R",
+      "drag",
+      "Blank"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmSackComponentMobo",
+    "strNameShort": "Sack: ComponentMobo",
+    "strNameFriendly": "Sack of Motherboards",
+    "strDesc": "A reinforced canvas sack, sized and stitched for one job: holding motherboards and nothing else. Single-type by construction.",
+    "strItemDef": "ItmSackComponentMobo",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerComponentMobo",
+    "nContainerHeight": 8,
+    "nContainerWidth": 8,
+    "aInteractions": [
+      "Inventory",
+      "EquipItem",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsBurnable=1.0x1.0",
+      "IsContainer=1.0x1",
+      "IsBackpack=1.0x1.0",
+      "IsFlexible=1.0x1.0",
+      "IsSheet=1.0x1.0",
+      "IsTempInsulator=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "StatMass=1.0x2.0",
+      "StatBasePrice=1.0x200.0",
+      "StatDamageMax=1.0x4",
+      "StatDismantleProgressMax=1.0x30",
+      "IsCategoryTextiles=1.0x1.0"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTClothesDestroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "ItmSackComponentMobo",
+    "strAudioEmitter": "ItmBackpackSound",
+    "mapSlotEffects": [
+      "back",
+      "Backpack02Full",
+      "heldL",
+      "HeldBackpack02FullL",
+      "heldR",
+      "HeldBackpack02FullR",
+      "drag",
+      "Backpack02Full"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmBucketComponentMobo",
+    "strNameShort": "Bucket: ComponentMobo",
+    "strNameFriendly": "Bucket of Motherboards",
+    "strDesc": "An oversized industrial bucket built for bulk salvage. Stays put -- drag it to where you want it. Accepts motherboards only.",
+    "strItemDef": "ItmBucketComponentMobo",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerComponentMobo",
+    "nContainerHeight": 16,
+    "nContainerWidth": 16,
+    "aInteractions": [
+      "Inventory",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsContainer=1.0x1.0",
+      "IsCrate=1.0x1.0",
+      "IsOversized=1.0x1.0",
+      "IsRigid=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "IsWaterproof=1.0x1.0",
+      "StatBasePrice=1.0x400.0",
+      "StatDamageMax=1.0x10",
+      "StatDismantleProgressMax=1.0x20",
+      "StatMass=1.0x15.0",
+      "IsCategoryTools=1.0x1"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTCrate01Destroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "paperdoll/held/portCrate01",
+    "strAudioEmitter": "ItmPlasticBoxSound",
+    "mapSlotEffects": [
+      "heldL",
+      "HeldItmCrate01L",
+      "heldR",
+      "HeldItmCrate01R",
+      "drag",
+      "Blank"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmSackScrapAluminum",
+    "strNameShort": "Sack: ScrapAluminum",
+    "strNameFriendly": "Sack of Aluminum Scrap",
+    "strDesc": "A reinforced canvas sack, sized and stitched for one job: holding aluminum scrap and nothing else. Single-type by construction.",
+    "strItemDef": "ItmSackScrapAluminum",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerScrapAluminum",
+    "nContainerHeight": 8,
+    "nContainerWidth": 8,
+    "aInteractions": [
+      "Inventory",
+      "EquipItem",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsBurnable=1.0x1.0",
+      "IsContainer=1.0x1",
+      "IsBackpack=1.0x1.0",
+      "IsFlexible=1.0x1.0",
+      "IsSheet=1.0x1.0",
+      "IsTempInsulator=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "StatMass=1.0x2.0",
+      "StatBasePrice=1.0x200.0",
+      "StatDamageMax=1.0x4",
+      "StatDismantleProgressMax=1.0x30",
+      "IsCategoryTextiles=1.0x1.0"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTClothesDestroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "ItmSackScrapAluminum",
+    "strAudioEmitter": "ItmBackpackSound",
+    "mapSlotEffects": [
+      "back",
+      "Backpack02Full",
+      "heldL",
+      "HeldBackpack02FullL",
+      "heldR",
+      "HeldBackpack02FullR",
+      "drag",
+      "Backpack02Full"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmBucketScrapAluminum",
+    "strNameShort": "Bucket: ScrapAluminum",
+    "strNameFriendly": "Bucket of Aluminum Scrap",
+    "strDesc": "An oversized industrial bucket built for bulk salvage. Stays put -- drag it to where you want it. Accepts aluminum scrap only.",
+    "strItemDef": "ItmBucketScrapAluminum",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerScrapAluminum",
+    "nContainerHeight": 16,
+    "nContainerWidth": 16,
+    "aInteractions": [
+      "Inventory",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsContainer=1.0x1.0",
+      "IsCrate=1.0x1.0",
+      "IsOversized=1.0x1.0",
+      "IsRigid=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "IsWaterproof=1.0x1.0",
+      "StatBasePrice=1.0x400.0",
+      "StatDamageMax=1.0x10",
+      "StatDismantleProgressMax=1.0x20",
+      "StatMass=1.0x15.0",
+      "IsCategoryTools=1.0x1"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTCrate01Destroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "paperdoll/held/portCrate01",
+    "strAudioEmitter": "ItmPlasticBoxSound",
+    "mapSlotEffects": [
+      "heldL",
+      "HeldItmCrate01L",
+      "heldR",
+      "HeldItmCrate01R",
+      "drag",
+      "Blank"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmSackComponentMotor",
+    "strNameShort": "Sack: ComponentMotor",
+    "strNameFriendly": "Sack of Small Motors",
+    "strDesc": "A reinforced canvas sack, sized and stitched for one job: holding small motors and nothing else. Single-type by construction.",
+    "strItemDef": "ItmSackComponentMotor",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerComponentMotor",
+    "nContainerHeight": 8,
+    "nContainerWidth": 8,
+    "aInteractions": [
+      "Inventory",
+      "EquipItem",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsBurnable=1.0x1.0",
+      "IsContainer=1.0x1",
+      "IsBackpack=1.0x1.0",
+      "IsFlexible=1.0x1.0",
+      "IsSheet=1.0x1.0",
+      "IsTempInsulator=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "StatMass=1.0x2.0",
+      "StatBasePrice=1.0x200.0",
+      "StatDamageMax=1.0x4",
+      "StatDismantleProgressMax=1.0x30",
+      "IsCategoryTextiles=1.0x1.0"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTClothesDestroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "ItmSackComponentMotor",
+    "strAudioEmitter": "ItmBackpackSound",
+    "mapSlotEffects": [
+      "back",
+      "Backpack02Full",
+      "heldL",
+      "HeldBackpack02FullL",
+      "heldR",
+      "HeldBackpack02FullR",
+      "drag",
+      "Backpack02Full"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmBucketComponentMotor",
+    "strNameShort": "Bucket: ComponentMotor",
+    "strNameFriendly": "Bucket of Small Motors",
+    "strDesc": "An oversized industrial bucket built for bulk salvage. Stays put -- drag it to where you want it. Accepts small motors only.",
+    "strItemDef": "ItmBucketComponentMotor",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerComponentMotor",
+    "nContainerHeight": 16,
+    "nContainerWidth": 16,
+    "aInteractions": [
+      "Inventory",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsContainer=1.0x1.0",
+      "IsCrate=1.0x1.0",
+      "IsOversized=1.0x1.0",
+      "IsRigid=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "IsWaterproof=1.0x1.0",
+      "StatBasePrice=1.0x400.0",
+      "StatDamageMax=1.0x10",
+      "StatDismantleProgressMax=1.0x20",
+      "StatMass=1.0x15.0",
+      "IsCategoryTools=1.0x1"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTCrate01Destroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "paperdoll/held/portCrate01",
+    "strAudioEmitter": "ItmPlasticBoxSound",
+    "mapSlotEffects": [
+      "heldL",
+      "HeldItmCrate01L",
+      "heldR",
+      "HeldItmCrate01R",
+      "drag",
+      "Blank"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmSackHeatSink",
+    "strNameShort": "Sack: HeatSink",
+    "strNameFriendly": "Sack of Heat Sinks",
+    "strDesc": "A reinforced canvas sack, sized and stitched for one job: holding heat sinks and nothing else. Single-type by construction.",
+    "strItemDef": "ItmSackHeatSink",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerHeatSink",
+    "nContainerHeight": 8,
+    "nContainerWidth": 8,
+    "aInteractions": [
+      "Inventory",
+      "EquipItem",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsBurnable=1.0x1.0",
+      "IsContainer=1.0x1",
+      "IsBackpack=1.0x1.0",
+      "IsFlexible=1.0x1.0",
+      "IsSheet=1.0x1.0",
+      "IsTempInsulator=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "StatMass=1.0x2.0",
+      "StatBasePrice=1.0x200.0",
+      "StatDamageMax=1.0x4",
+      "StatDismantleProgressMax=1.0x30",
+      "IsCategoryTextiles=1.0x1.0"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTClothesDestroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "ItmSackHeatSink",
+    "strAudioEmitter": "ItmBackpackSound",
+    "mapSlotEffects": [
+      "back",
+      "Backpack02Full",
+      "heldL",
+      "HeldBackpack02FullL",
+      "heldR",
+      "HeldBackpack02FullR",
+      "drag",
+      "Backpack02Full"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmBucketHeatSink",
+    "strNameShort": "Bucket: HeatSink",
+    "strNameFriendly": "Bucket of Heat Sinks",
+    "strDesc": "An oversized industrial bucket built for bulk salvage. Stays put -- drag it to where you want it. Accepts heat sinks only.",
+    "strItemDef": "ItmBucketHeatSink",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerHeatSink",
+    "nContainerHeight": 16,
+    "nContainerWidth": 16,
+    "aInteractions": [
+      "Inventory",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsContainer=1.0x1.0",
+      "IsCrate=1.0x1.0",
+      "IsOversized=1.0x1.0",
+      "IsRigid=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "IsWaterproof=1.0x1.0",
+      "StatBasePrice=1.0x400.0",
+      "StatDamageMax=1.0x10",
+      "StatDismantleProgressMax=1.0x20",
+      "StatMass=1.0x15.0",
+      "IsCategoryTools=1.0x1"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTCrate01Destroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "paperdoll/held/portCrate01",
+    "strAudioEmitter": "ItmPlasticBoxSound",
+    "mapSlotEffects": [
+      "heldL",
+      "HeldItmCrate01L",
+      "heldR",
+      "HeldItmCrate01R",
+      "drag",
+      "Blank"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmSackScrapCarbonFiber",
+    "strNameShort": "Sack: ScrapCarbonFiber",
+    "strNameFriendly": "Sack of Carbon Fiber Scrap",
+    "strDesc": "A reinforced canvas sack, sized and stitched for one job: holding carbon fiber scrap and nothing else. Single-type by construction.",
+    "strItemDef": "ItmSackScrapCarbonFiber",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerScrapCarbonFiber",
+    "nContainerHeight": 8,
+    "nContainerWidth": 8,
+    "aInteractions": [
+      "Inventory",
+      "EquipItem",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsBurnable=1.0x1.0",
+      "IsContainer=1.0x1",
+      "IsBackpack=1.0x1.0",
+      "IsFlexible=1.0x1.0",
+      "IsSheet=1.0x1.0",
+      "IsTempInsulator=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "StatMass=1.0x2.0",
+      "StatBasePrice=1.0x200.0",
+      "StatDamageMax=1.0x4",
+      "StatDismantleProgressMax=1.0x30",
+      "IsCategoryTextiles=1.0x1.0"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTClothesDestroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "ItmSackScrapCarbonFiber",
+    "strAudioEmitter": "ItmBackpackSound",
+    "mapSlotEffects": [
+      "back",
+      "Backpack02Full",
+      "heldL",
+      "HeldBackpack02FullL",
+      "heldR",
+      "HeldBackpack02FullR",
+      "drag",
+      "Backpack02Full"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmBucketScrapCarbonFiber",
+    "strNameShort": "Bucket: ScrapCarbonFiber",
+    "strNameFriendly": "Bucket of Carbon Fiber Scrap",
+    "strDesc": "An oversized industrial bucket built for bulk salvage. Stays put -- drag it to where you want it. Accepts carbon fiber scrap only.",
+    "strItemDef": "ItmBucketScrapCarbonFiber",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerScrapCarbonFiber",
+    "nContainerHeight": 16,
+    "nContainerWidth": 16,
+    "aInteractions": [
+      "Inventory",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsContainer=1.0x1.0",
+      "IsCrate=1.0x1.0",
+      "IsOversized=1.0x1.0",
+      "IsRigid=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "IsWaterproof=1.0x1.0",
+      "StatBasePrice=1.0x400.0",
+      "StatDamageMax=1.0x10",
+      "StatDismantleProgressMax=1.0x20",
+      "StatMass=1.0x15.0",
+      "IsCategoryTools=1.0x1"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTCrate01Destroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "paperdoll/held/portCrate01",
+    "strAudioEmitter": "ItmPlasticBoxSound",
+    "mapSlotEffects": [
+      "heldL",
+      "HeldItmCrate01L",
+      "heldR",
+      "HeldItmCrate01R",
+      "drag",
+      "Blank"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmSackPartsScreen",
+    "strNameShort": "Sack: PartsScreen",
+    "strNameFriendly": "Sack of Screen Fragments",
+    "strDesc": "A reinforced canvas sack, sized and stitched for one job: holding screen fragments and nothing else. Single-type by construction.",
+    "strItemDef": "ItmSackPartsScreen",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerPartsScreen",
+    "nContainerHeight": 8,
+    "nContainerWidth": 8,
+    "aInteractions": [
+      "Inventory",
+      "EquipItem",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsBurnable=1.0x1.0",
+      "IsContainer=1.0x1",
+      "IsBackpack=1.0x1.0",
+      "IsFlexible=1.0x1.0",
+      "IsSheet=1.0x1.0",
+      "IsTempInsulator=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "StatMass=1.0x2.0",
+      "StatBasePrice=1.0x200.0",
+      "StatDamageMax=1.0x4",
+      "StatDismantleProgressMax=1.0x30",
+      "IsCategoryTextiles=1.0x1.0"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTClothesDestroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "ItmSackPartsScreen",
+    "strAudioEmitter": "ItmBackpackSound",
+    "mapSlotEffects": [
+      "back",
+      "Backpack02Full",
+      "heldL",
+      "HeldBackpack02FullL",
+      "heldR",
+      "HeldBackpack02FullR",
+      "drag",
+      "Backpack02Full"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmBucketPartsScreen",
+    "strNameShort": "Bucket: PartsScreen",
+    "strNameFriendly": "Bucket of Screen Fragments",
+    "strDesc": "An oversized industrial bucket built for bulk salvage. Stays put -- drag it to where you want it. Accepts screen fragments only.",
+    "strItemDef": "ItmBucketPartsScreen",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerPartsScreen",
+    "nContainerHeight": 16,
+    "nContainerWidth": 16,
+    "aInteractions": [
+      "Inventory",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsContainer=1.0x1.0",
+      "IsCrate=1.0x1.0",
+      "IsOversized=1.0x1.0",
+      "IsRigid=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "IsWaterproof=1.0x1.0",
+      "StatBasePrice=1.0x400.0",
+      "StatDamageMax=1.0x10",
+      "StatDismantleProgressMax=1.0x20",
+      "StatMass=1.0x15.0",
+      "IsCategoryTools=1.0x1"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTCrate01Destroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "paperdoll/held/portCrate01",
+    "strAudioEmitter": "ItmPlasticBoxSound",
+    "mapSlotEffects": [
+      "heldL",
+      "HeldItmCrate01L",
+      "heldR",
+      "HeldItmCrate01R",
+      "drag",
+      "Blank"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmSackScrapPlastic",
+    "strNameShort": "Sack: ScrapPlastic",
+    "strNameFriendly": "Sack of Plastic Scrap",
+    "strDesc": "A reinforced canvas sack, sized and stitched for one job: holding plastic scrap and nothing else. Single-type by construction.",
+    "strItemDef": "ItmSackScrapPlastic",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerScrapPlastic",
+    "nContainerHeight": 8,
+    "nContainerWidth": 8,
+    "aInteractions": [
+      "Inventory",
+      "EquipItem",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsBurnable=1.0x1.0",
+      "IsContainer=1.0x1",
+      "IsBackpack=1.0x1.0",
+      "IsFlexible=1.0x1.0",
+      "IsSheet=1.0x1.0",
+      "IsTempInsulator=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "StatMass=1.0x2.0",
+      "StatBasePrice=1.0x200.0",
+      "StatDamageMax=1.0x4",
+      "StatDismantleProgressMax=1.0x30",
+      "IsCategoryTextiles=1.0x1.0"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTClothesDestroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "ItmSackScrapPlastic",
+    "strAudioEmitter": "ItmBackpackSound",
+    "mapSlotEffects": [
+      "back",
+      "Backpack02Full",
+      "heldL",
+      "HeldBackpack02FullL",
+      "heldR",
+      "HeldBackpack02FullR",
+      "drag",
+      "Backpack02Full"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmBucketScrapPlastic",
+    "strNameShort": "Bucket: ScrapPlastic",
+    "strNameFriendly": "Bucket of Plastic Scrap",
+    "strDesc": "An oversized industrial bucket built for bulk salvage. Stays put -- drag it to where you want it. Accepts plastic scrap only.",
+    "strItemDef": "ItmBucketScrapPlastic",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerScrapPlastic",
+    "nContainerHeight": 16,
+    "nContainerWidth": 16,
+    "aInteractions": [
+      "Inventory",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsContainer=1.0x1.0",
+      "IsCrate=1.0x1.0",
+      "IsOversized=1.0x1.0",
+      "IsRigid=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "IsWaterproof=1.0x1.0",
+      "StatBasePrice=1.0x400.0",
+      "StatDamageMax=1.0x10",
+      "StatDismantleProgressMax=1.0x20",
+      "StatMass=1.0x15.0",
+      "IsCategoryTools=1.0x1"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTCrate01Destroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "paperdoll/held/portCrate01",
+    "strAudioEmitter": "ItmPlasticBoxSound",
+    "mapSlotEffects": [
+      "heldL",
+      "HeldItmCrate01L",
+      "heldR",
+      "HeldItmCrate01R",
+      "drag",
+      "Blank"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmSackScrapClothDirty",
+    "strNameShort": "Sack: ScrapClothDirty",
+    "strNameFriendly": "Sack of Dirty Cloth Scraps",
+    "strDesc": "A reinforced canvas sack, sized and stitched for one job: holding dirty cloth scraps and nothing else. Single-type by construction.",
+    "strItemDef": "ItmSackScrapClothDirty",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerScrapClothDirty",
+    "nContainerHeight": 8,
+    "nContainerWidth": 8,
+    "aInteractions": [
+      "Inventory",
+      "EquipItem",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsBurnable=1.0x1.0",
+      "IsContainer=1.0x1",
+      "IsBackpack=1.0x1.0",
+      "IsFlexible=1.0x1.0",
+      "IsSheet=1.0x1.0",
+      "IsTempInsulator=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "StatMass=1.0x2.0",
+      "StatBasePrice=1.0x200.0",
+      "StatDamageMax=1.0x4",
+      "StatDismantleProgressMax=1.0x30",
+      "IsCategoryTextiles=1.0x1.0"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTClothesDestroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "ItmSackScrapClothDirty",
+    "strAudioEmitter": "ItmBackpackSound",
+    "mapSlotEffects": [
+      "back",
+      "Backpack02Full",
+      "heldL",
+      "HeldBackpack02FullL",
+      "heldR",
+      "HeldBackpack02FullR",
+      "drag",
+      "Backpack02Full"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmBucketScrapClothDirty",
+    "strNameShort": "Bucket: ScrapClothDirty",
+    "strNameFriendly": "Bucket of Dirty Cloth Scraps",
+    "strDesc": "An oversized industrial bucket built for bulk salvage. Stays put -- drag it to where you want it. Accepts dirty cloth scraps only.",
+    "strItemDef": "ItmBucketScrapClothDirty",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerScrapClothDirty",
+    "nContainerHeight": 16,
+    "nContainerWidth": 16,
+    "aInteractions": [
+      "Inventory",
+      "DropItem",
+      "PickupItem"
+    ],
+    "aStartingConds": [
+      "IsContainer=1.0x1.0",
+      "IsCrate=1.0x1.0",
+      "IsOversized=1.0x1.0",
+      "IsRigid=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "IsWaterproof=1.0x1.0",
+      "StatBasePrice=1.0x400.0",
+      "StatDamageMax=1.0x10",
+      "StatDismantleProgressMax=1.0x20",
+      "StatMass=1.0x15.0",
+      "IsCategoryTools=1.0x1"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [],
+    "mapChargeProfiles": [
+      "Melee",
+      "MeleeAttackDefault"
+    ],
+    "aUpdateCommands": [
+      "Destructable,StatDamage,ACTCrate01Destroy,StatDamageMax,1.0"
+    ],
+    "mapGUIPropMaps": null,
+    "strPortraitImg": "paperdoll/held/portCrate01",
+    "strAudioEmitter": "ItmPlasticBoxSound",
+    "mapSlotEffects": [
+      "heldL",
+      "HeldItmCrate01L",
+      "heldR",
+      "HeldItmCrate01R",
+      "drag",
+      "Blank"
+    ],
+    "jsonPI": null
+  },
+  {
+    "strName": "ItmSacksKiosk01",
+    "strNameShort": "Kiosk: Sacks & Buckets",
+    "strNameFriendly": "Sacks & Buckets Kiosk",
+    "strDesc": "A self-service kiosk stocked with single-type containers: sacks for wear-and-carry, buckets for bulk floor storage. One container, one item type.",
+    "strItemDef": "ItmKioskSupplies01",
+    "strType": "Item",
+    "strLoot": null,
+    "strContainerCT": "TIsFitContainerUnlimited",
+    "nContainerHeight": 0,
+    "nContainerWidth": 0,
+    "aInteractions": [
+      "ACTKioskUseNPC",
+      "GUITradeSacksKiosk"
+    ],
+    "aStartingConds": [
+      "IsContainer=1.0x1.0",
+      "IsIndestructable=1.0x1",
+      "IsKioskNPC=1.0x1",
+      "IsOversized=1.0x1.0",
+      "IsReadyRestock=1.0x1.0",
+      "IsRigid=1.0x1.0",
+      "IsSalvageValueHigh=1.0x1.0",
+      "IsSolid=1.0x1.0",
+      "IsTraderNPC=1.0x1",
+      "StatMass=1.0x31.0",
+      "StatDamageMax=1.0x70",
+      "IsMechanical=1.0x1",
+      "IsCategoryIndustrialProducts=1.0x1"
+    ],
+    "mapCondTolerance": [],
+    "mapPoints": [
+      "use,0,-16"
+    ],
+    "mapChargeProfiles": [],
+    "aUpdateCommands": [],
+    "mapGUIPropMaps": [
+      "Panel A",
+      "Trade",
+      "Trade",
+      "Trade",
+      "Trader",
+      "TraderSacksKiosk"
+    ],
+    "strPortraitImg": "ItmKioskSupplies01",
+    "strAudioEmitter": "ItmKioskHealth01Sound",
+    "mapSlotEffects": [
+      "heldL",
+      "HeldItmCrate01L",
+      "heldR",
+      "HeldItmCrate01R",
+      "drag",
+      "Blank"
+    ],
+    "jsonPI": null
+  }
+]

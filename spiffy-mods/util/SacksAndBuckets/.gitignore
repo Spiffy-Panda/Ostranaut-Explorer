@@ -1,0 +1,4 @@
+# Staged vanilla sprites (extracted from game install) -- not redistributable.
+sprite_sources/
+__pycache__/
+*.pyc

@@ -48,18 +48,27 @@ or switching the bucket to `IsInfiniteContainer + strContainerCT`
 ## Files
 
 ```
-spiffy-mods/SacksAndBuckets/
+spiffy-mods/mods/SacksAndBuckets/
 ├── README.md
 ├── mod_info.json                            ← strName, version, author
 └── data/
-    ├── condowners/condowners.json           ← 24 container CO entries + 1 kiosk CO (ItmSacksKiosk01)
-    ├── condtrigs/condtrigs.json             ← 12 fit-gate condtrigs
-    ├── interactions/interactions.json       ← GUITradeSacksKiosk (mirrors GUITradeKiosk's checks)
-    ├── guipropmaps/guipropmaps.json         ← TraderSacksKiosk (routes the kiosk to its stock table)
+    ├── condowners/condowners.json           ← 24 container CO entries + 1 kiosk CO (ItmSacksKiosk01) — generated
+    ├── condtrigs/condtrigs.json             ← 12 fit-gate condtrigs — hand-edited
+    ├── interactions/interactions.json       ← GUITradeSacksKiosk — hand-edited
+    ├── guipropmaps/guipropmaps.json         ← TraderSacksKiosk — hand-edited
+    ├── items/items.json                     ← 24 ItemDef entries (one per sack + bucket) — generated, supplies the strImg sprites
+    ├── textures/                            ← generated PNGs (gitignored if you don't want vanilla-art-derived files in source control)
     └── loot/
-        ├── loot.json                        ← ItmSacksKioskInv (the kiosk's stock, 24 lines)
-        └── loot_self_reference.json         ← 25 self-emit wrappers: 24 sacks/buckets + 1 for the kiosk itself (so `spawn ItmSacksKiosk01` resolves)
+        ├── loot.json                        ← ItmSacksKioskInv (kiosk stock, 24 lines) — generated
+        └── loot_self_reference.json         ← 25 self-emit wrappers — generated
 ```
+
+Generators live next door at
+[../../util/SacksAndBuckets/](../../util/SacksAndBuckets/) — driven by
+[config.yaml](../../util/SacksAndBuckets/config.yaml) which is the
+single source of truth for dimensions, item table, and sprite-gen
+properties. Re-run after editing config:
+`python spiffy-mods/util/SacksAndBuckets/emit_all.py`.
 
 Layout mirrors `<ModName>/data/<folder>/<file>.json` per the
 established Ostranauts mod convention. Folder names match base-game
@@ -169,7 +178,7 @@ repo) for the full data-trail.
    ```
 
    The repo ships a ready-to-use sample at
-   [spiffy-mods/loading_order.json](../loading_order.json). If you
+   [spiffy-mods/mods/loading_order.json](../loading_order.json). If you
    already have a `loading_order.json` with other mods, **merge**
    `SacksAndBuckets` into the existing `aLoadOrder` array — don't
    replace the file.

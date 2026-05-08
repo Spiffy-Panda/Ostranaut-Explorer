@@ -1,0 +1,130 @@
+# Configuration for the SacksAndBuckets mod generators.
+#
+# Read by emit_condowners.py, emit_loot.py, emit_sprites.py, emit_items.py.
+# All paths are repo-relative; the scripts resolve relative to the repo root
+# (Path(__file__).resolve().parents[3]).
+
+mod:
+  out_root: spiffy-mods/mods/SacksAndBuckets/data
+
+# Container grid sizes. Sacks are wearable; buckets are oversized/dragable.
+# Vanilla's largest grid container is ItmDolly02 at 6x6 = 36; above that
+# vanilla switches to IsInfiniteContainer. 16x16 = 256 is past vanilla's
+# tested envelope and is empirically untested (the inventory UI may not
+# render that many cells cleanly). Dial back if it breaks.
+dimensions:
+  sack:
+    height: 8     # 8x8 = 64 slots, 4x the vanilla 16-slot backpack
+    width: 8
+  bucket:
+    height: 16    # 16x16 = 256 slots, 16x the vanilla backpack
+    width: 16
+
+# Stock-table parameters for the kiosk's aLoots.
+kiosk_stock:
+  sack_chance: 1.0
+  sack_count_min: 1
+  sack_count_max: 2
+  bucket_chance: 0.5
+  bucket_count_min: 1
+  bucket_count_max: 1
+
+# Sprite generation. The script reads PNGs of the base container + the
+# scavenge material from `sprite_sources/<name>.png` (you stage them by
+# copying from your game install or extracting via UABE/AssetStudio),
+# composites them, and writes new PNGs to `out_root` below. items.json
+# generation references these names via `strImg`.
+sprite_gen:
+  # Where to look for source PNGs (vanilla bag/crate art + each item's
+  # icon). You stage these manually -- the script doesn't fetch from the
+  # game install, since extraction tooling and asset paths vary.
+  sources_dir: spiffy-mods/util/SacksAndBuckets/sprite_sources
+
+  # Where the generated sprites land. Convention: ship under the mod's
+  # data/textures/ folder; items.json strImg points at the file basename.
+  output_dir: spiffy-mods/mods/SacksAndBuckets/data/textures
+
+  # Base art for each container variant. Filenames are <name>.png in
+  # sources_dir (so sack_base = "ItmBackpack02" -> ItmBackpack02.png).
+  sack_base: ItmBackpack02
+  bucket_base: ItmCrate01
+
+  # Scavenge-material overlay properties.
+  # Scale is the material's size relative to the base (0.667 = 2/3).
+  # Offset is in pixels from the base's center; positive = right/down.
+  material_scale: 0.667
+  material_offset_x: 0
+  material_offset_y: 0
+
+  # If a source file is missing, write a placeholder PNG with the base
+  # art only and log a warning. Set false to fail hard instead.
+  warn_on_missing_material: true
+
+# The 12 item types. Each entry produces:
+#   * 1 sack CO + 1 bucket CO (in condowners.json)
+#   * 1 fit-gate condtrig (in condtrigs.json -- already shipped, not
+#     generated; this list mirrors what's there)
+#   * 2 self-emit loot wrappers (sack + bucket, in loot_self_reference.json)
+#   * 2 stock lines in ItmSacksKioskInv aLoots (sack + bucket)
+#   * 2 generated sprite PNGs (sack + bucket, blended from base + source)
+#
+# `source` names the vanilla item the bucket holds; the sprite generator
+# uses <source>.png from sources_dir as the material overlay.
+items:
+  - suffix: Trash
+    source: ItmScrapTrash
+    gate: TIsFitContainerTrash
+    noun: trash
+  - suffix: PartsMechSmall
+    source: ItmPartsMechSmall01
+    gate: TIsFitContainerPartsMechSmall
+    noun: small mech parts
+  - suffix: ScrapSteel
+    source: ItmScrapSteel
+    gate: TIsFitContainerScrapSteel
+    noun: steel scrap
+  - suffix: PartsElecSmall
+    source: ItmPartsElecSmall01
+    gate: TIsFitContainerPartsElecSmall
+    noun: small elec parts
+  - suffix: ComponentMobo
+    source: ItmComponentMobo01
+    gate: TIsFitContainerComponentMobo
+    noun: motherboards
+  - suffix: ScrapAluminum
+    source: ItmScrapAluminum
+    gate: TIsFitContainerScrapAluminum
+    noun: aluminum scrap
+  - suffix: ComponentMotor
+    source: ItmComponentMotor01
+    gate: TIsFitContainerComponentMotor
+    noun: small motors
+  - suffix: HeatSink
+    source: ItmHeatSink01
+    gate: TIsFitContainerHeatSink
+    noun: heat sinks
+  - suffix: ScrapCarbonFiber
+    source: ItmScrapCarbonFiber
+    gate: TIsFitContainerScrapCarbonFiber
+    noun: carbon fiber scrap
+  - suffix: PartsScreen
+    source: ItmPartsScreen01
+    gate: TIsFitContainerPartsScreen
+    noun: screen fragments
+  - suffix: ScrapPlastic
+    source: ItmScrapPlastic
+    gate: TIsFitContainerScrapPlastic
+    noun: plastic scrap
+  - suffix: ScrapClothDirty
+    source: ItmScrapClothDirty
+    gate: TIsFitContainerScrapClothDirty
+    noun: dirty cloth scraps
+
+# The kiosk CO. Modeled on ItmKioskSupplies01 but with crate-shape
+# spawnability (no IsInstalled, has IsOversized/IsRigid) so
+# `spawn ItmSacksKiosk01` actually drops it on the floor.
+kiosk:
+  strName: ItmSacksKiosk01
+  strItemDef: ItmKioskSupplies01    # Sprite alias; replace with generated sprite once art is wired.
+  guipropmap: TraderSacksKiosk
+  stock_table: ItmSacksKioskInv

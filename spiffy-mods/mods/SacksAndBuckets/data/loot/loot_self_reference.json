@@ -1,0 +1,202 @@
+[
+  {
+    "strName": "ItmSackTrash",
+    "aCOs": [
+      "ItmSackTrash=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmBucketTrash",
+    "aCOs": [
+      "ItmBucketTrash=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmSackPartsMechSmall",
+    "aCOs": [
+      "ItmSackPartsMechSmall=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmBucketPartsMechSmall",
+    "aCOs": [
+      "ItmBucketPartsMechSmall=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmSackScrapSteel",
+    "aCOs": [
+      "ItmSackScrapSteel=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmBucketScrapSteel",
+    "aCOs": [
+      "ItmBucketScrapSteel=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmSackPartsElecSmall",
+    "aCOs": [
+      "ItmSackPartsElecSmall=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmBucketPartsElecSmall",
+    "aCOs": [
+      "ItmBucketPartsElecSmall=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmSackComponentMobo",
+    "aCOs": [
+      "ItmSackComponentMobo=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmBucketComponentMobo",
+    "aCOs": [
+      "ItmBucketComponentMobo=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmSackScrapAluminum",
+    "aCOs": [
+      "ItmSackScrapAluminum=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmBucketScrapAluminum",
+    "aCOs": [
+      "ItmBucketScrapAluminum=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmSackComponentMotor",
+    "aCOs": [
+      "ItmSackComponentMotor=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmBucketComponentMotor",
+    "aCOs": [
+      "ItmBucketComponentMotor=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmSackHeatSink",
+    "aCOs": [
+      "ItmSackHeatSink=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmBucketHeatSink",
+    "aCOs": [
+      "ItmBucketHeatSink=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmSackScrapCarbonFiber",
+    "aCOs": [
+      "ItmSackScrapCarbonFiber=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmBucketScrapCarbonFiber",
+    "aCOs": [
+      "ItmBucketScrapCarbonFiber=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmSackPartsScreen",
+    "aCOs": [
+      "ItmSackPartsScreen=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmBucketPartsScreen",
+    "aCOs": [
+      "ItmBucketPartsScreen=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmSackScrapPlastic",
+    "aCOs": [
+      "ItmSackScrapPlastic=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmBucketScrapPlastic",
+    "aCOs": [
+      "ItmBucketScrapPlastic=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmSackScrapClothDirty",
+    "aCOs": [
+      "ItmSackScrapClothDirty=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmBucketScrapClothDirty",
+    "aCOs": [
+      "ItmBucketScrapClothDirty=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  },
+  {
+    "strName": "ItmSacksKiosk01",
+    "aCOs": [
+      "ItmSacksKiosk01=1.0x1"
+    ],
+    "aLoots": [],
+    "strType": "item"
+  }
+]
