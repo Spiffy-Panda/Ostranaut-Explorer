@@ -112,9 +112,18 @@ function Bucket-Entry($k) {
 function Kiosk-Entry {
   # Standalone trade kiosk that exposes only sacks & buckets via
   # GUITradeSacksKiosk -> TraderSacksKiosk -> ItmSacksKioskInv.
-  # Modeled on vanilla ItmKioskSupplies01 (data/condowners/condowners.json).
   # Spawnable via 'spawn ItmSacksKiosk01' because the loot generator
   # adds a same-named self-reference wrapper to loot_self_reference.json.
+  #
+  # Conds were originally cloned from ItmKioskSupplies01, but vanilla
+  # kiosks carry IsInstalled=1 because they're placed in ship layouts,
+  # never spawned dynamically -- spawn failed mid-emit ("leftovers")
+  # trying to instantiate something already-installed at the player's
+  # feet. Stripped to a crate-like spawnability profile (IsOversized +
+  # IsRigid + no IsInstalled/IsLocked/IsHiddenInv/IsInfiniteContainer)
+  # so it drops on the floor on spawn and can be dragged into position.
+  # Trade behavior preserved via IsTraderNPC (TIsTradeKiosk fires) and
+  # the explicit aInteractions + mapGUIPropMaps wiring below.
   @{
     strName          = "ItmSacksKiosk01"
     strNameShort     = "Kiosk: Sacks & Buckets"
@@ -122,20 +131,18 @@ function Kiosk-Entry {
     strDesc          = "A self-service kiosk stocked with single-type containers: sacks for wear-and-carry, buckets for bulk floor storage. One container, one item type."
     strItemDef       = "ItmKioskSupplies01"
     strType          = "Item"
-    strLoot          = $null
+    strLoot           = $null
     strContainerCT   = "TIsFitContainerUnlimited"
     nContainerHeight = 0
     nContainerWidth  = 0
     aInteractions    = @("ACTKioskUseNPC","GUITradeSacksKiosk")
     aStartingConds   = @(
-      "IsHiddenInv=1.0x1",
-      "IsInfiniteContainer=1.0x1",
-      "IsInstalled=1.0x1",
+      "IsContainer=1.0x1.0",
       "IsIndestructable=1.0x1",
-      "IsKiosk=1.0x1",
       "IsKioskNPC=1.0x1",
-      "IsLocked=1.0x1.0",
+      "IsOversized=1.0x1.0",
       "IsReadyRestock=1.0x1.0",
+      "IsRigid=1.0x1.0",
       "IsSalvageValueHigh=1.0x1.0",
       "IsSolid=1.0x1.0",
       "IsTraderNPC=1.0x1",
@@ -155,7 +162,11 @@ function Kiosk-Entry {
     )
     strPortraitImg   = "ItmKioskSupplies01"
     strAudioEmitter  = "ItmKioskHealth01Sound"
-    mapSlotEffects   = @()
+    mapSlotEffects   = @(
+      "heldL", "HeldItmCrate01L",
+      "heldR", "HeldItmCrate01R",
+      "drag",  "Blank"
+    )
     jsonPI           = $null
   }
 }
