@@ -60,6 +60,35 @@ Expected filenames in `sources_dir/`:
   `strItemDef`, then look that ItemDef up in `data/items/items.json`
   and read its `strImg`. That's the sprite filename.
 
+### Sprite sheets vs single PNGs
+
+Some vanilla items load their sprite as a **single-image PNG**;
+others load it as an **atlas/sprite-sheet** with multiple cells
+(auto-tiling walls, floor grates, etc., e.g. `ItmFloorGrate01_4x4`
+is a 4×4 = 16-cell sheet). The distinction is the
+`bHasSpriteSheet` field on the ItemDef:
+
+| `bHasSpriteSheet` | runtime path                | file shape                                             |
+|-------------------|------------------------------|--------------------------------------------------------|
+| `false` (default) | `DataHandler.GetMaterial`    | one image per item                                     |
+| `true`            | `DataHandler.GetMaterialSheet` | one PNG holding N cells, indexed by `nIndex`. Cell size is 16 × `tileWidth` / `tileHeight` px. nCols/nRows are *derived* from the texture's pixel dimensions, not stored in the JSON. |
+
+All 14 sprites this mod uses (`ItmBackpack02`, `ItmCrate01`, plus the
+12 material sources) are `bHasSpriteSheet: false` — single PNGs.
+`emit_sprites.py` assumes that and pastes the whole material onto the
+whole base. If a future row's `sprite_source` points at a sheet,
+the generator will paste the entire atlas onto the base and look
+ridiculous; it'd need a cell-extraction step first.
+
+### Output path
+
+Generated sprites land in **`spiffy-mods/mods/SacksAndBuckets/images/`**
+— a sibling of `data/`, not under it. That's because Ostranauts'
+runtime resolves item sprites via `DataHandler.LoadPNG` (decomp
+`DataHandler.cs:1196`), which walks each loaded mod's path and looks
+for `<modroot>/images/<strImg>.png`. So a strImg of `ItmSackTrash` →
+`mods/SacksAndBuckets/images/ItmSackTrash.png`.
+
 Materials should have **transparent backgrounds**. The script resizes
 them to `material_scale` of the base's longer edge (default 0.667 = 2/3),
 center-paste with optional offset, alpha-composited.

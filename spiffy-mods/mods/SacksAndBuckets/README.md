@@ -51,13 +51,13 @@ or switching the bucket to `IsInfiniteContainer + strContainerCT`
 spiffy-mods/mods/SacksAndBuckets/
 ├── README.md
 ├── mod_info.json                            ← strName, version, author
+├── images/                                  ← generated PNGs, one per container (sibling of data/; runtime loads sprites from <modroot>/images/<strImg>.png per DataHandler.LoadPNG)
 └── data/
     ├── condowners/condowners.json           ← 24 container CO entries + 1 kiosk CO (ItmSacksKiosk01) — generated
     ├── condtrigs/condtrigs.json             ← 12 fit-gate condtrigs — hand-edited
     ├── interactions/interactions.json       ← GUITradeSacksKiosk — hand-edited
     ├── guipropmaps/guipropmaps.json         ← TraderSacksKiosk — hand-edited
-    ├── items/items.json                     ← 24 ItemDef entries (one per sack + bucket) — generated, supplies the strImg sprites
-    ├── textures/                            ← generated PNGs (gitignored if you don't want vanilla-art-derived files in source control)
+    ├── items/items.json                     ← 24 ItemDef entries — generated; each strImg references a sibling images/ PNG
     └── loot/
         ├── loot.json                        ← ItmSacksKioskInv (kiosk stock, 24 lines) — generated
         └── loot_self_reference.json         ← 25 self-emit wrappers — generated

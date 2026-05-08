@@ -40,9 +40,11 @@ sprite_gen:
   # game install, since extraction tooling and asset paths vary.
   sources_dir: spiffy-mods/util/SacksAndBuckets/sprite_sources
 
-  # Where the generated sprites land. Convention: ship under the mod's
-  # data/textures/ folder; items.json strImg points at the file basename.
-  output_dir: spiffy-mods/mods/SacksAndBuckets/data/textures
+  # Where the generated sprites land. Per DataHandler.LoadPNG (decomp at
+  # DataHandler.cs:1196), the runtime looks for images at
+  # <modroot>/images/<strImg>.png -- so the output dir is the mod's
+  # images/ folder (a *sibling* of data/, not under it).
+  output_dir: spiffy-mods/mods/SacksAndBuckets/images
 
   # Base art for each container variant. Filenames are <name>.png in
   # sources_dir (so sack_base = "ItmBackpack02" -> ItmBackpack02.png).

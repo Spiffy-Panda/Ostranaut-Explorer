@@ -2,8 +2,31 @@
 
 For each item in config.yaml's `items` list, produces two PNGs in
 sprite_gen.output_dir:
-  ItmSack<Suffix>.png    = sack_base + <source> material at material_scale
-  ItmBucket<Suffix>.png  = bucket_base + <source> material at material_scale
+  ItmSack<Suffix>.png    = sack_base + <sprite_source> material at material_scale
+  ItmBucket<Suffix>.png  = bucket_base + <sprite_source> material at material_scale
+
+Output path: per DataHandler.LoadPNG (decomp DataHandler.cs:1196), the
+runtime resolves item sprites as <modroot>/images/<strImg>.png. So
+output_dir in config.yaml is set to mods/SacksAndBuckets/images/ -- a
+sibling of data/, not under it. The mod's items.json sets each
+container's strImg = its strName, so e.g. ItmSackTrash.png ends up at
+mods/SacksAndBuckets/images/ItmSackTrash.png and the runtime finds it.
+
+A note on sprite sheets: items with bHasSpriteSheet=true (decomp
+JsonItemDef.cs:75) load their PNG via DataHandler.GetMaterialSheet
+(DataHandler.cs:3495), which treats the file as a 16-px-cell grid:
+  cellWidth_uv  = tileWidth * 16 / texture.width
+  cellHeight_uv = tileHeight * 16 / texture.height
+  nCols = round(1 / cellWidth_uv)   # derived from texture pixel size
+  nRows = round(1 / cellHeight_uv)
+  cellRow = floor(nIndex / nCols);  cellCol = nIndex % nCols
+This is what auto-tiling walls/floors use (e.g. ItmFloorGrate01_4x4 is
+a 4x4 = 16-cell sheet). Our containers are bHasSpriteSheet=false
+(single image), so this doesn't apply -- we just paste the whole
+material PNG. If you ever want a SacksAndBuckets entry to use a sheet
+source as material, this script will need to extract the right cell
+first; not implemented since none of the 12 current sources are
+sheets.
 
 Source PNGs are read from sprite_gen.sources_dir (you stage them by
 copying from your game install or extracting via UABE / AssetStudio --
