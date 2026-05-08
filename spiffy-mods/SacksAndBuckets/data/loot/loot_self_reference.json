@@ -238,5 +238,15 @@
 
                    ],
         "strType":  "item"
+    },
+    {
+        "strName":  "ItmSacksKiosk01",
+        "aCOs":  [
+                     "ItmSacksKiosk01=1.0x1"
+                 ],
+        "aLoots":  [
+
+                   ],
+        "strType":  "item"
     }
 ]

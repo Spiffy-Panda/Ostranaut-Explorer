@@ -1,0 +1,35 @@
+[
+    {
+        "strName":  "ItmSacksKioskInv",
+        "aCOs":  [
+
+                 ],
+        "aLoots":  [
+                       "ItmSackTrash=1.0x1-2",
+                       "ItmBucketTrash=0.5x1",
+                       "ItmSackPartsMechSmall=1.0x1-2",
+                       "ItmBucketPartsMechSmall=0.5x1",
+                       "ItmSackScrapSteel=1.0x1-2",
+                       "ItmBucketScrapSteel=0.5x1",
+                       "ItmSackPartsElecSmall=1.0x1-2",
+                       "ItmBucketPartsElecSmall=0.5x1",
+                       "ItmSackComponentMobo=1.0x1-2",
+                       "ItmBucketComponentMobo=0.5x1",
+                       "ItmSackScrapAluminum=1.0x1-2",
+                       "ItmBucketScrapAluminum=0.5x1",
+                       "ItmSackComponentMotor=1.0x1-2",
+                       "ItmBucketComponentMotor=0.5x1",
+                       "ItmSackHeatSink=1.0x1-2",
+                       "ItmBucketHeatSink=0.5x1",
+                       "ItmSackScrapCarbonFiber=1.0x1-2",
+                       "ItmBucketScrapCarbonFiber=0.5x1",
+                       "ItmSackPartsScreen=1.0x1-2",
+                       "ItmBucketPartsScreen=0.5x1",
+                       "ItmSackScrapPlastic=1.0x1-2",
+                       "ItmBucketScrapPlastic=0.5x1",
+                       "ItmSackScrapClothDirty=1.0x1-2",
+                       "ItmBucketScrapClothDirty=0.5x1"
+                   ],
+        "strType":  "item"
+    }
+]

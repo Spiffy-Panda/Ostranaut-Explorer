@@ -47,11 +47,13 @@ spiffy-mods/SacksAndBuckets/
 ├── README.md
 ├── mod_info.json                            ← strName, version, author
 └── data/
-    ├── condowners/condowners.json           ← 24 container CO entries
+    ├── condowners/condowners.json           ← 24 container CO entries + 1 kiosk CO (ItmSacksKiosk01)
     ├── condtrigs/condtrigs.json             ← 12 fit-gate condtrigs
     ├── interactions/interactions.json       ← GUITradeSacksKiosk (mirrors GUITradeKiosk's checks)
+    ├── guipropmaps/guipropmaps.json         ← TraderSacksKiosk (routes the kiosk to its stock table)
     └── loot/
-        └── loot_self_reference.json         ← 24 self-emit wrappers (one per sack/bucket; required so aLoots refs resolve)
+        ├── loot.json                        ← ItmSacksKioskInv (the kiosk's stock, 24 lines)
+        └── loot_self_reference.json         ← 25 self-emit wrappers: 24 sacks/buckets + 1 for the kiosk itself (so `spawn ItmSacksKiosk01` resolves)
 ```
 
 Layout mirrors `<ModName>/data/<folder>/<file>.json` per the
@@ -76,18 +78,33 @@ overrides** — every entry is additive.
 - **Bucket-as-installable** — buckets carry
   `IsOversized + IsRigid + IsCrate`, mirroring `ItmCrate01`. Game
   treats them as drag-only by virtue of `IsOversized`. No new tag.
-- **Universal trade interaction** —
-  `GUITradeSacksKiosk` interaction with the same checks as vanilla
-  `GUITradeKiosk` (`CTTestUs: TIsHuman`, `CTTestThem: TIsTradeKiosk`,
-  `aInverse: [GUITradeCheckOKLGLicensed, GUITradeAllow]`). The intent
-  is for it to surface on **any** kiosk that satisfies `TIsTradeKiosk`,
-  no per-kiosk wiring needed.
-- **Self-reference loot wrappers** — `aLoots` refs target the `loot/`
-  folder per schema, so each sack/bucket gets an entry there that
-  emits itself via `aCOs`. Vanilla wraps every aLoots-referenced item
-  the same way in `data/loot/loot_self_reference.json`. Useful for
-  explorer navigation and for any future mod additions that reference
-  these items via aLoots.
+- **Standalone kiosk** — ships its own
+  `ItmSacksKiosk01` with `aInteractions: [ACTKioskUseNPC,
+  GUITradeSacksKiosk]`. Modeled on `ItmKioskSupplies01` (carries
+  `IsKioskNPC + IsTraderNPC` so `TIsTradeKiosk` fires;
+  `IsInstalled + IsLocked + IsIndestructable` for fixture behavior).
+  Sprite aliases `ItmKioskSupplies01`.
+- **Self-contained trade chain** —
+  `GUITradeSacksKiosk` interaction (mirrors vanilla `GUITradeKiosk`'s
+  full us/them chain: `aInverse: [GUITradeCheckOKLGLicensed,
+  GUITradeAllow]`, `CTTestUs: TIsHuman`, `CTTestThem: TIsTradeKiosk`).
+  The kiosk's `mapGUIPropMaps` routes the `Trader` slot to a new
+  `TraderSacksKiosk` guipropmap, which points `strLoot` at
+  `ItmSacksKioskInv` — the loot table containing all 24 sacks &
+  buckets. The trade UI reads inventory from this chain, so it shows
+  our items and only our items.
+- **`spawn`-friendly via self-reference loot wrapper** — the kiosk
+  has a same-named entry in `loot_self_reference.json` so the debug
+  command `spawn ItmSacksKiosk01` resolves it as a loot table that
+  emits the actual CO. This is the trick vanilla uses for every
+  spawnable item (e.g. `ItmAICargo01`); vanilla *kiosks* lack the
+  wrapper because they're placed in ship layouts directly, but for
+  a mod-shipped kiosk the wrapper is essential.
+- **Self-reference loot wrappers (sacks/buckets)** — `aLoots` refs
+  target the `loot/` folder per schema, so each sack/bucket also gets
+  a self-emit entry there. Vanilla wraps every aLoots-referenced item
+  the same way in `data/loot/loot_self_reference.json`. Without these,
+  the kiosk's stock-table aLoots resolves to dangling refs.
 
 ## Why no BepIn
 
@@ -103,24 +120,17 @@ repo) for the full data-trail.
   `ItmCrate01` for buckets. Modder will tell them apart by
   `strNameFriendly` ("Sack of Bolts" vs "Sack of Boards") in the
   inventory tooltip. Custom art is a v2 task.
-- **Trade UI shows the kiosk's vanilla stock, not our items** (open
-  question). The trade UI reads `[them].mapGUIPropMaps[Trader]` →
-  guipropmap → `strLoot` to determine inventory, and that chain is
-  set on the kiosk CO, not on the interaction. So `GUITradeSacksKiosk`
-  surfacing on a vanilla kiosk just opens that kiosk's normal trade
-  UI. Wiring our items into the displayed inventory needs one of:
-  (a) override the kiosk's `mapGUIPropMaps[Trader]` to point at our
-      stock table (per-kiosk override),
-  (b) ship a new kiosk CO with our wiring (the previous approach,
-      which depends on placing the kiosk somewhere reachable),
-  (c) BepIn-side change to route the trade UI by interaction strName
-      instead of by kiosk-side guipropmap.
-  v1 ships the interaction and lets us empirically check whether it
-  surfaces on vanilla kiosks at all; the inventory-routing piece is
-  open.
+- **Kiosk does not auto-spawn in ship layouts.** The mod adds the
+  kiosk as a CO definition only; placing one in a specific
+  ship/station layout would require editing `data/ships/*.json`
+  (out of scope for v1). Use `spawn ItmSacksKiosk01` in the debug
+  console (BackQuote, after `unlockdebug` if needed) to bring it
+  next to the player. The self-reference wrapper makes `spawn`
+  work; without it the command silently no-ops.
 - **Dismantle integration deferred.** v1 does not yield buckets from
-  dismantle. Adding `ItmBucket<Suffix>=0.05x1` to dismantle loot
-  tables is a separate patch.
+  dismantle — buckets are bought from the kiosk. Adding
+  `ItmBucket<Suffix>=0.05x1` to dismantle loot tables is a separate
+  patch.
 - **No stat tuning pass yet.** Mass / price / damage values are
   reasonable-by-analogy rather than balanced. The 8×8 bucket is
   intentionally generous; tune down for an upstream submission.
@@ -146,25 +156,32 @@ repo) for the full data-trail.
    already have a `loading_order.json` with other mods, **merge**
    `SacksAndBuckets` into the existing `aLoadOrder` array — don't
    replace the file.
-4. **Test in-game**:
-   - `spawn ItmSackTrash` (or any of the 24) — should succeed (purple
-     command text) if the mod loaded. Failure means the load is broken;
-     check BepInEx log first.
-   - **Walk up to any vanilla supply kiosk** and right-click. Look for
-     a "Trade Sacks & Buckets" option in the action menu next to the
-     vanilla "Trade" option. If it appears, the interaction is
-     surfacing globally — proceed to test what UI it opens. If it
-     doesn't appear, Ostranauts only surfaces interactions explicitly
-     listed in a CO's `aInteractions`, and we'll need to override
-     individual kiosk COs to add our interaction to their lists.
+4. **Open the debug console** (BackQuote, plus `unlockdebug` once if
+   needed) **and spawn the kiosk**:
+
+   ```
+   spawn ItmSacksKiosk01
+   ```
+
+   It'll appear next to the player. Right-click → "Trade Sacks &
+   Buckets" → trade UI opens with all 24 sacks/buckets in stock.
+   The kiosk auto-restocks on the `RestockSupplyKiosk` ticker, gated
+   by `IsReadyRestock`, same as vanilla supply kiosks.
 
 The mod has no ordering dependency on other mods, but always after `"core"`.
 
 If something doesn't work:
 
 - Confirm the game version in `mod_info.json` (`strGameVersion`)
-  matches the version printed on your Ostranauts main menu. Mismatches
-  can cause silent load failures.
+  matches the version printed on your Ostranauts main menu.
+  Mismatches can cause silent load failures.
+- `spawn ItmSackTrash` (or any of the 24) should succeed (purple
+  command text). If it doesn't, the mod isn't loading — check the
+  BepInEx log.
+- `spawn ItmSacksKiosk01` should also succeed. If it does but the
+  trade UI doesn't open when you interact, check the
+  interaction → guipropmap → strLoot chain on the kiosk's detail
+  page in the explorer.
 - Look at the game's BepInEx log (`BepInEx/LogOutput.log`) for
   loader errors mentioning any of our strNames.
 
