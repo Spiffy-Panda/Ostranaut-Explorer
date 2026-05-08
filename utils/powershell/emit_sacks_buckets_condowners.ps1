@@ -109,61 +109,11 @@ function Bucket-Entry($k) {
   }
 }
 
-function Kiosk-Entry {
-  # Standalone trade kiosk that exposes only sacks & buckets via
-  # GUITradeSacksKiosk -> TraderSacksKiosk -> ItmSacksKioskInv.
-  # Modeled on vanilla ItmKioskSupplies01 (data/condowners/condowners.json).
-  @{
-    strName          = "ItmSacksKiosk01"
-    strNameShort     = "Kiosk: Sacks & Buckets"
-    strNameFriendly  = "Sacks & Buckets Kiosk"
-    strDesc          = "A self-service kiosk stocked with single-type containers: sacks for wear-and-carry, buckets for bulk floor storage. One container, one item type."
-    strItemDef       = "ItmKioskSupplies01"
-    strType          = "Item"
-    strLoot          = $null
-    strContainerCT   = "TIsFitContainerUnlimited"
-    nContainerHeight = 0
-    nContainerWidth  = 0
-    aInteractions    = @("ACTKioskUseNPC","GUITradeSacksKiosk")
-    aStartingConds   = @(
-      "IsHiddenInv=1.0x1",
-      "IsInfiniteContainer=1.0x1",
-      "IsInstalled=1.0x1",
-      "IsIndestructable=1.0x1",
-      "IsKiosk=1.0x1",
-      "IsKioskNPC=1.0x1",
-      "IsLocked=1.0x1.0",
-      "IsReadyRestock=1.0x1.0",
-      "IsSalvageValueHigh=1.0x1.0",
-      "IsSolid=1.0x1.0",
-      "IsTraderNPC=1.0x1",
-      "StatMass=1.0x31.0",
-      "StatDamageMax=1.0x70",
-      "IsMechanical=1.0x1",
-      "IsCategoryIndustrialProducts=1.0x1"
-    )
-    mapCondTolerance = @()
-    mapPoints        = @("use,0,-16")
-    mapChargeProfiles= @()
-    aUpdateCommands  = @()
-    mapGUIPropMaps   = @(
-      "Panel A", "Trade",
-      "Trade",   "Trade",
-      "Trader",  "TraderSacksKiosk"
-    )
-    strPortraitImg   = "ItmKioskSupplies01"
-    strAudioEmitter  = "ItmKioskHealth01Sound"
-    mapSlotEffects   = @()
-    jsonPI           = $null
-  }
-}
-
 $entries = @()
 foreach ($k in $kinds) {
   $entries += Sack-Entry   $k
   $entries += Bucket-Entry $k
 }
-$entries += Kiosk-Entry
 
 # Use ordered hashtables converted via JSON serialization.
 # PowerShell 5.1 ConvertTo-Json reorders keys alphabetically when fed regular

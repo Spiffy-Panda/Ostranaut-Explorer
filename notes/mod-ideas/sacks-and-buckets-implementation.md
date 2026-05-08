@@ -214,25 +214,39 @@ mod loader matches them up by name. v1 ships the full 12-item cohort
 (per "modders aim overpowered to demonstrate the mechanic"; trim to
 scrap-only if upstreamed).
 
-v1 architecture — **standalone kiosk, no vanilla overrides**. Originally
-the design overrode the three vanilla supply-kiosk loot tables
-(`ItmSupplyKioskInv` / `*BCERInv` / `*BCRSInv`); that was brittle to
-vanilla content patches and required full-copy of long aLoots arrays.
-The current shape ships a self-contained
-`GUITradeSacksKiosk` interaction + `TraderSacksKiosk` guipropmap +
-`ItmSacksKioskInv` loot table + `ItmSacksKiosk01` kiosk CO. The kiosk
-is debug-spawnable (`spawn ItmSacksKiosk01`); putting one in vanilla
-ship layouts is a v2 task.
+v1 architecture — **interaction-only, no kiosk CO, no vanilla overrides**.
+The mod adds a single `GUITradeSacksKiosk` interaction with the same
+checks as vanilla `GUITradeKiosk` (`CTTestUs: TIsHuman`, `CTTestThem:
+TIsTradeKiosk`, `aInverse: [GUITradeCheckOKLGLicensed, GUITradeAllow]`).
+The hope is the interaction will surface on any kiosk passing
+`TIsTradeKiosk` without per-kiosk wiring.
+
+**Open architectural question** the live empirical test is supposed to
+answer: how does the trade UI know to show *our* items rather than the
+kiosk's vanilla stock? The UI reads `[them].mapGUIPropMaps[Trader]` →
+guipropmap → `strLoot` to determine inventory, and that chain is set
+on the *kiosk CO*, not the interaction. So our interaction surfacing
+on a vanilla kiosk just opens the vanilla trade UI. To actually route
+inventory we'd need (a) per-kiosk overrides of `mapGUIPropMaps`,
+(b) a separate kiosk CO wired to our stock (previous attempt — kiosk
+wouldn't spawn cleanly), or (c) BepIn-side routing-by-interaction.
+
+Two earlier architecture attempts and why we left them:
+- *Vanilla supply-kiosk loot table override* — full-copy of three
+  long aLoots arrays + 24 appended lines. Worked in the explorer
+  but visibly didn't show up in-game; brittle to vanilla content
+  patches and needed a re-sync generator.
+- *Standalone kiosk CO + own guipropmap + own stock table*
+  (`ItmSacksKiosk01`) — cleaner architecture but `spawn
+  ItmSacksKiosk01` failed in-game (not yet diagnosed).
 
 | File (new)                                                                            | Contents                                                                                                                                |
 |---------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
 | [spiffy-mods/SacksAndBuckets/README.md](../../spiffy-mods/SacksAndBuckets/README.md) | Mod overview, install notes, caveats.                                                                                                  |
 | [spiffy-mods/SacksAndBuckets/data/condtrigs/condtrigs.json](../../spiffy-mods/SacksAndBuckets/data/condtrigs/condtrigs.json) | 12 new `TIsFitContainer*` fit-gates — one per item type. Sack and bucket of the same item share the gate.                              |
-| [spiffy-mods/SacksAndBuckets/data/condowners/condowners.json](../../spiffy-mods/SacksAndBuckets/data/condowners/condowners.json) | 24 container CO entries (12 sacks at 4×4 grid + 12 buckets at 8×8 grid) + `ItmSacksKiosk01` kiosk CO. Containers alias `ItmBackpack02`/`ItmCrate01` art; kiosk aliases `ItmKioskSupplies01`. |
-| [spiffy-mods/SacksAndBuckets/data/interactions/interactions.json](../../spiffy-mods/SacksAndBuckets/data/interactions/interactions.json) | `GUITradeSacksKiosk` interaction. Mirrors `GUITradeKiosk`'s us/them chain; `aInverse: ["GUITradeAllow"]` (drops the OKLG license check). |
-| [spiffy-mods/SacksAndBuckets/data/guipropmaps/guipropmaps.json](../../spiffy-mods/SacksAndBuckets/data/guipropmaps/guipropmaps.json) | `TraderSacksKiosk` guipropmap. Routes the kiosk's `Trader` slot to `strLoot: "ItmSacksKioskInv"`; reuses vanilla restock/discount/CTs entries. |
-| [spiffy-mods/SacksAndBuckets/data/loot/loot.json](../../spiffy-mods/SacksAndBuckets/data/loot/loot.json) | `ItmSacksKioskInv` loot table — the kiosk's stock. 24 lines, all sack/bucket. |
-| [spiffy-mods/SacksAndBuckets/data/loot/loot_self_reference.json](../../spiffy-mods/SacksAndBuckets/data/loot/loot_self_reference.json) | 24 self-emit loot wrappers (one per sack/bucket). Required because `aLoots` refs target `loot/`; vanilla wraps every aLoots-referenced item the same way. |
+| [spiffy-mods/SacksAndBuckets/data/condowners/condowners.json](../../spiffy-mods/SacksAndBuckets/data/condowners/condowners.json) | 24 container CO entries (12 sacks at 4×4 grid + 12 buckets at 8×8 grid). Sacks alias `ItmBackpack02` art; buckets alias `ItmCrate01`. |
+| [spiffy-mods/SacksAndBuckets/data/interactions/interactions.json](../../spiffy-mods/SacksAndBuckets/data/interactions/interactions.json) | `GUITradeSacksKiosk` interaction. Same `CTTestUs`/`CTTestThem`/`aInverse` as vanilla `GUITradeKiosk`. |
+| [spiffy-mods/SacksAndBuckets/data/loot/loot_self_reference.json](../../spiffy-mods/SacksAndBuckets/data/loot/loot_self_reference.json) | 24 self-emit loot wrappers (one per sack/bucket). Required because `aLoots` refs target `loot/`; vanilla wraps every aLoots-referenced item the same way. Useful for explorer navigation and any future loot-table additions. |
 
 **No edits to base-game `data/`.** Every entry is additive — the mod
 contributes new strNames in well-known folders, and the load order
