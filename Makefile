@@ -40,6 +40,23 @@ endif
 		cp -r $(HANDOFF_SRC)/. $(BUILD_DIR)/handoff/; \
 	fi
 
+# Build the site with every mod under spiffy-mods/<ModName>/data/ loaded as
+# an additional root after vanilla data + comment_mod/data. Roots load in
+# order, last-wins per strName -- so a mod can override a vanilla entry by
+# redefining it. Use this to preview a mod's effect on the explorer; default
+# `make site` stays vanilla-only.
+site-mods: cli user-stories
+	@mkdir -p $(BUILD_DIR)
+	dotnet run --project $(BUILDER_PROJ) -c $(CONFIG) --no-build -- \
+		$(foreach r,data comment_mod/data $(wildcard spiffy-mods/*/data),--root $(r)) \
+		--out $(BUILD_DIR)/data
+	cp -r $(SITE_SRC)/. $(BUILD_DIR)/
+	@if [ -d "$(HANDOFF_SRC)" ]; then \
+		mkdir -p $(BUILD_DIR)/handoff; \
+		cp -r $(HANDOFF_SRC)/. $(BUILD_DIR)/handoff/; \
+	fi
+.PHONY: site-mods
+
 # Render notes/user-stories/*.md into $(SITE_SRC)/user-stories/ (gitignored)
 # so direct file:// preview of src/Ostranauts.Site/index.html resolves the
 # User Stories tab card. The site/site-public targets' cp -r SITE_SRC/. step
