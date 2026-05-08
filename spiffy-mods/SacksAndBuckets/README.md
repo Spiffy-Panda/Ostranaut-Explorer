@@ -43,7 +43,7 @@ if upstreamed).
 ## Files
 
 ```
-spiffy-mods/sacks-and-buckets/
+spiffy-mods/SacksAndBuckets/
 ├── README.md
 ├── mod_info.json                    ← strName, version, author
 └── data/
@@ -107,7 +107,7 @@ repo) for the full data-trail.
 
 ## Install
 
-Drop `spiffy-mods/sacks-and-buckets/` into your Ostranauts mods
+Drop `spiffy-mods/SacksAndBuckets/` into your Ostranauts mods
 directory and ensure load order has it after vanilla. The mod has no
 ordering dependency on other mods.
 
