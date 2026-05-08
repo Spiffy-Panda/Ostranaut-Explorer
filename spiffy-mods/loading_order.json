@@ -1,0 +1,12 @@
+[
+  {
+    "strName": "Mod Loading Order",
+    "strNotes": "Sample loading order for the spiffy-mods bundle. Drop this file into your Ostranauts Mods/ folder (Options->Files in-game shows the path), alongside the mod folders. 'core' refers to the base game data and should always come first. Each entry must match a mod folder name exactly. If you already have a loading_order.json with other mods listed, merge SacksAndBuckets into your existing aLoadOrder array instead of replacing the file.",
+    "aLoadOrder": [
+      "core",
+      "SacksAndBuckets"
+    ],
+    "aIgnorePatterns": [
+    ]
+  }
+]

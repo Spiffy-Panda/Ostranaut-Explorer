@@ -107,9 +107,44 @@ repo) for the full data-trail.
 
 ## Install
 
-Drop `spiffy-mods/SacksAndBuckets/` into your Ostranauts mods
-directory and ensure load order has it after vanilla. The mod has no
-ordering dependency on other mods.
+1. Find your game's Mods folder. In-game: **Options → Files**. On a
+   default Steam install it's typically `Steam/steamapps/common/Ostranauts/Ostranauts_Data/Mods/`.
+2. Copy the `SacksAndBuckets/` folder into that Mods directory.
+3. Make sure `Mods/loading_order.json` exists and contains
+   `SacksAndBuckets` in its `aLoadOrder` array, **after `"core"`**:
+
+   ```json
+   [{
+     "strName": "Mod Loading Order",
+     "aLoadOrder": [ "core", "SacksAndBuckets" ],
+     "aIgnorePatterns": []
+   }]
+   ```
+
+   The repo ships a ready-to-use sample at
+   [spiffy-mods/loading_order.json](../loading_order.json). If you
+   already have a `loading_order.json` with other mods, **merge**
+   `SacksAndBuckets` into the existing `aLoadOrder` array — don't
+   replace the file.
+4. **Start a NEW game** to see the new items in supply kiosks. Existing
+   saves have already rolled their kiosk inventory at world-gen — the
+   added stock won't appear until kiosks restock (gated by
+   `IsReadyRestock`), which can take a while in-game.
+
+The mod has no ordering dependency on other mods, but always after `"core"`.
+
+If you don't see the items at a supply kiosk on a fresh game:
+
+- Confirm the game version in `mod_info.json` (`strGameVersion`)
+  matches the version printed on your Ostranauts main menu. Mismatches
+  can cause silent load failures.
+- Check that the kiosk you're at is actually a **supply kiosk**. This
+  mod only stocks `ItmSupplyKioskInv` / `ItmSupplyKioskBCERInv` /
+  `ItmSupplyKioskBCRSInv`. OKLG, Furnishings, Med, Scrap, Faction, and
+  Fuel kiosks use different stock tables — extending those is a v1.1
+  task.
+- Look at the game's BepInEx log (`BepInEx/LogOutput.log`) for
+  loader errors mentioning our strNames.
 
 ## License
 
