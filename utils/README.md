@@ -22,14 +22,13 @@ All scripts assume the working directory is the repo root unless noted; they use
 | `decomp_string_search.py` | Regex-grep for `"<key>"` quoted-literal occurrences across decomp. Catches hardcoded data-name lookups in game code (e.g. `DataHandler.GetPledge("EmbarkCommand")`). Interactive — pass keys on the command line, optional `-C N` for context. |
 | `emit_code_refs.py` | **Required** for the site's "Code references" block. Scans `decomp/Assembly-CSharp/**/*.cs` for `"<strName>"` literals matching any node in `build/data/graph.js`; writes `build/data/code_refs.js`. Single regex pass per file; ~3 seconds against current decomp. |
 
-## PowerShell tools
+## Mod tooling lives with the mod
 
-Generators that emit mod artifacts under `spiffy-mods/`. Anchor to repo root via `Split-Path -Parent (Split-Path -Parent $PSScriptRoot)`. Run from any working dir.
-
-| Script | Purpose |
-|---|---|
-| `emit_sacks_buckets_condowners.ps1` | Generates `spiffy-mods/SacksAndBuckets/data/condowners/condowners.json`. Templates 24 container CO entries (12 sacks at 4×4 grid + 12 buckets at 8×8 grid) from a single (suffix, source-item, fit-gate, contents-noun) table. Re-run after table edits. |
-| `emit_sacks_buckets_loot.ps1` | Generates `spiffy-mods/SacksAndBuckets/data/loot/loot.json` by reading the three vanilla supply-kiosk loot tables (`ItmSupplyKioskInv`, `*BCERInv`, `*BCRSInv`) and appending 24 sack/bucket stock lines to each `aLoots`. Re-sync after a vanilla content update — the mod's loot.json is a full-copy override by `strName`, so it goes stale when vanilla changes. |
+Per-mod generators live under `spiffy-mods/util/<ModName>/` (e.g.
+[spiffy-mods/util/SacksAndBuckets/](../spiffy-mods/util/SacksAndBuckets/)),
+not here. They're driven by a per-mod `config.yaml` and emit JSON +
+PNG artifacts into the mod's `data/` folder. See each mod's
+`util/<ModName>/README.md` for invocation.
 
 ## Common usage
 
@@ -51,10 +50,6 @@ python utils/python/decomp_string_search.py -C 3 EmbarkCommand
 
 # Refresh the site's code-refs panel after a build
 python utils/python/emit_code_refs.py
-
-# Re-emit the sacks-and-buckets mod artifacts (PowerShell)
-pwsh utils/powershell/emit_sacks_buckets_condowners.ps1
-pwsh utils/powershell/emit_sacks_buckets_loot.ps1
 ```
 
 ## Adding a new tool

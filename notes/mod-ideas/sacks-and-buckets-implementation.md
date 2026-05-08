@@ -208,7 +208,7 @@ existing condowner entry.
 
 ## Files that need modifying
 
-The mod is a sibling root tree under `spiffy-mods/SacksAndBuckets/`,
+The mod is a sibling root tree under `spiffy-mods/mods/SacksAndBuckets/`,
 with filenames mirroring base-game `data/<folder>/<file>.json` so the
 mod loader matches them up by name. v1 ships the full 12-item cohort
 (per "modders aim overpowered to demonstrate the mechanic"; trim to
@@ -249,13 +249,14 @@ Two earlier architecture attempts and why we left them:
 
 | File (new)                                                                            | Contents                                                                                                                                |
 |---------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| [spiffy-mods/SacksAndBuckets/README.md](../../spiffy-mods/SacksAndBuckets/README.md) | Mod overview, install notes, caveats.                                                                                                  |
-| [spiffy-mods/SacksAndBuckets/data/condtrigs/condtrigs.json](../../spiffy-mods/SacksAndBuckets/data/condtrigs/condtrigs.json) | 12 new `TIsFitContainer*` fit-gates — one per item type. Sack and bucket of the same item share the gate.                              |
-| [spiffy-mods/SacksAndBuckets/data/condowners/condowners.json](../../spiffy-mods/SacksAndBuckets/data/condowners/condowners.json) | 24 container CO entries (sacks at 8×8 = 64 slots, 4× backpack; buckets at 16×16 = 256, 16× backpack) + `ItmSacksKiosk01` kiosk CO. Containers alias `ItmBackpack02`/`ItmCrate01` art; kiosk aliases `ItmKioskSupplies01`. Note: 16×16 goes past vanilla's largest grid container (`ItmDolly02` at 6×6 = 36); above 6×6 vanilla switches to `IsInfiniteContainer` -- UI rendering at 16×16 is empirically unverified. |
-| [spiffy-mods/SacksAndBuckets/data/interactions/interactions.json](../../spiffy-mods/SacksAndBuckets/data/interactions/interactions.json) | `GUITradeSacksKiosk` interaction. Mirrors `GUITradeKiosk`'s us/them chain (full `aInverse: [GUITradeCheckOKLGLicensed, GUITradeAllow]`). |
-| [spiffy-mods/SacksAndBuckets/data/guipropmaps/guipropmaps.json](../../spiffy-mods/SacksAndBuckets/data/guipropmaps/guipropmaps.json) | `TraderSacksKiosk` guipropmap. Routes the kiosk's `Trader` slot to `strLoot: "ItmSacksKioskInv"`; reuses vanilla restock/discount/CTs entries. |
-| [spiffy-mods/SacksAndBuckets/data/loot/loot.json](../../spiffy-mods/SacksAndBuckets/data/loot/loot.json) | `ItmSacksKioskInv` loot table — the kiosk's stock. 24 lines, all sack/bucket. |
-| [spiffy-mods/SacksAndBuckets/data/loot/loot_self_reference.json](../../spiffy-mods/SacksAndBuckets/data/loot/loot_self_reference.json) | 25 self-emit loot wrappers: 24 sacks/buckets (so the kiosk's `aLoots` resolves) + 1 for `ItmSacksKiosk01` itself (so `spawn ItmSacksKiosk01` works). |
+| [spiffy-mods/mods/SacksAndBuckets/README.md](../../spiffy-mods/mods/SacksAndBuckets/README.md) | Mod overview, install notes, caveats.                                                                                                  |
+| [spiffy-mods/mods/SacksAndBuckets/data/condtrigs/condtrigs.json](../../spiffy-mods/mods/SacksAndBuckets/data/condtrigs/condtrigs.json) | 12 new `TIsFitContainer*` fit-gates — one per item type. Sack and bucket of the same item share the gate.                              |
+| [spiffy-mods/mods/SacksAndBuckets/data/condowners/condowners.json](../../spiffy-mods/mods/SacksAndBuckets/data/condowners/condowners.json) | 24 container CO entries (sacks at 8×8 = 64 slots, 4× backpack; buckets at 16×16 = 256, 16× backpack) + `ItmSacksKiosk01` kiosk CO. Containers alias `ItmBackpack02`/`ItmCrate01` art; kiosk aliases `ItmKioskSupplies01`. Note: 16×16 goes past vanilla's largest grid container (`ItmDolly02` at 6×6 = 36); above 6×6 vanilla switches to `IsInfiniteContainer` -- UI rendering at 16×16 is empirically unverified. |
+| [spiffy-mods/mods/SacksAndBuckets/data/interactions/interactions.json](../../spiffy-mods/mods/SacksAndBuckets/data/interactions/interactions.json) | `GUITradeSacksKiosk` interaction. Mirrors `GUITradeKiosk`'s us/them chain (full `aInverse: [GUITradeCheckOKLGLicensed, GUITradeAllow]`). |
+| [spiffy-mods/mods/SacksAndBuckets/data/guipropmaps/guipropmaps.json](../../spiffy-mods/mods/SacksAndBuckets/data/guipropmaps/guipropmaps.json) | `TraderSacksKiosk` guipropmap. Routes the kiosk's `Trader` slot to `strLoot: "ItmSacksKioskInv"`; reuses vanilla restock/discount/CTs entries. |
+| [spiffy-mods/mods/SacksAndBuckets/data/loot/loot.json](../../spiffy-mods/mods/SacksAndBuckets/data/loot/loot.json) | `ItmSacksKioskInv` loot table — the kiosk's stock. 24 lines, all sack/bucket. |
+| [spiffy-mods/mods/SacksAndBuckets/data/loot/loot_self_reference.json](../../spiffy-mods/mods/SacksAndBuckets/data/loot/loot_self_reference.json) | 25 self-emit loot wrappers: 24 sacks/buckets (so the kiosk's `aLoots` resolves) + 1 for `ItmSacksKiosk01` itself (so `spawn ItmSacksKiosk01` works). |
+| [spiffy-mods/mods/SacksAndBuckets/data/items/items.json](../../spiffy-mods/mods/SacksAndBuckets/data/items/items.json) | 24 ItemDef entries (one per container). Each `strImg` points at a generated PNG in `data/textures/` (composited from base sack/crate + scavenge-material overlay). |
 
 **No edits to base-game `data/`.** Every entry is additive — the mod
 contributes new strNames in well-known folders, and the load order
@@ -268,17 +269,34 @@ already carries a distinguishing `Is*` cond
 `IsPartsSmall+IsMechanical` / `IsPartsSmall+IsElectronic` / 
 `IsScrap+IsSheet+IsDirty`).
 
-Generators that emit the bulk JSON live in `utils/powershell/`:
+Generators live with the mod under
+[spiffy-mods/util/SacksAndBuckets/](../../spiffy-mods/util/SacksAndBuckets/),
+driven by a single
+[config.yaml](../../spiffy-mods/util/SacksAndBuckets/config.yaml) that
+holds dimensions, the item table, kiosk-stock weights, and sprite-gen
+properties. All four scripts share `_lib.py` (config loader + JSON
+writer):
 
-- [emit_sacks_buckets_condowners.ps1](../../utils/powershell/emit_sacks_buckets_condowners.ps1) — templated 25-entry generator (24 containers + 1 kiosk CO).
-- [emit_sacks_buckets_loot.ps1](../../utils/powershell/emit_sacks_buckets_loot.ps1) — emits both `loot.json` (kiosk stock table) and `loot_self_reference.json` (24 self-emit wrappers).
+- `emit_condowners.py` — 25-entry condowners.json (24 containers + kiosk).
+- `emit_items.py` — 24-entry items.json (one ItemDef per container; supplies the strImg sprite name).
+- `emit_loot.py` — `loot.json` (kiosk stock table) + `loot_self_reference.json` (25 wrappers, including the kiosk so spawn resolves).
+- `emit_sprites.py` — composites scavenge-material PNGs onto base sack/crate art via PIL/Pillow. Reads from a `sprite_sources/` staging dir (gitignored, you fill manually from your game install).
+- `emit_all.py` — runs all four in order.
+
+The shift from PowerShell to Python was driven by the config.yaml:
+Windows PowerShell 5.1 has no native YAML, and adding a module
+dependency for ad-hoc tooling was the worse trade vs. switching to
+Python (which already has lots of repo tooling under
+[utils/python/](../../utils/python/)). Pillow also gives a clean
+image API for the sprite generator that PowerShell would have had to
+shell out for.
 
 If the user wants the dismantle-yields-bucket flow on top of the kiosk
 flow, add one more file (also in the mod tree):
 
 | File                                                  | Contents                                                                                                |
 |-------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
-| `spiffy-mods/SacksAndBuckets/data/installables/installables_dismantle.json` | Override targeted dismantle entries' `strLootOut` to point at a new loot table that yields the bucket. |
+| `spiffy-mods/mods/SacksAndBuckets/data/installables/installables_dismantle.json` | Override targeted dismantle entries' `strLootOut` to point at a new loot table that yields the bucket. |
 
 This is independent of the kiosk path and can ship later.
 
