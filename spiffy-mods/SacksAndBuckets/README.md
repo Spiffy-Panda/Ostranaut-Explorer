@@ -45,16 +45,21 @@ if upstreamed).
 ```
 spiffy-mods/SacksAndBuckets/
 ├── README.md
-├── mod_info.json                    ← strName, version, author
+├── mod_info.json                            ← strName, version, author
 └── data/
-    ├── condowners/condowners.json   ← 24 container CO entries
-    ├── condtrigs/condtrigs.json     ← 12 fit-gate condtrigs
-    └── loot/loot.json               ← supply-kiosk stock, vanilla-copied + extended
+    ├── condowners/condowners.json           ← 24 container CO entries + 1 kiosk CO (ItmSacksKiosk01)
+    ├── condtrigs/condtrigs.json             ← 12 fit-gate condtrigs
+    ├── interactions/interactions.json       ← GUITradeSacksKiosk (mirrors GUITradeKiosk's us/them chain)
+    ├── guipropmaps/guipropmaps.json         ← TraderSacksKiosk (routes the kiosk to its stock table)
+    └── loot/
+        ├── loot.json                        ← ItmSacksKioskInv (the kiosk's stock, 24 lines)
+        └── loot_self_reference.json         ← 24 self-emit wrappers (one per sack/bucket; required so aLoots refs resolve)
 ```
 
 Layout mirrors `<ModName>/data/<folder>/<file>.json` per the
 established Ostranauts mod convention. Folder names match base-game
-`data/` exactly so the mod loader merges by folder.
+`data/` exactly so the mod loader merges by folder. **No vanilla data
+overrides** — every entry is additive.
 
 ## How it works (mechanic by mechanic)
 
@@ -73,11 +78,21 @@ established Ostranauts mod convention. Folder names match base-game
 - **Bucket-as-installable** — buckets carry
   `IsOversized + IsRigid + IsCrate`, mirroring `ItmCrate01`. Game
   treats them as drag-only by virtue of `IsOversized`. No new tag.
-- **Kiosk stock** — `loot/loot.json` redefines
-  `ItmSupplyKioskInv`, `ItmSupplyKioskBCERInv`, `ItmSupplyKioskBCRSInv`
-  with the vanilla content **plus** 24 sack/bucket lines. Mods
-  override loot tables by `strName`, so this works as long as the
-  load order has this mod after vanilla data.
+- **Standalone kiosk** — instead of overriding any vanilla supply-kiosk
+  loot table, this mod ships its own kiosk
+  `ItmSacksKiosk01`. The kiosk's `aInteractions` carries a new
+  `GUITradeSacksKiosk` interaction that mirrors `GUITradeKiosk`'s
+  us/them chain (just `aInverse: ["GUITradeAllow"]` — drops the OKLG
+  license check vanilla uses). Its `mapGUIPropMaps` routes the
+  `Trader` slot to a new `TraderSacksKiosk` guipropmap, which points
+  `strLoot` at `ItmSacksKioskInv` — the loot table containing all 24
+  sacks & buckets. Net effect: a self-contained trade UI that doesn't
+  touch the vanilla supply-kiosk stock at all.
+- **Self-reference loot wrappers** — `aLoots` refs target the `loot/`
+  folder per schema, so each sack/bucket needs an entry there that
+  emits itself via `aCOs`. Vanilla wraps every aLoots-referenced item
+  the same way in `data/loot/loot_self_reference.json`. Without these,
+  our kiosk's `aLoots` resolves to dangling refs.
 
 ## Why no BepIn
 
@@ -93,12 +108,14 @@ repo) for the full data-trail.
   `ItmCrate01` for buckets. Modder will tell them apart by
   `strNameFriendly` ("Sack of Bolts" vs "Sack of Boards") in the
   inventory tooltip. Custom art is a v2 task.
-- **Loot-table override is brittle to vanilla updates.** If a vanilla
-  patch changes the supply-kiosk stock list, this mod's
-  `loot/loot.json` will replace those changes when loaded. Re-sync the
-  vanilla content into this mod's loot file when that happens.
+- **Kiosk does not auto-spawn in ship layouts.** The mod adds the kiosk
+  as a CO definition only; placing one in any specific ship/station
+  layout would require editing `data/ships/*.json` files (out of scope
+  for v1). To use the kiosk, **debug-spawn it**: open the console with
+  the BackQuote (`` ` ``) key, then `spawn ItmSacksKiosk01`. Adding
+  the kiosk to default station layouts is a v2 task.
 - **Dismantle integration deferred.** v1 does not yield buckets from
-  dismantle — buckets are bought from supply kiosks. Adding
+  dismantle — buckets are bought from the kiosk. Adding
   `ItmBucket<Suffix>=0.05x1` to dismantle loot tables is a separate
   patch on top of this mod.
 - **No stat tuning pass yet.** Mass / price / damage values are
@@ -126,25 +143,34 @@ repo) for the full data-trail.
    already have a `loading_order.json` with other mods, **merge**
    `SacksAndBuckets` into the existing `aLoadOrder` array — don't
    replace the file.
-4. **Start a NEW game** to see the new items in supply kiosks. Existing
-   saves have already rolled their kiosk inventory at world-gen — the
-   added stock won't appear until kiosks restock (gated by
-   `IsReadyRestock`), which can take a while in-game.
+4. **Start a new game (or load any save), open the debug console**
+   (BackQuote key, after `unlockdebug` if needed), and **spawn the
+   kiosk**:
+
+   ```
+   spawn ItmSacksKiosk01
+   ```
+
+   It'll appear next to the player. From there, interact with it via
+   "Browse Sacks & Buckets". The kiosk's stock auto-restocks on the
+   `RestockSupplyKiosk` ticker, gated by `IsReadyRestock`, same as
+   vanilla supply kiosks.
 
 The mod has no ordering dependency on other mods, but always after `"core"`.
 
-If you don't see the items at a supply kiosk on a fresh game:
+If something doesn't work:
 
 - Confirm the game version in `mod_info.json` (`strGameVersion`)
   matches the version printed on your Ostranauts main menu. Mismatches
   can cause silent load failures.
-- Check that the kiosk you're at is actually a **supply kiosk**. This
-  mod only stocks `ItmSupplyKioskInv` / `ItmSupplyKioskBCERInv` /
-  `ItmSupplyKioskBCRSInv`. OKLG, Furnishings, Med, Scrap, Faction, and
-  Fuel kiosks use different stock tables — extending those is a v1.1
-  task.
+- `spawn ItmSackTrash` (or any of the 24) should succeed if the mod
+  loaded. Failure (pink command text) means the load is broken —
+  start with the BepInEx log.
+- `spawn ItmSacksKiosk01` should also succeed. If it does but the
+  trade UI doesn't open when you interact, the
+  interaction/guipropmap chain has an issue — paste the BepInEx log.
 - Look at the game's BepInEx log (`BepInEx/LogOutput.log`) for
-  loader errors mentioning our strNames.
+  loader errors mentioning any of our strNames.
 
 ## License
 

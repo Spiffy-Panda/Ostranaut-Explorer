@@ -1,0 +1,31 @@
+[
+  {
+    "strName" : "GUITradeSacksKiosk",
+    "strTitle" : "Trade Sacks & Buckets",
+    "strDesc" : "[us] [browses] [them]'s single-type containers.",
+    "strTooltip" : "Buy or sell single-type sacks and buckets.",
+    "strActionGroup" : "Use",
+    "strTargetPoint" : "use",
+    "fTargetPointRange" : 0,
+    "strAnim"           : "Use",
+    "strBubble"         : "BblTouch",
+    "nQabOrderPriority" : 5,
+    "aInverse"          : [
+      "GUITradeAllow"
+    ],
+    "fDuration"         : 0.00001,
+    "strThemType"       : "Other",
+    "strRaiseUI"        : null,
+    "nLogging"         : 1,
+    "bOpener"     : true,
+    "bHumanOnly"     : true,
+    "bIgnoreFeelings" : true,
+    "LootCTsUs"       : null,
+    "LootCTsThem"     : null,
+    "CTTestUs"           : "TIsHuman",
+    "CTTestThem"         : "TIsTradeKiosk",
+    "aLootItms"       : [
+    ],
+    "objLootModeSwitch"    : null
+  }
+]
