@@ -1,0 +1,10 @@
+[
+  {
+    "strName": "SacksAndBuckets",
+    "strAuthor": "Spiffy-Panda",
+    "strModURL": "https://github.com/Spiffy-Panda",
+    "strGameVersion": "0.12.0.6",
+    "strModVersion": "0.1",
+    "strNotes": "Adds 12 single-type containers in two sizes: sacks (4x4, wearable) and buckets (8x8, oversized/dragged), one of each per common dismantle-yield item. Each container only accepts its declared item type. Sold at supply kiosks."
+  }
+]

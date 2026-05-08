@@ -45,13 +45,16 @@ if upstreamed).
 ```
 spiffy-mods/sacks-and-buckets/
 ├── README.md
-├── condowners/condowners.json   ← 24 container CO entries
-├── condtrigs/condtrigs.json     ← 12 fit-gate condtrigs
-└── loot/loot.json               ← supply-kiosk stock, vanilla-copied + extended
+├── mod_info.json                    ← strName, version, author
+└── data/
+    ├── condowners/condowners.json   ← 24 container CO entries
+    ├── condtrigs/condtrigs.json     ← 12 fit-gate condtrigs
+    └── loot/loot.json               ← supply-kiosk stock, vanilla-copied + extended
 ```
 
-Filenames mirror base-game `data/<folder>/<file>.json` so the mod loader
-matches them up.
+Layout mirrors `<ModName>/data/<folder>/<file>.json` per the
+established Ostranauts mod convention. Folder names match base-game
+`data/` exactly so the mod loader merges by folder.
 
 ## How it works (mechanic by mechanic)
 
