@@ -209,6 +209,7 @@
 
 <div class="callout good">
 <p><strong>About the decompiled source citations on this page.</strong> Files like <code>decomp/Assembly-CSharp/Item.cs</code> are decompiled C# recovered from the game's <code>Assembly-CSharp.dll</code> via ILSpy/dnSpy. They are ground truth for what fields the game actually reads. The data in <code>data/*.json</code> shows what modders write; the decomp shows what the engine does with it. When the two disagree, decomp wins. When this page cites <code>Item.cs:271</code>, that is the runtime code you would hit if you stepped through the game in a debugger. The JSON example next to it shows what data feeds that code path.</p>
+<p><strong>Snapshot caveat:</strong> the decomp in this repo predates the live game build. Structural claims (field names, footprint formulas, file layouts) move slowly and are still trustworthy. Specific engine-bug claims tagged below may have been patched in a more recent build &mdash; verify against your own decomp of the current <code>Assembly-CSharp.dll</code> if you depend on the bug's presence or absence.</p>
 </div>
 
 <h2>The three symptoms</h2>
@@ -497,8 +498,9 @@ if (strImgNorm != "blank")
 <p>The field is <strong>optional.</strong> If you omit <code>strImgNorm</code> or set it to <code>"blank"</code>, the item will still render; it just won't respond to the ship's dynamic lighting the way vanilla items do. For quick prototyping, you can skip it entirely and add it later.</p>
 
 <div class="callout pit">
-<p><strong>Inventory bump map bug (verified).</strong> The game has a confirmed bug in <code>Item.SetUpInventoryMaterial</code> at <code>Item.cs:447-449</code>. The inventory material setup correctly checks whether <code>strImgNormOverride</code> is set, but then loads the wrong file: it loads <code>strImgOverride</code> (your diffuse texture) as the <code>_BumpMap</code> instead of <code>strImgNormOverride</code>. The world-render path (<code>DataHandler.GetMaterial</code>) does this correctly. The inventory path does not.</p>
-<p>In practice: even when you set <code>strImgNorm</code>, the inventory icon receives <strong>no functional normal map</strong> &mdash; the <code>_BumpMap</code> slot is just a second copy of the diffuse texture, which is a degenerate flat normal. Set <code>strImgNorm</code> for the benefit of the world (floor) rendering; expect no extra per-pixel shading from it in the inventory view.</p>
+<p><strong>Inventory bump map bug (verified against an older decomp &mdash; may be patched in the live build).</strong> In the decomp snapshot this repo holds, <code>Item.SetUpInventoryMaterial</code> at <code>Item.cs:447-449</code> correctly checks whether <code>strImgNormOverride</code> is set, but then loads the wrong file: it loads <code>strImgOverride</code> (your diffuse texture) as the <code>_BumpMap</code> instead of <code>strImgNormOverride</code>. The world-render path (<code>DataHandler.GetMaterial</code>) does this correctly. The inventory path does not.</p>
+<p>In practice for that snapshot: even when you set <code>strImgNorm</code>, the inventory icon receives <strong>no functional normal map</strong> &mdash; the <code>_BumpMap</code> slot is just a second copy of the diffuse texture, which is a degenerate flat normal. Set <code>strImgNorm</code> for the benefit of the world (floor) rendering; expect no extra per-pixel shading from it in the inventory view.</p>
+<p><strong>Patch status unknown.</strong> The game has received patches since this decomp was taken. If you care whether the inventory normal map actually works in your current build, decompile your local <code>Assembly-CSharp.dll</code> and re-check <code>Item.SetUpInventoryMaterial</code> &mdash; the fix would be a one-line change from <code>strImgOverride</code> to <code>strImgNormOverride</code> on the <code>LoadPNG</code> call.</p>
 </div>
 
 <details>
@@ -587,9 +589,9 @@ foreach (string entry in this.mapPoints)
       <td><code>Item.cs:284</code> passes <code>strImgNormOverride</code> to <code>DataHandler.GetMaterial</code>; <code>DataHandler.cs:3464-3466</code> binds it as <code>_BumpMap</code></td>
     </tr>
     <tr>
-      <td><code>SetUpInventoryMaterial</code> binds diffuse texture (<code>strImgOverride</code>) to <code>_BumpMap</code> instead of <code>strImgNormOverride</code> &mdash; inventory normal map is broken</td>
-      <td><span class="verified ok">verified</span></td>
-      <td><code>Item.cs:447-449</code>: the condition guards on <code>strImgNormOverride</code> but the <code>LoadPNG</code> call passes <code>strImgOverride</code>; contrast with <code>DataHandler.GetMaterial</code> which passes <code>strImgNorm</code> correctly</td>
+      <td><code>SetUpInventoryMaterial</code> binds diffuse texture (<code>strImgOverride</code>) to <code>_BumpMap</code> instead of <code>strImgNormOverride</code> &mdash; inventory normal map is broken <em>(in the decomp snapshot; may be patched in the live build)</em></td>
+      <td><span class="verified ok">verified vs. older decomp</span></td>
+      <td><code>Item.cs:447-449</code>: the condition guards on <code>strImgNormOverride</code> but the <code>LoadPNG</code> call passes <code>strImgOverride</code>; contrast with <code>DataHandler.GetMaterial</code> which passes <code>strImgNorm</code> correctly. The decomp in this repo predates the current game build; re-verify against a fresh decomp before depending on the bug's presence.</td>
     </tr>
     <tr>
       <td><code>mapPoints</code> controls interaction offsets only, not sprite anchor</td>
@@ -618,7 +620,7 @@ foreach (string entry in this.mapPoints)
   <li><strong>Count your sockets.</strong> <code>aSocketAdds.Count</code> must equal <code>nCols &times; intended_height_in_tiles</code>. A count that's not divisible by <code>nCols</code> gives fractional tiles (C# integer division truncates).</li>
   <li><strong>Check your PNG path.</strong> <code>strImg</code> must be a filename <em>without</em> the <code>.png</code> extension. The game appends it. A typo or missing file gives a blank inventory icon.</li>
   <li><strong>Off-center?</strong> Crop the PNG canvas tightly to the art. No power-of-two padding. Keep pixel dimensions at multiples of 16.</li>
-  <li><strong>No lighting response?</strong> Add <code>strImgNorm</code> pointing to a normal-map PNG (GIMP: Filters &rarr; Generic &rarr; Normal Map on your base sprite). Affects world (floor) rendering; inventory normal map is broken in the engine regardless.</li>
+  <li><strong>No lighting response?</strong> Add <code>strImgNorm</code> pointing to a normal-map PNG (GIMP: Filters &rarr; Generic &rarr; Normal Map on your base sprite). Affects world (floor) rendering. The inventory normal map looked broken in our decomp snapshot but may be patched in the current build &mdash; see the bump map note above.</li>
   <li><strong>Inventory slot wrong size?</strong> The slot size comes from <code>nWidthInTiles</code> / <code>nHeightInTiles</code>, which come from <code>nCols</code> / <code>aSocketAdds</code>. Fix step 2. If you specifically need an inventory size that differs from the world footprint, set <code>inventoryWidth</code> / <code>inventoryHeight</code> on the CondOwner entry (rare; no base-game item currently uses this override).</li>
   <li><strong>Modding an installable (e.g. a wall-mount fixture)?</strong> You need two item defs and two CondOwner entries: one installed form (<code>TILFixtureAdds</code> sockets, <code>IsInstalled</code>, <code>IsHiddenInv</code>) and one loose form (<code>TILItemAdds</code> sockets, no <code>IsInstalled</code>). Add two entries to <code>installables/</code> (one install, one uninstall) linking the loose and installed CondOwners. Size each PNG independently against its own <code>nCols</code>/<code>aSocketAdds</code>.</li>
 </ol>

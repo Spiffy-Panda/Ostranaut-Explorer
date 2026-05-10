@@ -4,6 +4,16 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-10 — handoff: sprite scaling bump-map bug — flagged as decomp-snapshot-only
+
+Tightened the inventory bump-map bug claim in [notes/handoff/sprite-scaling-for-item-mods.html](notes/handoff/sprite-scaling-for-item-mods.html) to make it clear the verification is against the `decomp/Assembly-CSharp/` snapshot in this repo, which predates the current live game build. Patches have shipped since; whether `Item.SetUpInventoryMaterial`'s `_BumpMap` mis-binding (loading `strImgOverride` instead of `strImgNormOverride`) is still present in the live `Assembly-CSharp.dll` is unverified. Modders who depend on the bug's presence/absence should re-decompile their local DLL and re-check `Item.cs:447-449`.
+
+Edits, all in the same file: (a) added a "snapshot caveat" paragraph to the existing decomp-explainer callout near the top of the page, scoping the caveat to engine-bug claims (structural claims like field names and footprint formulas move slowly and remain trustworthy); (b) reworded the pit-callout that announces the bug to say "verified against an older decomp — may be patched in the live build" and added a third paragraph telling readers how to verify against their own decomp; (c) re-tagged the confidence-table row from `verified` to `verified vs. older decomp`; (d) softened the quick-reference card's "broken in the engine regardless" line. No structural changes to the page, no new sections, no other claims touched.
+
+Fair-use four-factor check: still clears all four. This edit only reframes a claim that's already on the page — adds caveat language, doesn't add new game prose or new excerpts. Factor 3 unchanged (no new C# or JSON quoted). Pushing to GitHub.
+
+---
+
 ## 2026-05-10 — handoff: sprite scaling for item mods (v2)
 
 Additive v2 pass on [notes/handoff/sprite-scaling-for-item-mods.html](notes/handoff/sprite-scaling-for-item-mods.html). Three additions:
