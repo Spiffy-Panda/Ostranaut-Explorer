@@ -81,6 +81,7 @@ site-public: user-stories
 	@echo 'window.GRAPH_DATA = { nodes: [], edges: [], rules: {}, _isPublicBundle: true };' > $(PUBLIC_BUILD_DIR)/data/graph.js
 	@echo 'window.NODE_PROPS = {};' > $(PUBLIC_BUILD_DIR)/data/properties.js
 	@echo 'window.CODE_REFS = {};' > $(PUBLIC_BUILD_DIR)/data/code_refs.js
+	@echo 'window.COVERAGE_MISSES = {};' > $(PUBLIC_BUILD_DIR)/data/coverage_misses.js
 	@echo 'window.REF_CANDIDATES = {};' > $(PUBLIC_BUILD_DIR)/data/ref_candidates.js
 	@if [ -d "$(HANDOFF_SRC)" ]; then \
 		mkdir -p $(PUBLIC_BUILD_DIR)/handoff; \

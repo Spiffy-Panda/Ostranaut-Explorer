@@ -1,6 +1,6 @@
 # User story — Free Traits Mod
 
-**Source mod:** `testdata_mods/FreeTraits_and_StarterShipPlus/FreeTraitsMod/`
+**Source mod:** `test-data/mods/FreeTraits_and_StarterShipPlus/FreeTraitsMod/`
 **Original mod by:** jwebmeister — https://github.com/jwebmeister
 **Mod version:** 0.2 (game version 0.14.0.0)
 

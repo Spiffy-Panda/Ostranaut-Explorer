@@ -371,6 +371,45 @@ header h1 {
 }
 #search::placeholder { color: var(--ink-3); }
 
+/* Search-scope filter row — three checkboxes (glossary / strName / description)
+   plus a folder combo. Sits directly under the input; results dropdown still
+   anchors to the wrap so it doesn't overlap. Keep it visually quiet — it's
+   metadata about the next search, not the search itself. */
+.search-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.85rem;
+  align-items: center;
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--ink-2);
+}
+.search-filters label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  cursor: pointer;
+  user-select: none;
+}
+.search-filters input[type=checkbox] {
+  margin: 0;
+  vertical-align: middle;
+}
+.search-filters .folder-filter {
+  margin-left: auto;
+  gap: 0.3rem;
+}
+.search-filters select {
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink-3);
+  border-radius: var(--r-1);
+  padding: 0.1rem 0.35rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  max-width: 180px;
+}
+
 #search-results {
   position: absolute;
   top: calc(100% + 4px);
@@ -1238,6 +1277,93 @@ section#detail {
 }
 .fields-block .fields-desc-toggle:hover { color: var(--fg); }
 
+/* Calculated field row (e.g. items/ "Num Rows" derived from sockets) — same
+ * layout as a regular field-row but visually distinguished by a small f(x)
+ * badge and a slightly muted background. */
+.fields-block .field-row-calc { background: var(--row-alt, rgba(127,127,127,0.06)); }
+.fields-block .field-row-calc .calc-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0 0.25rem;
+  font-size: 0.65rem;
+  font-family: var(--mono, ui-monospace, Menlo, monospace);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+/* Item socket grid — items/ entries' aSocketAdds / aSocketForbids /
+ * aSocketReqs rendered as labeled CSS grids. Body grid is nCols×nRows; halo
+ * grids are (nCols+2)×(nRows+2) with the inner body region highlighted. */
+.socket-block {
+  --socket-cell: 28px;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--border);
+}
+.socket-block h4 {
+  font-size: 0.85rem;
+  margin: 0 0 0.4rem;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.socket-legend {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+.socket-grids {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem 1.5rem;
+}
+.socket-grid-fig { margin: 0; }
+.socket-grid-fig figcaption {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+  font-family: var(--mono, ui-monospace, Menlo, monospace);
+}
+.socket-grid-fig .socket-dim {
+  margin-left: 0.4rem;
+  color: var(--muted);
+  opacity: 0.75;
+}
+.socket-grid {
+  display: grid;
+  gap: 2px;
+  background: var(--border);
+  padding: 2px;
+  border-radius: 3px;
+  width: fit-content;
+}
+.socket-cell {
+  width: var(--socket-cell);
+  height: var(--socket-cell);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono, ui-monospace, Menlo, monospace);
+  font-size: 0.62rem;
+  background: var(--bg);
+  color: var(--fg);
+  user-select: none;
+  border-radius: 1px;
+  overflow: hidden;
+}
+.socket-cell.socket-blank { background: var(--bg-alt, rgba(127,127,127,0.08)); color: transparent; }
+.socket-cell.socket-add    { background: rgba( 80,160, 80, 0.30); color: var(--fg); }
+.socket-cell.socket-forbid { background: rgba(200, 80, 80, 0.30); color: var(--fg); }
+.socket-cell.socket-req    { background: rgba( 80,120,200, 0.30); color: var(--fg); }
+.socket-cell.socket-other  { background: rgba(180,140, 60, 0.28); color: var(--fg); }
+.socket-cell.socket-inner {
+  outline: 1px dashed var(--accent, #88a);
+  outline-offset: -2px;
+}
+
 /* code-refs block — hardcoded string literals found in decomp */
 .code-refs-block {
   margin-top: 1.25rem;
@@ -1300,6 +1426,55 @@ section#detail {
   background: transparent;
 }
 .code-refs-block .code-refs-group .meta { color: var(--muted); font-size: 0.75rem; }
+
+/* Coverage-misses block — visually distinct (warning hue) so the safety-net
+   nature is obvious. Mirrors the .code-refs-block sizing for familiarity. */
+.cov-misses-block {
+  margin-top: 1.25rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-left: 3px solid #d39a2a;
+  border-radius: 3px;
+}
+.cov-misses-block h3 {
+  font-size: 0.875rem;
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+.cov-misses-block .muted-note {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.75rem;
+  display: block;
+  margin-top: 0.2rem;
+}
+.cov-misses-block .cov-miss-group {
+  margin-top: 0.5rem;
+}
+.cov-misses-block .cov-miss-field {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 0.2rem;
+}
+.cov-misses-block .cov-miss-field code {
+  color: var(--fg);
+  background: transparent;
+}
+.cov-misses-block ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0 0.75rem;
+}
+.cov-misses-block li {
+  font-size: 0.8rem;
+  margin-bottom: 0.15rem;
+}
+.cov-misses-block li code {
+  background: transparent;
+  color: var(--fg);
+}
+.cov-misses-block .muted { color: var(--muted); font-size: 0.75rem; }
 /* code-method / code-class detail page — outgoing literal listing */
 .code-out { list-style: none; padding: 0; margin: 0; }
 .code-out > li { margin-bottom: 0.5rem; }
@@ -1415,6 +1590,55 @@ section#detail {
   border-bottom: 1px dashed var(--accent-dim);
 }
 .fields-block a.auto-detected:hover { color: var(--accent); border-bottom-color: var(--accent); }
+/* Schema-backed inline ref — distinct from auto-detect (no 🔍, solid underline,
+   standard link color). Visual signal: this is a canonical schema reference,
+   not a sampled guess. */
+.fields-block a.schema-ref { color: var(--accent); border-bottom: 1px solid transparent; }
+.fields-block a.schema-ref:hover { border-bottom-color: var(--accent); }
+
+/* Search landing page — reached by pressing Enter on a query without picking
+   a dropdown row. Two stacked sections: glossary cards on top, then strName
+   matches grouped by folder with chip-style jump links. */
+.search-landing-section { margin: 1rem 0 1.5rem; }
+.search-landing-section h3 { font-size: 1rem; margin: 0 0 0.6rem; }
+.search-landing-section h4 { font-size: 0.875rem; margin: 0.8rem 0 0.3rem; }
+.search-landing-glossary { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.6rem; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.search-landing-card {
+  padding: 0.6rem 0.8rem;
+  background: var(--paper-2);
+  border: 1px solid var(--ink-3);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-1);
+}
+.search-landing-card .g-head { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.25rem; }
+.search-landing-card .g-label { font-size: 0.7rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; }
+.search-landing-card .g-name { font-weight: 600; }
+.search-landing-card .g-summary { font-size: 0.8125rem; color: var(--ink-2); margin-bottom: 0.3rem; }
+.search-landing-card .g-cta { font-size: 0.8125rem; }
+.search-landing-card .g-hint { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; }
+.search-landing-folder-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 0.8rem;
+}
+.search-landing-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--paper-2);
+  border: 1px solid var(--ink-3);
+  font-size: 0.75rem;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.search-landing-chip:hover { background: var(--paper-3); color: var(--ink); }
+.search-landing-chip .chip-count { font-weight: 600; color: var(--accent); }
+.search-landing-folder-group { margin: 0.4rem 0 0.6rem; }
+.search-landing-folder-group ul { list-style: none; padding: 0 0 0 0.3rem; margin: 0; }
+.search-landing-folder-group li { font-size: 0.8125rem; padding: 0.05rem 0; }
 .fields-block .folder-prefix { color: var(--muted); margin-right: 0.05em; }
 .fields-block .auto-badge {
   margin-left: 0.4em;
@@ -1587,3 +1811,277 @@ section#detail {
 }
 .llm-block button:hover { color: var(--fg); border-color: var(--accent-dim); }
 .llm-block button.copied { color: var(--accent); border-color: var(--accent); }
+
+/* ─── Mode-aware sidebar (Tier-1 follow-up) ─────────────────── */
+
+/* On schema/coverage/data-health/llm pages the folder rail is irrelevant —
+   the page is global, not folder-scoped. Hide the aside entirely so the
+   detail panel claims the full width. */
+main[data-mode="nosidebar"] aside#folders { display: none; }
+main[data-mode="nosidebar"] section#detail { width: 100%; }
+
+/* In facets/plots modes the rail is repurposed as a clustered nav. Same
+   structural CSS as the folder list (container width, spacing) but the
+   contents are different. The shared .meta-sidebar-* classes below pick up
+   wherever the heading + list need bespoke rules. */
+.meta-sidebar-blurb {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+  line-height: 1.35;
+}
+.meta-sidebar-blurb code {
+  font-size: 0.72rem;
+  background: var(--paper-3);
+  padding: 0 0.2rem;
+  border-radius: 2px;
+}
+.meta-sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.meta-sidebar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.18rem 0.4rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.meta-sidebar-row:hover { background: var(--paper-3); }
+.meta-sidebar-row .folder-name {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.meta-sidebar-row .count {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+.meta-sidebar-overflow {
+  list-style: none;
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-style: italic;
+  padding: 0.3rem 0.4rem 0;
+}
+.meta-sidebar-back {
+  margin: 0.6rem 0 0;
+  font-size: 0.72rem;
+}
+.meta-sidebar-back a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.meta-sidebar-back a:hover { text-decoration: underline; }
+
+/* Scroll-flash: when the user clicks a sidebar cluster, briefly highlight the
+   target section with a banner-edge tint so the eye can find the new position
+   without bouncing. */
+@keyframes scroll-flash-pulse {
+  0%   { box-shadow: 0 0 0 2px var(--accent-banner-edge); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.refs-block.scroll-flash {
+  animation: scroll-flash-pulse 1.2s ease-out;
+}
+
+/* ─── Tier-1 meta pages: facets + plot beats ────────────────── */
+
+/* Affordance row on object detail pages: small pill links to the matching
+   facet / plot-beat aggregator. Tucked above the Edit-this callout so the
+   first thing a modder sees is "this is part of something larger". */
+.meta-page-links {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 0.6rem 0 0.4rem;
+}
+.meta-page-link {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  border: 1px dashed var(--accent-banner-edge);
+  border-radius: 4px;
+  background: var(--accent-banner-bg);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.1s ease;
+}
+.meta-page-link:hover {
+  background: var(--accent-banner-edge);
+  color: var(--paper);
+  border-style: solid;
+}
+
+/* Facet aggregator — stacked cards, one per folder the strName lives in. */
+.facet-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.facet-card {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--badge-color, var(--accent));
+  border-radius: 4px;
+  background: var(--paper-2);
+  padding: 0.55rem 0.7rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.facet-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.facet-card-body {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.8125rem;
+}
+.facet-file {
+  color: var(--muted);
+  font-size: 0.75rem;
+  word-break: break-all;
+}
+.facet-counts {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.facet-open {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+.facet-open:hover { text-decoration: underline; }
+
+/* Unified-inbound block, grouped by source folder. */
+.facet-inbound-folder { margin-top: 0.7rem; }
+.facet-inbound-folder h4 {
+  font-size: 0.85rem;
+  margin: 0 0 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.facet-inbound-count {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.75rem;
+}
+.facet-inbound-folder ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0.4rem;
+  border-left: 2px solid var(--paper-3);
+}
+.facet-inbound-folder li {
+  padding: 0.2rem 0 0.2rem 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.facet-inbound-field { color: var(--muted); font-size: 0.75rem; }
+.facet-target-tag {
+  display: inline-block;
+  background: var(--paper-3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.7rem;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+/* Facets index page — name list grouped by family. */
+.facets-name-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  columns: 3;
+  column-gap: 1.5rem;
+}
+.facets-name-list li {
+  break-inside: avoid;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  padding: 0.15rem 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.facets-name-list .meta {
+  color: var(--muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+@media (max-width: 1100px) {
+  .facets-name-list { columns: 2; }
+}
+@media (max-width: 700px) {
+  .facets-name-list { columns: 1; }
+}
+
+/* Plot meta-page — bucket lists per surface. */
+.plot-bucket-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
+  gap: 0.2rem 1rem;
+}
+.plot-bucket-list li {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  padding: 0.18rem 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+/* Plots index — table with per-surface column counts. */
+.plots-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  margin-top: 0.4rem;
+}
+.plots-table th {
+  text-align: left;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding: 0.3rem 0.5rem;
+}
+.plots-table th[title] { cursor: help; }
+.plots-table td {
+  padding: 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--paper-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.plots-table td.num { text-align: right; }
+.plots-table tbody tr:hover { background: var(--paper-2); }
+.plots-table a { text-decoration: none; color: var(--accent); }
+.plots-table a:hover { text-decoration: underline; }

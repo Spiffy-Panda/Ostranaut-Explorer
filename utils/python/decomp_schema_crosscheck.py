@@ -8,6 +8,13 @@ For each class that maps to a known schema folder, reports:
 
 Also lists unmatched classes and unmatched schemas at the end.
 
+The (class → folder) table is derived from DataHandler.LoadAllData /
+LoadMod via decomp_loader_table.py — i.e. the same dispatch table the
+game itself uses, so every loadable Json* class is covered. Earlier
+versions carried a hand-curated allowlist that silently skipped
+unmapped DTOs (installables, ads, cooverlays, …); discovery from the
+loader fixes that scope bug.
+
 Usage:
     python ./utils/python/decomp_schema_crosscheck.py [--verbose]
 """
@@ -25,22 +32,26 @@ SCHEMA_DIRS = [
     ROOT / "comment_mod" / "data" / "schemas",
 ]
 
-# Maps C# class name → schema base name (without -schema.json).
-# Add entries here as new schemas are written.
-CLASS_TO_SCHEMA = {
-    "JsonCond":        "conditions",
-    "JsonCondOwner":   "condowners",
-    "JsonCondTrigger": "condtrigs",
-    "JsonCrime":       "crime",
-    "JsonHomeworld":   "homeworlds",
-    "JsonInteraction": "interactions",
-    "JsonItemDef":     "items",
-    "JsonJob":         "jobs",
-    "JsonLoot":        "loot",
-    "JsonPersonSpec":  "personspecs",
-    "JsonPledge":      "pledges",
-    "JsonPlot":        "plot",
-}
+# Loader-derived (class → schema-folder-key) table. See decomp_loader_table.py
+# for the parsing logic. Multi-DTO folders (e.g. attackmodes, blueprints,
+# market, racing) get one entry per DTO, all pointing at the shared schema.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from decomp_loader_table import parse_loader_dispatches  # noqa: E402
+
+
+def _build_class_to_schema() -> dict[str, str]:
+    out: dict[str, str] = {}
+    for entry in parse_loader_dispatches():
+        if entry.is_simple:
+            continue  # JsonSimple covers many string-table folders; skip
+        # First binding wins — preserves loader source order on duplicates.
+        out.setdefault(entry.cls, entry.folder_key)
+    # CondRule is bound to "condrules" via its non-Json* name; the loader
+    # parser already captures it. Same for any other DTOs without a Json prefix.
+    return out
+
+
+CLASS_TO_SCHEMA = _build_class_to_schema()
 
 PROP_RE = re.compile(
     r"public\s+\S+\s+(\w+)\s*\{\s*get\s*;\s*set\s*;\s*\}"
@@ -120,7 +131,9 @@ def main():
             else:
                 print(", ".join(ghost[:6]) + f"  … +{len(ghost)-6} more")
 
-    # Unmatched decomp classes
+    # Unmatched decomp classes — Json* files that DataHandler doesn't dispatch
+    # to. These are typically save-game DTOs, sub-objects of larger DTOs, or
+    # internal types not loaded as folder content.
     all_cs = {p.stem for p in DECOMP_DIR.glob("Json*.cs")}
     unmatched_classes = sorted(all_cs - set(CLASS_TO_SCHEMA.keys()))
 

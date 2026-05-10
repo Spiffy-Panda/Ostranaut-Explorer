@@ -1,6 +1,6 @@
 # User story — Starter Ship Plus Mod
 
-**Source mod:** `testdata_mods/FreeTraits_and_StarterShipPlus/StarterShipPlusMod/`
+**Source mod:** `test-data/mods/FreeTraits_and_StarterShipPlus/StarterShipPlusMod/`
 **Original mod by:** jwebmeister — https://github.com/jwebmeister
 **Mod version:** 0.3 (game version 0.12.0.6)
 

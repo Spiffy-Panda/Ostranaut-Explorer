@@ -7,6 +7,11 @@ Produces a single markdown table with columns: name | type | schema
 
 One full-width "header" row per class/schema pair separates groups.
 
+The (class → folder) mapping is derived from DataHandler.LoadAllData /
+LoadMod via decomp_loader_table.py — every Json* DTO the game actually
+loads gets a row, including ones we haven't written schemas for yet
+(those rows show every C# field marked "N").
+
 Usage:
     python ./utils/python/decomp_schema_table.py [--out FILE]
 
@@ -26,25 +31,22 @@ SCHEMA_DIRS = [
     ROOT / "comment_mod" / "data" / "schemas",
 ]
 
-CLASS_TO_SCHEMA = {
-    "JsonCond":        "conditions",
-    "JsonCondOwner":   "condowners",
-    "JsonCondTrigger": "condtrigs",
-    "JsonCrime":       "crime",
-    "JsonHomeworld":   "homeworlds",
-    "JsonInteraction": "interactions",
-    "JsonItemDef":     "items",
-    "JsonJob":         "jobs",
-    "JsonLoot":        "loot",
-    "JsonPersonSpec":  "personspecs",
-    "JsonPledge":      "pledges",
-    "JsonPlot":        "plot",
-    # Per CodeDocs/iverifiable-ref-map.md: CondRule has no Json prefix —
-    # it IS the deserialization target for the condrules/ folder.
-    "CondRule":        "condrules",
-    # JsonPlotManagerSettings → plot_manager/ (the "plot ghosts" actually live here).
-    "JsonPlotManagerSettings": "plot_manager",
-}
+# Loader-derived (class → schema-folder-key) table. See decomp_loader_table.py
+# for the parsing logic. Replaces the previous hand-curated allowlist.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from decomp_loader_table import parse_loader_dispatches  # noqa: E402
+
+
+def _build_class_to_schema() -> dict[str, str]:
+    out: dict[str, str] = {}
+    for entry in parse_loader_dispatches():
+        if entry.is_simple:
+            continue  # JsonSimple covers many string-table folders; skip
+        out.setdefault(entry.cls, entry.folder_key)
+    return out
+
+
+CLASS_TO_SCHEMA = _build_class_to_schema()
 
 PROP_RE = re.compile(
     r"public\s+(\S+)\s+(\w+)\s*\{\s*get\s*;\s*set\s*;\s*\}"

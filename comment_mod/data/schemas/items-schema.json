@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$comment": "Comment Mod overlay — only fields whose base-game descriptions don't match the SchemaLoader ref-detection regex (e.g. sockets, which describe behaviour but never name the target folder). Last-wins over data/schemas/items-schema.json. Sibling fields not listed here keep the base description.",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+            "aSocketReqs": {
+                "type": "array",
+                "description": "Per-tile placement requirements for grid-placed items. Each entry refers to entry within loot.json; that loot's conditions must all be satisfied on the corresponding footprint tile for the item to be placeable. Array length = nCols × nRows; rotates with the item (TileUtils.RotateTilesCW). Use 'Blank' to leave a tile unconstrained.",
+                "x-targets": ["loot"]
+            },
+            "aSocketForbids": {
+                "type": "array",
+                "description": "Per-tile placement forbiddances. Each entry refers to entry within loot.json; that loot's conditions must NOT be present on the corresponding footprint tile or placement fails. Array indexed by footprint tile in lockstep with aSocketReqs (length = nCols × nRows; rotates with the item). 'Blank' = no forbiddance.",
+                "x-targets": ["loot"]
+            },
+            "aSocketAdds": {
+                "type": "array",
+                "description": "Per-tile loot rolled onto each footprint tile once placement succeeds — the conditions/items the placed item contributes to the world. Each entry refers to entry within loot.json. Array indexed by footprint tile (length = nCols × nRows for a non-1×1 footprint; rotates with the item). 'Blank' = nothing applied.",
+                "x-targets": ["loot"]
+            }
+        }
+    }
+}

@@ -17,6 +17,15 @@
     <h1>Ostranaut Data Explorer</h1>
     <div class="search-wrap">
       <input id="search" type="search" autocomplete="off" placeholder="search by strName or folder…">
+      <div id="search-filters" class="search-filters" role="group" aria-label="search scope">
+        <label><input type="checkbox" data-filter="glossary" checked> glossary</label>
+        <label><input type="checkbox" data-filter="strName" checked> strName</label>
+        <label title="match against strDesc field of objects"><input type="checkbox" data-filter="description"> description</label>
+        <label class="folder-filter">
+          folder:
+          <select id="search-folder-filter"><option value="">any</option></select>
+        </label>
+      </div>
       <ul id="search-results" hidden></ul>
     </div>
     <p class="status" id="status">loading…</p>
@@ -24,6 +33,8 @@
   <nav id="tabs" aria-label="primary navigation">
     <a href="#/" data-tab="home" title="Search and click your way through the data tree. The default landing page.">Explorer</a>
     <a href="#/schemas" data-tab="schemas" title="What reference rules the parser learned from each folder's schema. Use this to see which folders have rich coverage and which need schema overlays.">Schemas</a>
+    <a href="#/facets" data-tab="facets" title="Multi-folder strNames (Itm*, Wound*, Outfit*) — the same strName lives in multiple folders simultaneously. Use this to see all surfaces of one item-as-a-system.">Facets</a>
+    <a href="#/plots" data-tab="plots" title="Plot beats — the five-prefix coordination across plot_beats / plots / conditions / condtrigs / loot / interactions. Use this to see a whole beat in one place.">Plots</a>
     <a href="#/health/coverage" data-tab="coverage" title="Which folders the parser sees no edges for, and what the detector found instead. Use this to spot blind spots and pick the next schema overlay to write.">Coverage</a>
     <a href="#/health/data" data-tab="data-health" title="Dangling refs (target doesn't exist), orphans (nothing points to them), and cross-folder duplicate strNames. Often indicates data bugs or missing extractors.">Data Health</a>
     <a href="#/llm-candidates" data-tab="llm" title="Top objects by incoming-ref count, with clipboard buttons that produce self-contained LLM prompts for folder templates or per-object blurbs.">LLM Candidates</a>
@@ -42,6 +53,7 @@
   <script src="data/graph.js"></script>           <!-- window.GRAPH_DATA: nodes, edges, rules -->
   <script src="data/properties.js"></script>      <!-- window.NODE_PROPS: per-node scalar fields -->
   <script src="data/code_refs.js"></script>       <!-- window.CODE_REFS: hardcoded string refs from decomp (optional) -->
+  <script src="data/coverage_misses.js"></script>  <!-- window.COVERAGE_MISSES: full-string strName occurrences not covered by parser edges (optional) -->
   <script src="data/ref_candidates.js"></script>  <!-- window.REF_CANDIDATES: detector-derived ref candidates -->
   <script src="data/glossary.js"></script>        <!-- window.GLOSSARY: hand-seeded concept→strName cards (UX 1.1) -->
   <script src="app.js"></script>

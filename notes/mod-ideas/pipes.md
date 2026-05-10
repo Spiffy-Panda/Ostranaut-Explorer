@@ -7,6 +7,15 @@ own accept rules — no per-pipe filter config.
 
 Captured 2026-05-07.
 
+## Implementation explorations
+
+- [Data-only strawman](spikes/pipes-porter-drone.md) — feasibility spike
+  using a porter-drone CondOwner. Workable but visibly worse than a
+  real pipe; motivates the BepIn version.
+- [BepIn POC plan](spikes/pipes-bepin-poc.md) — minimal C# pipe using
+  `aUpdateCommands` + signal-wire hookup. Active intake + passive
+  output, no logistics intelligence yet.
+
 ---
 
 ## Setup

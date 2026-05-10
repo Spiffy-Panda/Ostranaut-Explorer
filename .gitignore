@@ -9,8 +9,11 @@
 # Scratch / exploratory scripts (per CLAUDE.md convention)
 /scrap_*/
 
-# Test mod data — local modding experiments, not redistributable
-/testdata_mods/
+# Local test fixtures — modding experiments + save folders used to validate
+# save-format claims in handoffs. test-data/mods/ holds the historical
+# testdata_mods/ tree (jwebmeister's FreeTraits/StarterShip+, Voideka's
+# HygieneStation, etc.). Whole tree is local-only, not redistributable.
+/test-data/
 
 # Wiki page cache — fetch-once, re-read locally. See CLAUDE.md.
 /wiki_cache/
@@ -64,6 +67,10 @@ CLAUDE.local.md
 # only on the design branches that integrate them) and the zip is redundant
 # once extracted.
 /notes/*.zip
+
+# Python bytecode
+__pycache__/
+*.pyc
 
 # OS
 .DS_Store

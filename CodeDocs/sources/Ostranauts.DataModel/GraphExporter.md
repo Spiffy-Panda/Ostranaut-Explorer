@@ -29,6 +29,8 @@ Schema v6 is v5 + first-class **code-side nodes** (PLAN-AST Phase 1 + 2). Synthe
 
 `code-component` nodes carry structured (`array` / `object`) values in `properties.js` for `inPorts` and `produces` — the `WritePropertiesFile` opt-in is gated on `Folder.StartsWith("code-")` so data-side nodes still skip arrays/objects (those are graph edges, not viewable scalars).
 
+One narrow data-side exception: `items/` entries pass through their three socket arrays (`aSocketAdds`, `aSocketForbids`, `aSocketReqs`). They aren't graph edges — they describe the inventory-grid footprint — and the site needs them to render the socket-grid visualisation + derive the calculated `Num Rows` field. Gated on `Folder == "items"` and `IsItemSocketField(name)`; everything else still skips structured values on the data side.
+
 Writes a PAIR of files: `graph.js` (the path passed in) plus a sibling `properties.js` in the same directory. The graph file is graph-only (nodes + edges + rules); per-node scalar fields move to `properties.js` under `window.NODE_PROPS`. See `CodeDocs/io/outputs.md` for the full v6 spec.
 
 See `CodeDocs/io/outputs.md` for the canonical spec. Briefly: `$schema_version`, `generated_by`, `object_count`, `reference_count`, `nodes[]` (id/folder/strName/file), `edges[]` (source/target/kind/sourceField/optional metadata), `rules[]` (when a catalog is supplied), and — slice 3 / UX 1.3 — `fieldDescriptions: { "<folder>:<fieldName>": "..." }` carrying every schema description (incl. non-ref scalar fields). Schema version stays at 6; the new key is purely additive.

@@ -4,6 +4,25 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-10 — Land deferred frontend + housekeeping batch
+
+Catch-up commit landing several stretches of frontend + tooling whose DEV-LOG entries were committed in `1d29d3e` but whose code hadn't been staged yet:
+
+- **Items socket grid + Num Rows** (entry above) — `GraphExporter.cs` socket-array passthrough, `app.js` socket-grid renderer, `style.css` socket cells, `comment_mod/data/schemas/items-schema.json` overlay, CodeDocs sync.
+- **Facets / Plots meta-pages + mode-aware sidebars** (entry above) — `app.js` Facets / Plots / paired-pattern code, `style.css` meta-sidebar styling, `explorer.html` Facets + Plots tabs.
+- **Loader-derived schema discovery + 39 generated overlays** (entry above) — `utils/python/decomp_loader_table.py`, `generate_missing_schemas.py`, the 39 generated `comment_mod/data/schemas/*-schema.json` overlays, audit-script switch to discovery.
+
+Plus three smaller pieces that didn't have their own entry:
+
+- **Search-scope filters + landing page.** Search input grows a glossary / strName / description checkbox row + folder filter (persisted in `localStorage`); empty-search state shows a landing card explaining the four scopes. `explorer.html` `<div id="search-filters">`, `app.js` `searchFilters` state + `renderSearchLanding`, `style.css` `.search-filters` / `.search-landing-*`.
+- **Potentially-missed-references panel.** New `utils/python/coverage_strname_occurrences.py` walks every JSON tree to find strName occurrences the parser didn't emit edges for, filters known false-positive fields via the graph's `fieldDescriptions` map, and writes `build/data/coverage_misses.js`. Site reads the payload and shows a `.cov-misses-block` warning panel on detail pages where the strName has unresolved external mentions. Makefile public-bundle stub line added so the empty-data deploy still loads. `utils/README.md` registers the script.
+- **Pipes mod-idea spikes.** [notes/mod-ideas/pipes.md](notes/mod-ideas/pipes.md) gains an "Implementation explorations" section linking two new spike notes: [pipes-porter-drone.md](notes/mod-ideas/spikes/pipes-porter-drone.md) (data-only strawman using a porter-drone CondOwner — workable but visibly worse than a real pipe) and [pipes-bepin-poc.md](notes/mod-ideas/spikes/pipes-bepin-poc.md) (minimal BepIn POC using `aUpdateCommands` + signal-wire hookup, active intake + passive output, no logistics intelligence yet).
+
+Housekeeping in the same commit:
+
+- **Local-fixtures rename: `testdata_mods/` → `test-data/mods/`.** `.gitignore` widened from `/testdata_mods/` to `/test-data/` — the new parent also holds `test-data/save/` (used by the save-fix handoff above to validate save-format claims). Tracked references in [notes/user-stories/](notes/user-stories/) (3 mod story files) and [notes/design/claude-designer-brief.md](notes/design/claude-designer-brief.md) updated to the new path. Historical mention preserved in this and the 2026-05-03 entry so the rename is discoverable.
+- **`.gitignore` adds Python bytecode** (`__pycache__/`, `*.pyc`) — was missing, was about to leak compiled outputs from the new audit scripts.
+
 ## 2026-05-10 — Save-fix handoff: escape the OKLG Public Enemy doom loop
 
 New modder-facing handoff at [notes/handoff/save-fix-public-enemy-doom-loop.html](notes/handoff/save-fix-public-enemy-doom-loop.html) — recipe for digging a single crew member out of the spiral where station combat in OKLG zones permanently flags them as `CrimeOKLGThreat`, licenses every OKLG NPC to attack via `TIsAIReportCrimeValidVictim`, and accumulates per-target `fAnimosity` until *My Standings* reads four-digit negative. Sourced from a real modder question observed in BlueBottleGames Discord, #modding-discussion, 2026-05-09.
@@ -739,9 +758,9 @@ Makefile: added `HANDOFF_SRC := notes/handoff` and a post-`cp` step that mirrors
 
 The Claude Code convention is `.claude/settings.json` = shared (tracked), `.claude/settings.local.json` = per-user (gitignored). This repo had it inverted: only the `.local.json` existed and it was tracked. Added the file to `.gitignore` and `git rm --cached`'d it. Local copy preserved.
 
-## 2026-05-03 — User stories from `testdata_mods/` source mods
+## 2026-05-03 — User stories from `test-data/mods/` source mods
 
-Five new story files in `notes/user-stories/`, derived from studying two real mods sitting in a local `testdata_mods/` working tree (jwebmeister's `FreeTraits_and_StarterShipPlus`, Voideka's `HygieneStation`). Same modder-as-audience framing as the rest of the user-stories folder.
+Five new story files in `notes/user-stories/`, derived from studying two real mods sitting in a local `test-data/mods/` working tree (jwebmeister's `FreeTraits_and_StarterShipPlus`, Voideka's `HygieneStation`). Same modder-as-audience framing as the rest of the user-stories folder. (Originally `testdata_mods/`; renamed 2026-05-10 when the local-fixtures tree was unified under `test-data/` to also hold save folders for handoff investigations.)
 
 - `mod-free-traits.md` — tuning mod (`traitscores.json` `aValues` cond-string, position 2 = age years; flip non-zero rows to `0`). Covers the careers `aSkillsHobby` companion override.
 - `mod-hygiene-station.md` — full "add a new installable" mod, exercising condowners (installed + loose variants), items, conditions_simple, condtrigs, the `aInverse` interaction state machine, loot (`bNested`/`bSuppress` spawn-contents, `strType: interaction` destroy delegate), and installables (install / uninstall / dismantle / undamage).
@@ -749,7 +768,7 @@ Five new story files in `notes/user-stories/`, derived from studying two real mo
 - `mod-suppress-needs.md` — captured Discord exchange about a player-trait that flatlines needs. The mod path is the `Thresh<StatName>` pattern (additive, save-safe). Includes an explicit acceptance criterion ("…without needing to ask on Discord").
 - `explore-needs-loop.md` — a meta-story (explicitly disclaimed up top as "designer exploration, not a mod-making story") on what the explorer needs to surface so a designer can see why the needs loop reads as a treadmill. Two paths: (1) conversational agency — `StatSocialization` / `StatBelonging` are real but `nDisplaySelf=0` until crisis; (2) drain/refill asymmetry — passive drain vs. active refill, rates buried in tick-effect loot edges. Findings feed into `mod-suppress-needs.md` and into UX 1.1 / 1.4 / 1.10 component requirements.
 
-`.gitignore` adds `/testdata_mods/` — the source mods are local working material, not redistributable. Stories cite their paths but the trees themselves stay local.
+`.gitignore` adds `/testdata_mods/` (later widened to `/test-data/`) — the source mods are local working material, not redistributable. Stories cite their paths but the trees themselves stay local.
 
 ---
 

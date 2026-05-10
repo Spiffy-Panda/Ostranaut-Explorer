@@ -400,7 +400,7 @@ detail-page kinds without requiring them in phase 1/2.
 ## Reference materials in the source repo (you have read access)
 
 Public repo: <https://github.com/Spiffy-Panda/Ostranaut-Explorer>. Game-data
-content (`data/`, `decomp/`, `wiki_cache/`, `testdata_mods/`) is gitignored
+content (`data/`, `decomp/`, `wiki_cache/`, `test-data/`) is gitignored
 and not redistributable; everything else is tracked. The files below are
 all in the public repo — fetch them directly if you want detail beyond
 what this brief embeds.

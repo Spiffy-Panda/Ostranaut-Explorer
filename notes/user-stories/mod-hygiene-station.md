@@ -1,6 +1,6 @@
 # User story — HygieneStation Mod
 
-**Source mod:** `testdata_mods/HygieneStation/`
+**Source mod:** `test-data/mods/HygieneStation/`
 **Original mod by:** Voideka (mod version 1.5, game version 0.14.3.6)
 
 ---

@@ -19,7 +19,28 @@ const $ = sel => document.querySelector(sel);
 const statusEl = $('#status');
 const searchEl = $('#search');
 const searchResultsEl = $('#search-results');
-const folderListEl = $('#folder-list');
+const searchFiltersEl = $('#search-filters');
+const searchFolderFilterEl = $('#search-folder-filter');
+
+// Search-scope filter state. Persisted across reloads so a modder doesn't have
+// to retoggle every session. Defaults: glossary + strName on, description off
+// (description scans strDesc text — opt-in because it's noisier).
+const SEARCH_FILTERS_KEY = 'searchFilters';
+const DEFAULT_SEARCH_FILTERS = { glossary: true, strName: true, description: false, folder: '' };
+let searchFilters = readSearchFilters();
+function readSearchFilters() {
+  try {
+    const raw = localStorage.getItem(SEARCH_FILTERS_KEY);
+    return raw ? { ...DEFAULT_SEARCH_FILTERS, ...JSON.parse(raw) } : { ...DEFAULT_SEARCH_FILTERS };
+  } catch { return { ...DEFAULT_SEARCH_FILTERS }; }
+}
+function writeSearchFilters() {
+  try { localStorage.setItem(SEARCH_FILTERS_KEY, JSON.stringify(searchFilters)); } catch {}
+}
+// Folder list lives inside an aside whose innerHTML is rewritten when the
+// sidebar swaps mode (explorer / facets / plots). Re-resolve at use sites
+// rather than caching, so a stale reference can't outlive the swap.
+let folderListEl = $('#folder-list');
 const detailEl = $('#detail');
 
 let graph = null;          // raw payload
@@ -32,6 +53,7 @@ let codeFolderCounts = []; // [{folder, count}] — synthetic code-* folders (PL
 let rulesBySource = new Map(); // sourceFolder -> [rules]
 let edgeCountByRule = new Map(); // "<sourceFolder>:<fieldName>" -> int
 let ruleDescriptions = new Map(); // "<sourceFolder>:<fieldName>" -> description
+let ruleTargets = new Map();      // "<sourceFolder>:<fieldName>" -> targetFolder (scalar rules only; arrays + type-routed rules drive edges, not inline links)
 // Auto-detected (phase 2 detector) — scalar top-level candidates only.
 // fieldPath has no `[*]` / `.` for these. Used to decorate Fields block on
 // detail pages with a "would link to <folder>" hint when schema doesn't cover.
@@ -42,6 +64,15 @@ let allCandidates = []; // candidate[]
 // condowners often share Itm* names). Drives the "(also: folder, ...)" suffix
 // on rendered ref values so a modder can navigate to the parallel entries.
 let nameToFolders = new Map();
+// Tier 1 — multi-folder facet index. Subset of nameToFolders restricted to
+// strNames living in 3+ folders simultaneously. Drives the #/facets index
+// page and the #/facet/<strName> aggregator. Populated in buildIndexes().
+let facetNames = [];           // sorted strName[]
+// suffix -> { conditions:Set, interactions:Set, condtrigs:Set, loots:Set, plotBeats:Set }
+// Builds the plot-beat coordination map. Suffix is the shared tail across the
+// five plot prefix conventions (Plot<X>, PLOT_<X>, CTPLOT_<X>, CONDPLOT_<X>,
+// plot_beats:<X>). Drives #/plots and #/plot/<suffix>.
+let plotBySuffix = new Map();
 // Slice 4 / UX 1.1 — glossary cards. window.GLOSSARY (optional payload) is an
 // array of { aliases, name, summary, wikiPage?, wikiSlug?, dataTerm: {folder, strName}, modderHint? }.
 // Indexed at load time into a flat list of (alias, entry) pairs so substring
@@ -68,6 +99,9 @@ function main() {
   }
   if (typeof window.CODE_REFS === 'undefined') {
     console.info('code_refs.js not loaded — Code references block will be omitted. Run utils/python/emit_code_refs.py to generate it.');
+  }
+  if (typeof window.COVERAGE_MISSES === 'undefined') {
+    console.info('coverage_misses.js not loaded — Potentially missed references block will be omitted. Run utils/python/coverage_strname_occurrences.py to generate it.');
   }
   if (typeof window.REF_CANDIDATES === 'undefined') {
     console.info('ref_candidates.js not loaded — auto-detected refs will be hidden. Re-run the Builder to generate it.');
@@ -118,10 +152,16 @@ function buildIndexes() {
   }
   for (const list of rulesBySource.values()) list.sort((a, b) => a.fieldName.localeCompare(b.fieldName));
 
-  // (folder, fieldName) -> description (from rules that carry one).
+  // (folder, fieldName) -> description (from rules that carry one) and
+  // -> targetFolder (so the Fields block can render schema-backed scalar refs
+  // as inline links — sibling-typed array rules like Loot.aCOs go through edge
+  // generation instead and aren't surfaced here).
   for (const rule of (graph.rules ?? [])) {
     if (rule.description) {
       ruleDescriptions.set(`${rule.sourceFolder}:${rule.fieldName}`, rule.description);
+    }
+    if (rule.shape !== 'array' && typeof rule.targetFolder === 'string' && rule.targetFolder.length > 0) {
+      ruleTargets.set(`${rule.sourceFolder}:${rule.fieldName}`, rule.targetFolder);
     }
   }
   // Slice 3 / UX 1.3 — non-ref-rule field descriptions (integers, booleans,
@@ -164,6 +204,67 @@ function buildIndexes() {
       autoScalarByKey.set(`${c.sourceFolder}:${c.fieldPath}`, c);
     }
   }
+
+  // Tier-1 facet index: same strName lives in 3+ folders. Itm* dominates this
+  // (item def + condowner template + loot bundle + cooverlay + audioemitter is
+  // the canonical 5-way fan-out), but Wound* and any future cross-folder pattern
+  // also auto-qualify with no extra config. Sorted alphabetically so the index
+  // page is browsable.
+  facetNames = [...nameToFolders.entries()]
+    .filter(([, set]) => set.size >= 3)
+    .map(([name]) => name)
+    .sort((a, b) => a.localeCompare(b));
+
+  // Tier-1 plot-beat index. The plot system stores one beat across five prefix
+  // conventions; we group by shared suffix so every facet of one beat lands at
+  // the same key. Each plot* node contributes whichever surface it represents.
+  buildPlotBeatIndex();
+}
+
+// Plot-beat coordination — five prefixes pointing at the same suffix. Groups:
+//   conditions:    Plot<X>             (587 entries; player-visible plot conditions)
+//   interactions:  PLOT_<X> | Plot<X>  (812 + 339; the dialogue/actions clusters)
+//   condtrigs:     CTPLOT_<X>          (355; selection predicates / gates)
+//   loot:          CONDPLOT_<X>        (460; the grants that apply Plot<X> conditions)
+//   plot_beats:    <X>                 (292; the structural spec — beats / phases / etc.)
+// We strip the prefix to recover the suffix and slot each node into its facet.
+function buildPlotBeatIndex() {
+  plotBySuffix = new Map();
+  const ensure = (suffix) => {
+    if (!plotBySuffix.has(suffix)) {
+      plotBySuffix.set(suffix, {
+        conditions: [], interactions: [], condtrigs: [], loots: [], plotBeats: [], plots: [],
+      });
+    }
+    return plotBySuffix.get(suffix);
+  };
+  for (const node of graph.nodes) {
+    if (isCodeFolder(node.folder)) continue;
+    const name = node.strName;
+    let suffix = null, bucket = null;
+    if (node.folder === 'conditions' && /^Plot[A-Z_]/.test(name)) {
+      suffix = name.substring(4); bucket = 'conditions';
+    } else if (node.folder === 'interactions' && name.startsWith('PLOT_')) {
+      suffix = name.substring(5); bucket = 'interactions';
+    } else if (node.folder === 'interactions' && /^Plot[A-Z_]/.test(name)) {
+      // Older naming generation shares the namespace; cluster with PLOT_ on the
+      // same suffix so beats with mixed-prefix interactions still land together.
+      suffix = name.substring(4); bucket = 'interactions';
+    } else if (node.folder === 'condtrigs' && name.startsWith('CTPLOT_')) {
+      suffix = name.substring(7); bucket = 'condtrigs';
+    } else if (node.folder === 'loot' && name.startsWith('CONDPLOT_')) {
+      suffix = name.substring(9); bucket = 'loots';
+    } else if (node.folder === 'plot_beats') {
+      // plot_beats use the bare suffix as their strName (no prefix).
+      suffix = name; bucket = 'plotBeats';
+    } else if (node.folder === 'plots') {
+      // plots/ is the top-level beat container (45 entries). Use bare strName.
+      suffix = name; bucket = 'plots';
+    }
+    if (suffix && bucket) {
+      ensure(suffix)[bucket].push(node);
+    }
+  }
 }
 
 function renderFolderList() {
@@ -204,12 +305,43 @@ function wireSearch() {
   let activeIndex = -1;
   let lastResults = [];
 
+  // Reflect persisted filter state into the checkboxes + folder combo, then
+  // wire change handlers. Folder options are folderCounts (already built by
+  // the time wireSearch runs).
+  if (searchFiltersEl) {
+    searchFiltersEl.querySelectorAll('input[type=checkbox][data-filter]').forEach(cb => {
+      const key = cb.dataset.filter;
+      cb.checked = !!searchFilters[key];
+      cb.addEventListener('change', () => {
+        searchFilters[key] = cb.checked;
+        writeSearchFilters();
+        update();
+      });
+    });
+  }
+  if (searchFolderFilterEl) {
+    for (const fc of folderCounts) {
+      const opt = document.createElement('option');
+      opt.value = fc.folder;
+      opt.textContent = `${fc.folder} (${fc.count})`;
+      searchFolderFilterEl.appendChild(opt);
+    }
+    searchFolderFilterEl.value = searchFilters.folder || '';
+    searchFolderFilterEl.addEventListener('change', () => {
+      searchFilters.folder = searchFolderFilterEl.value;
+      writeSearchFilters();
+      update();
+    });
+  }
+
   function update() {
     const q = searchEl.value.trim().toLowerCase();
     if (!q) { hide(); return; }
 
-    const matches = searchMatches(q, SEARCH_LIMIT);
-    const glossary = glossaryMatches(q, 4);
+    const matches = searchFilters.strName || searchFilters.description
+      ? searchMatches(q, SEARCH_LIMIT)
+      : [];
+    const glossary = searchFilters.glossary ? glossaryMatches(q, 4) : [];
     lastResults = matches;  // arrow nav still navigates strName matches only;
                            // glossary cards are mouse-click destinations
     activeIndex = -1;
@@ -233,6 +365,16 @@ function wireSearch() {
     } else if (e.key === 'Enter' && activeIndex >= 0) {
       e.preventDefault();
       navigateToObject(lastResults[activeIndex]);
+    } else if (e.key === 'Enter') {
+      // No active dropdown selection — promote the query to a full search
+      // landing page. Honors current filter state (folder, description).
+      const q = searchEl.value.trim();
+      if (q) {
+        e.preventDefault();
+        searchEl.blur();
+        hide();
+        window.location.hash = `#/search/${encodeURIComponent(q)}`;
+      }
     } else if (e.key === 'Escape') {
       hide();
     }
@@ -285,15 +427,28 @@ function glossaryMatches(q, limit) {
 }
 
 function searchMatches(q, limit) {
-  // Simple ranking: prefix match on strName > infix match on strName > infix on folder.
+  // Ranking layers (lower = better): prefix-on-strName > infix-on-strName >
+  // infix-on-folder > infix-on-strDesc (description, opt-in via filter).
+  // Folder filter, when set, restricts to nodes in that folder.
+  const folderFilter = searchFilters.folder || '';
+  const wantStrName = searchFilters.strName !== false;
+  const wantDesc = searchFilters.description === true;
+  const props = window.NODE_PROPS ?? {};
   const matches = [];
   for (const node of graph.nodes) {
+    if (folderFilter && node.folder !== folderFilter) continue;
     const nameLower = node.strName.toLowerCase();
-    let score;
-    if (nameLower.startsWith(q)) score = 0;
-    else if (nameLower.includes(q)) score = 1;
-    else if (node.folder.toLowerCase().includes(q)) score = 2;
-    else continue;
+    let score = -1;
+    if (wantStrName) {
+      if (nameLower.startsWith(q)) score = 0;
+      else if (nameLower.includes(q)) score = 1;
+      else if (node.folder.toLowerCase().includes(q)) score = 2;
+    }
+    if (score === -1 && wantDesc) {
+      const desc = props[`${node.folder}:${node.strName}`]?.strDesc;
+      if (typeof desc === 'string' && desc.toLowerCase().includes(q)) score = 3;
+    }
+    if (score === -1) continue;
     matches.push({ node, score });
     // Cheap early bail: don't scan past a multiple of the limit
     if (matches.length > limit * 4) break;
@@ -367,7 +522,12 @@ function renderRoute() {
   const objectMatch = hash.match(/^#\/o\/([^/]+)\/(.+)$/);
   const folderMatch = hash.match(/^#\/f\/([^/]+)$/);
   const schemaMatch = hash.match(/^#\/schema\/([^/]+)$/);
+  const facetMatch = hash.match(/^#\/facet\/(.+)$/);
+  const plotMatch = hash.match(/^#\/plot\/(.+)$/);
+  const searchMatch = hash.match(/^#\/search\/(.+)$/);
   const schemasIndex = hash === '#/schemas';
+  const facetsIndex = hash === '#/facets';
+  const plotsIndex = hash === '#/plots';
   const healthCoverage = hash === '#/health/coverage';
   const healthData = hash === '#/health/data';
   const llmCandidates = hash === '#/llm-candidates';
@@ -378,8 +538,18 @@ function renderRoute() {
     renderFolderIndex(decodeURIComponent(folderMatch[1]));
   } else if (schemaMatch) {
     renderSchemaDetail(decodeURIComponent(schemaMatch[1]));
+  } else if (facetMatch) {
+    renderFacet(decodeURIComponent(facetMatch[1]));
+  } else if (plotMatch) {
+    renderPlotBeat(decodeURIComponent(plotMatch[1]));
+  } else if (searchMatch) {
+    renderSearchLanding(decodeURIComponent(searchMatch[1]));
   } else if (schemasIndex) {
     renderSchemasIndex();
+  } else if (facetsIndex) {
+    renderFacetsIndex();
+  } else if (plotsIndex) {
+    renderPlotsIndex();
   } else if (healthCoverage) {
     renderHealthCoverage();
   } else if (healthData) {
@@ -392,8 +562,139 @@ function renderRoute() {
         Pick an object from the search bar or a folder on the left, or pick a tab above.
       </p>`;
   }
-  renderFolderList();
+  renderSidebar(hash);
   highlightActiveTab(hash);
+}
+
+// Sidebar mode is determined by the active tab. The folder list is only useful
+// while drilling into objects/folders; on meta-pages (Facets, Plots) we show a
+// clustered nav instead, and on health/schema pages we hide the sidebar entirely
+// so the detail panel gets the full width.
+function sidebarModeFor(hash) {
+  if (hash.startsWith('#/facets') || hash.startsWith('#/facet/')) return 'facets';
+  if (hash.startsWith('#/plots') || hash.startsWith('#/plot/')) return 'plots';
+  if (hash.startsWith('#/schemas') || hash.startsWith('#/schema/')) return 'nosidebar';
+  if (hash.startsWith('#/health/')) return 'nosidebar';
+  if (hash === '#/llm-candidates') return 'nosidebar';
+  return 'explorer';  // default — folder list (covers #/, #/o/, #/f/)
+}
+
+function renderSidebar(hash) {
+  const mode = sidebarModeFor(hash);
+  const aside = document.getElementById('folders');
+  const main = document.querySelector('main');
+  if (main) main.dataset.mode = mode;
+  if (mode === 'nosidebar') {
+    // CSS hides the aside via [data-mode="nosidebar"]; no rendering needed.
+    return;
+  }
+  if (mode === 'facets') {
+    renderFacetsSidebar(aside);
+    return;
+  }
+  if (mode === 'plots') {
+    renderPlotsSidebar(aside);
+    return;
+  }
+  // Default: the existing folder-rail render.
+  renderFolderListSidebar(aside);
+}
+
+// Restored the original aside header so the explorer-mode rail looks unchanged.
+// Split out from the old top-level renderFolderList so the meta-mode renders
+// can replace just the contents without rebuilding the heading.
+function renderFolderListSidebar(aside) {
+  aside.innerHTML = `<h2>Folders</h2><ul id="folder-list"></ul>`;
+  folderListEl = aside.querySelector('#folder-list');
+  renderFolderList();
+}
+
+// Facets mode — sidebar lists the family clusters (Itm / Wound / Outfit / ...)
+// with counts. Click scrolls the main panel to that family's section. Also a
+// "back to all" link for completeness.
+function renderFacetsSidebar(aside) {
+  const byFamily = new Map();
+  for (const name of facetNames) {
+    const fam = facetFamilyOf(name);
+    byFamily.set(fam, (byFamily.get(fam) ?? 0) + 1);
+  }
+  const familyOrder = ['Itm', 'Wound', 'Outfit', 'Plot', 'CT', 'Other'];
+  const ordered = familyOrder.filter(f => byFamily.has(f));
+  const items = ordered.map(fam => `
+    <li class="meta-sidebar-row" data-scroll-to="facet-family-${escapeAttr(fam)}">
+      <span class="folder-name">${escapeHtml(fam)}</span>
+      <span class="count">${byFamily.get(fam).toLocaleString()}</span>
+    </li>
+  `).join('');
+  aside.innerHTML = `
+    <h2>Facet families</h2>
+    <p class="meta-sidebar-blurb">strNames living in 3+ folders simultaneously, grouped by leading-prefix family. Click to scroll.</p>
+    <ul class="meta-sidebar-list">${items}</ul>
+    <p class="meta-sidebar-back"><a href="#/facets">↑ jump to top</a></p>
+  `;
+  wireMetaSidebarScroll(aside);
+}
+
+// Plots mode — sidebar lists arc prefixes (everything before the first _ in
+// the suffix), with the count of beats per arc. Click scrolls main panel to
+// that arc's section.
+function renderPlotsSidebar(aside) {
+  const byPrefix = new Map();
+  for (const suffix of plotBySuffix.keys()) {
+    const pre = plotArcPrefix(suffix);
+    byPrefix.set(pre, (byPrefix.get(pre) ?? 0) + 1);
+  }
+  const sorted = [...byPrefix.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  // Cap the visible list — long-tail single-suffix arcs aren't navigation-worthy.
+  const cap = 80;
+  const visible = sorted.slice(0, cap);
+  const items = visible.map(([pre, n]) => `
+    <li class="meta-sidebar-row" data-scroll-to="plot-arc-${escapeAttr(pre)}">
+      <span class="folder-name">${escapeHtml(pre || '(empty)')}</span>
+      <span class="count">${n.toLocaleString()}</span>
+    </li>
+  `).join('');
+  const overflow = sorted.length > cap
+    ? `<li class="meta-sidebar-overflow">… ${sorted.length - cap} more arcs (1 beat each)</li>`
+    : '';
+  aside.innerHTML = `
+    <h2>Plot arcs</h2>
+    <p class="meta-sidebar-blurb">Suffix prefixes. <code>MedHeist_PlanInMotionResist</code> rolls into the <code>MedHeist</code> arc. Click to scroll.</p>
+    <ul class="meta-sidebar-list">${items}${overflow}</ul>
+    <p class="meta-sidebar-back"><a href="#/plots">↑ jump to top</a></p>
+  `;
+  wireMetaSidebarScroll(aside);
+}
+
+// Extract the "arc" prefix from a plot suffix. Most suffixes are <Arc>_<Phase>;
+// some start with a leading underscore (`_Whodunnit_*`) that's part of the arc
+// identity, so preserve it. If there's no underscore, the entire suffix IS its
+// own arc (sole-beat case).
+function plotArcPrefix(suffix) {
+  if (!suffix) return '';
+  const leading = suffix.startsWith('_') ? '_' : '';
+  const rest = leading ? suffix.substring(1) : suffix;
+  const i = rest.indexOf('_');
+  if (i < 0) return suffix;
+  return leading + rest.substring(0, i);
+}
+
+// Click-to-scroll handler shared by facets/plots sidebars. Looks up an element
+// in the detail panel by its [data-scroll-anchor="<key>"] attribute.
+function wireMetaSidebarScroll(aside) {
+  aside.querySelectorAll('.meta-sidebar-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const key = row.dataset.scrollTo;
+      const target = document.querySelector(`[data-scroll-anchor="${key}"]`);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Briefly highlight the section so the user can see where they landed.
+        target.classList.add('scroll-flash');
+        setTimeout(() => target.classList.remove('scroll-flash'), 1200);
+      }
+    });
+  });
 }
 
 // Modder-pov blurbs surfaced at the top of each non-Explorer page. Title lines
@@ -415,6 +716,14 @@ const PAGE_BLURBS = {
     `<strong>LLM candidates</strong> — top objects by incoming-ref count, the highest-leverage targets for a folder template or per-object blurb. ` +
     `Each row has two clipboard buttons: copy a self-contained prompt, paste it into your LLM, paste the response into the template editor on the object's detail page. ` +
     `<em>Modder use:</em> the more incoming refs an object has, the more important its description is — start there when documenting a folder.`,
+  facets:
+    `<strong>Facets</strong> — strNames the same data uses across multiple folders. ` +
+    `<code>ItmSensorEM01</code>, for example, exists at once as an item definition, a condowner template, a loot bundle, a cooverlay, and an audioemitter — together they describe one item-as-a-system. ` +
+    `<em>Modder use:</em> when you're editing one face of an item, click through to confirm the others stay coherent. The unified inbound block on a facet page collapses references across all surfaces into one answer.`,
+  plots:
+    `<strong>Plot beats</strong> — designers author each plot beat as a coordinated set across five folders: a <code>plot_beats/</code> spec, a <code>CTPLOT_&lt;X&gt;</code> selection predicate, a <code>CONDPLOT_&lt;X&gt;</code> loot bundle, a set of <code>Plot&lt;X&gt;</code> conditions, and a cluster of <code>PLOT_&lt;X&gt;</code> interactions. ` +
+    `This page groups them by shared suffix so the whole beat is one click away. ` +
+    `<em>Modder use:</em> when you're tracing why an NPC qualifies for a branch (or doesn't), the five surfaces together tell the full story; isolated, each is half the picture.`,
 };
 
 function pageBlurb(key) {
@@ -446,6 +755,8 @@ function highlightActiveTab(hash) {
   const tabs = document.querySelectorAll('#tabs a');
   let active = 'home';
   if (hash === '#/schemas' || hash.startsWith('#/schema/')) active = 'schemas';
+  else if (hash === '#/facets' || hash.startsWith('#/facet/')) active = 'facets';
+  else if (hash === '#/plots' || hash.startsWith('#/plot/')) active = 'plots';
   else if (hash === '#/health/coverage') active = 'coverage';
   else if (hash === '#/health/data') active = 'data-health';
   else if (hash === '#/llm-candidates') active = 'llm';
@@ -499,10 +810,13 @@ function renderObjectDetail(folder, strName) {
     ${isCodeEmitted ? renderCodeEmittedHeader(folder, strName, props) : ''}
     ${renderPrefixExplainers(folder, strName)}
     ${renderFolderMismatchNote(folder, strName)}
-    ${isCodeEmitted ? '' : renderEditThisCallout(folder, strName, id, props, out, node.file)}
+    ${renderMetaPageAffordance(folder, strName)}
+    ${'' /* edit-this callout muted — feels like noise next to the per-object Note. Restore by replacing this line with: ${isCodeEmitted ? '' : renderEditThisCallout(folder, strName, id, props, out, node.file)} */}
     ${renderTemplateBlock(folder, strName, id)}
     ${isCodeEmitted ? '' : renderFieldsBlock(folder, props)}
     ${renderThreshDerivedPanel(folder, strName)}
+    ${renderTIsIsTwinPanel(folder, strName)}
+    ${renderDcLadderPanel(folder, strName)}
     ${renderCodeRefsBlock(id)}
 
     <div class="refs-block">
@@ -514,6 +828,8 @@ function renderObjectDetail(folder, strName) {
       <h3>Referenced by (${inc.length})</h3>
       ${renderEdgeGroups(inc, 'target-perspective', folder, `in/${id}`)}
     </div>
+
+    ${renderCoverageMissesBlock(id)}
   `;
   detailEl.innerHTML = html;
 
@@ -1350,12 +1666,58 @@ function renderLegacyCodeRefsBlock(id) {
   `;
 }
 
+// Coverage-misses panel — for every strName that appears as a complete JSON
+// value (or dict key) inside this object's data file but isn't represented
+// by any outgoing edge, surface it here. The point is that a modder who
+// would otherwise grep / ctrl-F the data tree should never get more hits
+// than the explorer shows. Sourced from utils/python/coverage_strname_occurrences.py;
+// false-positive fields (cosmetic, enum, NOT-a-ref) are filtered out
+// upstream so this block is silent for known-clean objects.
+function renderCoverageMissesBlock(id) {
+  const misses = (window.COVERAGE_MISSES ?? {})[id];
+  if (!misses || misses.length === 0) return '';
+  // Group by field for tidier presentation; one row per (field, value) tuple.
+  const byField = new Map();
+  for (const m of misses) {
+    if (!byField.has(m.field)) byField.set(m.field, []);
+    byField.get(m.field).push(m);
+  }
+  const groups = [...byField.entries()].sort(([a], [b]) => a.localeCompare(b));
+  const groupHtml = groups.map(([field, rows]) => {
+    const items = rows.map(r => {
+      const mult = r.positions > 1 ? ` <span class="muted">×${r.positions}</span>` : '';
+      return `<li><code>${escapeHtml(r.value)}</code>${mult}</li>`;
+    }).join('');
+    return `<div class="cov-miss-group">
+      <div class="cov-miss-field"><code>${escapeHtml(field)}</code></div>
+      <ul>${items}</ul>
+    </div>`;
+  }).join('');
+  return `
+    <div class="cov-misses-block">
+      <h3>Potentially missed references (${misses.length})
+        <span class="muted-note">— these strName values appear in this object's JSON but the parser didn't emit a graph edge for them. A ctrl-F over the data tree would have surfaced them, so they're listed here so the explorer never under-reports. Real misses are usually a schema-overlay gap; if a row looks like a false positive (display text, enum, color name), file it under <code>utils/python/coverage_strname_occurrences.py</code>'s COSMETIC_FIELDS or mark the field <code>x-no-ref</code>.</span>
+      </h3>
+      ${groupHtml}
+    </div>
+  `;
+}
+
+// items/ entries carry three socket arrays (aSocketAdds / aSocketForbids /
+// aSocketReqs) describing the inventory-grid footprint. They aren't graph
+// edges and aren't meaningful as inline scalar values, so the Fields block
+// hides them — the dedicated socket-grid renderer below shows them visually.
+const ITEM_SOCKET_FIELDS = new Set(['aSocketAdds', 'aSocketForbids', 'aSocketReqs']);
+
 function renderFieldsBlock(folder, fields) {
   // node.fields is an object of scalar key/value pairs. Could be missing (small payload).
   if (!fields || typeof fields !== 'object' || Object.keys(fields).length === 0) {
     return '';
   }
-  const keys = Object.keys(fields).sort();
+  const isItem = folder === 'items';
+  const keys = Object.keys(fields)
+    .filter(k => !(isItem && ITEM_SOCKET_FIELDS.has(k)))
+    .sort();
   // UX 1.3 — collapsibility toggle persisted per-folder so a power user
   // landing on Stat* pages can hide descriptions site-wide for that folder
   // without losing them on, say, loot/. Default = expanded (newcomers don't
@@ -1375,24 +1737,36 @@ function renderFieldsBlock(folder, fields) {
       // etc.). Beginners shouldn't have to read CLAUDE.md to learn this.
       valueText = `${escapeHtml(String(v))} <button type="button" class="strtype-dispatch-trigger" data-strtype-value="${escapeAttr(String(v))}" aria-label="show strType dispatch table" title="Show how strType routes Loot payloads">?</button>`;
     } else {
-      const resolved = resolveAutoDetectedValue(folder, k, String(v));
-      if (resolved) {
-        // Render as link with auto-detected badge. Tooltip names the candidate
-        // hit-rate so you can judge confidence.
-        const tipParts = [
-          `auto-detected: ${resolved.candidate.fieldPath} → ${resolved.targetFolder}`,
-          `hit-rate ${(resolved.candidate.targets[0]?.hitRate * 100).toFixed(0)}%`,
-          `${resolved.candidate.distinctValues} distinct / ${resolved.candidate.sampleSize} samples`,
-          'no schema rule yet',
-        ];
-        const altSuffix = renderAltFolderSuffix(resolved.targetFolder, String(v));
+      // Schema-backed ref takes precedence over auto-detect: if the schema
+      // declares a target folder for this field and the value resolves to a
+      // real node there, render confident inline link (no 🔍 badge).
+      const schemaTarget = ruleTargets.get(`${folder}:${k}`);
+      const schemaResolved = schemaTarget && nodesById.has(`${schemaTarget}:${String(v)}`);
+      if (schemaResolved) {
         valueText =
-          `<a class="auto-detected" href="#/o/${encodeURIComponent(resolved.targetFolder)}/${encodeURIComponent(String(v))}" title="${escapeAttr(tipParts.join(' — '))}">` +
-          `<span class="folder-prefix">${escapeHtml(resolved.targetFolder)}:</span>${escapeHtml(String(v))}` +
-          `<span class="auto-badge" aria-label="auto-detected, no schema rule">🔍</span>` +
-          `</a>${altSuffix}`;
+          `<a class="schema-ref" href="#/o/${encodeURIComponent(schemaTarget)}/${encodeURIComponent(String(v))}" title="${escapeAttr(`${schemaTarget}/${String(v)} — schema-declared reference`)}">` +
+          `<span class="folder-prefix">${escapeHtml(schemaTarget)}:</span>${escapeHtml(String(v))}` +
+          `</a>`;
       } else {
-        valueText = escapeHtml(String(v));
+        const resolved = resolveAutoDetectedValue(folder, k, String(v));
+        if (resolved) {
+          // Render as link with auto-detected badge. Tooltip names the candidate
+          // hit-rate so you can judge confidence.
+          const tipParts = [
+            `auto-detected: ${resolved.candidate.fieldPath} → ${resolved.targetFolder}`,
+            `hit-rate ${(resolved.candidate.targets[0]?.hitRate * 100).toFixed(0)}%`,
+            `${resolved.candidate.distinctValues} distinct / ${resolved.candidate.sampleSize} samples`,
+            'no schema rule yet',
+          ];
+          const altSuffix = renderAltFolderSuffix(resolved.targetFolder, String(v));
+          valueText =
+            `<a class="auto-detected" href="#/o/${encodeURIComponent(resolved.targetFolder)}/${encodeURIComponent(String(v))}" title="${escapeAttr(tipParts.join(' — '))}">` +
+            `<span class="folder-prefix">${escapeHtml(resolved.targetFolder)}:</span>${escapeHtml(String(v))}` +
+            `<span class="auto-badge" aria-label="auto-detected, no schema rule">🔍</span>` +
+            `</a>${altSuffix}`;
+        } else {
+          valueText = escapeHtml(String(v));
+        }
       }
     }
     const descRow = desc
@@ -1406,6 +1780,8 @@ function renderFieldsBlock(folder, fields) {
       ${descRow}
     </li>`;
   }).join('');
+  const calcRow = isItem ? renderItemNumRowsRow(fields) : '';
+  const socketGrid = isItem ? renderItemSocketGrid(fields) : '';
   const descCount = keys.filter(k => ruleDescriptions.has(`${folder}:${k}`)).length;
   const toggleLabel = hidden
     ? `Show ${descCount} description${descCount === 1 ? '' : 's'}`
@@ -1413,12 +1789,109 @@ function renderFieldsBlock(folder, fields) {
   const toggleHtml = descCount > 0
     ? `<button type="button" class="fields-desc-toggle" data-folder="${escapeAttr(folder)}">${escapeHtml(toggleLabel)}</button>`
     : '';
+  const fieldCount = keys.length + (calcRow ? 1 : 0);
   return `
     <div class="fields-block ${hidden ? 'descriptions-hidden' : ''}">
-      <h3>Fields (${keys.length})${toggleHtml ? ' ' + toggleHtml : ''}</h3>
-      <ul>${rows}</ul>
+      <h3>Fields (${fieldCount})${toggleHtml ? ' ' + toggleHtml : ''}</h3>
+      <ul>${rows}${calcRow}</ul>
+      ${socketGrid}
     </div>
   `;
+}
+
+// Calculated "Num Rows" row, appended after the alphabetical scalar list on
+// items/ entries that carry an nCols + aSocketAdds. Decompiled Item.cs:
+//   nWidthInTiles  = jid.nCols
+//   nHeightInTiles = aSocketAdds.Count / jid.nCols
+// so the height of an item's footprint is the implicit second axis. The naming
+// incongruity ("Num Rows" vs the schema's nCols/nRows convention) is
+// intentional — the field is a derived display value, not a JSON key, and the
+// label reads more naturally for newcomers.
+function renderItemNumRowsRow(fields) {
+  const nCols = Number(fields.nCols);
+  const adds = Array.isArray(fields.aSocketAdds) ? fields.aSocketAdds : null;
+  if (!Number.isFinite(nCols) || nCols <= 0 || !adds) return '';
+  const numRows = adds.length / nCols;
+  if (!Number.isFinite(numRows)) return '';
+  const valueText = Number.isInteger(numRows) ? String(numRows) : numRows.toFixed(2);
+  const tip = 'Calculated: aSocketAdds.length / nCols. Item footprint height in tiles. Decompiled Item.cs sets nHeightInTiles this way.';
+  return `<li class="field-row field-row-calc">
+    <div class="field-line">
+      <span class="field-name" title="${escapeAttr(tip)}">Num Rows <span class="calc-badge" aria-label="calculated field">f(x)</span></span>
+      <span class="field-value">${escapeHtml(valueText)}</span>
+    </div>
+  </li>`;
+}
+
+// Three labeled CSS grids visualising the item's socket arrays. Body
+// (aSocketAdds) is the nCols × nRows footprint; Forbids and Reqs are the
+// (nCols+2) × (nRows+2) halo used for adjacency checks. Cells render with a
+// short token chip; "Blank" is rendered as an empty muted cell. Hover gives
+// the full socket-loot name.
+function renderItemSocketGrid(fields) {
+  const nCols = Number(fields.nCols);
+  const adds = Array.isArray(fields.aSocketAdds) ? fields.aSocketAdds : null;
+  const forbids = Array.isArray(fields.aSocketForbids) ? fields.aSocketForbids : null;
+  const reqs = Array.isArray(fields.aSocketReqs) ? fields.aSocketReqs : null;
+  if (!Number.isFinite(nCols) || nCols <= 0 || !adds) return '';
+  const nRows = adds.length / nCols;
+  if (!Number.isInteger(nRows) || nRows <= 0) return '';
+  const haloW = nCols + 2;
+  const haloH = nRows + 2;
+  const haloLen = haloW * haloH;
+  const grids = [];
+  grids.push(renderSocketGrid('Body — aSocketAdds', adds, nCols, nRows));
+  if (forbids && forbids.length === haloLen) {
+    grids.push(renderSocketGrid('Forbids — aSocketForbids (halo)', forbids, haloW, haloH, { haloInner: { col: 1, row: 1, w: nCols, h: nRows } }));
+  }
+  if (reqs && reqs.length === haloLen) {
+    grids.push(renderSocketGrid('Reqs — aSocketReqs (halo)', reqs, haloW, haloH, { haloInner: { col: 1, row: 1, w: nCols, h: nRows } }));
+  }
+  const legend = `<div class="socket-legend">Footprint: ${nCols}×${nRows} (body), ${haloW}×${haloH} (halo). Halo highlights mark the body region inside the padded socket grid.</div>`;
+  return `<div class="socket-block">
+    <h4>Socket grid</h4>
+    ${legend}
+    <div class="socket-grids">${grids.join('')}</div>
+  </div>`;
+}
+
+function renderSocketGrid(label, cells, w, h, opts = {}) {
+  const inner = opts.haloInner;
+  const cellHtml = cells.map((tok, i) => {
+    const col = i % w;
+    const row = Math.floor(i / w);
+    const isInner = inner
+      ? (col >= inner.col && col < inner.col + inner.w && row >= inner.row && row < inner.row + inner.h)
+      : false;
+    const blank = tok === 'Blank' || tok === '' || tok == null;
+    const classes = ['socket-cell'];
+    if (blank) classes.push('socket-blank');
+    else classes.push(socketCellKindClass(tok));
+    if (isInner) classes.push('socket-inner');
+    const chip = blank ? '' : escapeHtml(socketShortLabel(tok));
+    const tip = blank ? 'Blank' : tok;
+    return `<div class="${classes.join(' ')}" title="${escapeAttr(tip)}">${chip}</div>`;
+  }).join('');
+  return `<figure class="socket-grid-fig">
+    <figcaption>${escapeHtml(label)} <span class="socket-dim">${w}×${h}</span></figcaption>
+    <div class="socket-grid" style="grid-template-columns: repeat(${w}, var(--socket-cell, 28px));">${cellHtml}</div>
+  </figure>`;
+}
+
+function socketCellKindClass(tok) {
+  const s = String(tok);
+  if (s.includes('Forbid')) return 'socket-forbid';
+  if (s.includes('Add')) return 'socket-add';
+  if (s.includes('Req')) return 'socket-req';
+  return 'socket-other';
+}
+
+function socketShortLabel(tok) {
+  const s = String(tok);
+  // The vast majority of values are TILItemAdds / TILItemForbids; strip the
+  // common TIL prefix so the cell can fit a readable chip.
+  const base = s.startsWith('TIL') ? s.slice(3) : s;
+  return base.length > 6 ? base.slice(0, 6) : base;
 }
 
 const FIELDS_BLOCK_HIDDEN_KEY = 'fieldsBlockDescHidden';
@@ -2121,6 +2594,105 @@ function renderFolderIndex(folder) {
   `;
 }
 
+/* ─── search landing ───────────────────────────────────────── */
+
+// Full-page search results. Reached via Enter in the search input (when no
+// dropdown row is highlighted) or directly via #/search/<query>. Honors the
+// active filter state — including the folder combo, which restricts strName +
+// description matches to a single folder. Glossary cards are unaffected by
+// the folder filter (concepts span folders by design).
+function renderSearchLanding(rawQuery) {
+  const query = (rawQuery || '').trim();
+  const q = query.toLowerCase();
+  if (!q) {
+    detailEl.innerHTML = `<p class="hint">Empty search query.</p>`;
+    return;
+  }
+
+  // Run the search through the same primitives the dropdown uses, but with
+  // a much higher cap so a landing page is genuinely browsable.
+  const LANDING_LIMIT = 500;
+  const objMatches = (searchFilters.strName || searchFilters.description)
+    ? searchMatches(q, LANDING_LIMIT)
+    : [];
+  const glossary = searchFilters.glossary ? glossaryMatches(q, 12) : [];
+
+  // Group strName/description matches by folder so the page reads like a
+  // faceted result set instead of a 500-row flat list. Per-folder hit count
+  // is the spinal navigational signal.
+  const byFolder = new Map();
+  for (const node of objMatches) {
+    if (!byFolder.has(node.folder)) byFolder.set(node.folder, []);
+    byFolder.get(node.folder).push(node);
+  }
+  const folderGroups = [...byFolder.entries()]
+    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+
+  const filtersSummary = [];
+  if (searchFilters.glossary) filtersSummary.push('glossary');
+  if (searchFilters.strName) filtersSummary.push('strName');
+  if (searchFilters.description) filtersSummary.push('description');
+  if (searchFilters.folder) filtersSummary.push(`folder=${searchFilters.folder}`);
+
+  const glossaryHtml = glossary.length === 0 ? '' : `
+    <section class="search-landing-section">
+      <h3>Concepts (${glossary.length})</h3>
+      <ul class="search-landing-glossary">
+        ${glossary.map(entry => {
+          const dt = entry.dataTerm;
+          const summary = entry.summary ? `<div class="g-summary">${escapeHtml(entry.summary)}</div>` : '';
+          const hint = entry.modderHint ? `<div class="g-hint">💡 ${escapeHtml(entry.modderHint)}</div>` : '';
+          return `<li class="search-landing-card">
+            <div class="g-head">
+              <span class="g-label">concept</span>
+              <span class="g-name">${escapeHtml(entry.name || dt.strName)}</span>
+            </div>
+            ${summary}
+            <div class="g-cta">
+              → <a href="#/o/${encodeURIComponent(dt.folder)}/${encodeURIComponent(dt.strName)}">${escapeHtml(dt.folder)}:${escapeHtml(dt.strName)}</a>
+            </div>
+            ${hint}
+          </li>`;
+        }).join('')}
+      </ul>
+    </section>`;
+
+  const folderHtml = folderGroups.length === 0 ? '' : `
+    <section class="search-landing-section">
+      <h3>Matches by folder (${objMatches.length}${objMatches.length === LANDING_LIMIT ? '+' : ''} across ${folderGroups.length} folder${folderGroups.length === 1 ? '' : 's'})</h3>
+      <div class="search-landing-folder-chips">
+        ${folderGroups.map(([f, nodes]) =>
+          `<a class="search-landing-chip ${folderClass(f)}" href="#sf-${escapeAttr(f)}">${escapeHtml(f)} <span class="chip-count">${nodes.length}</span></a>`
+        ).join('')}
+      </div>
+      ${folderGroups.map(([f, nodes]) => `
+        <div class="search-landing-folder-group" id="sf-${escapeAttr(f)}">
+          <h4><a href="#/f/${encodeURIComponent(f)}">${escapeHtml(f)}</a> <span class="muted">(${nodes.length})</span></h4>
+          <ul>
+            ${nodes.map(n =>
+              `<li><a href="#/o/${encodeURIComponent(f)}/${encodeURIComponent(n.strName)}">${escapeHtml(formatCodeName(f, n.strName))}</a></li>`
+            ).join('')}
+          </ul>
+        </div>
+      `).join('')}
+    </section>`;
+
+  const empty = glossary.length === 0 && objMatches.length === 0 ? `
+    <p class="hint">No matches for <code>${escapeHtml(query)}</code> with the current filter scope (${filtersSummary.join(', ') || 'none'}). Toggle filters above the search box and try again.</p>
+  ` : '';
+
+  detailEl.innerHTML = `
+    <div class="detail-head">
+      <div class="crumbs">search</div>
+      <h2>${escapeHtml(query)}</h2>
+      <div class="file">scope: ${escapeHtml(filtersSummary.join(' · ') || 'no filters active')}</div>
+    </div>
+    ${empty}
+    ${glossaryHtml}
+    ${folderHtml}
+  `;
+}
+
 /* ─── schema inspector ─────────────────────────────────────── */
 
 function renderSchemasIndex() {
@@ -2215,6 +2787,544 @@ function renderSchemaDetail(folder) {
     }).join('')}
   `;
   detailEl.innerHTML = html;
+}
+
+/* ─── facet aggregator (Tier 1) ────────────────────────────── */
+
+// Heuristic family label for the index page. Pure presentation — no logic
+// downstream depends on these strings. Most cross-folder names cluster around
+// a single recognizable prefix; "Other" catches the long-tail oddities.
+function facetFamilyOf(name) {
+  if (/^Itm[A-Z]/.test(name)) return 'Itm';
+  if (/^Wound[A-Z]/.test(name)) return 'Wound';
+  if (/^Outfit[A-Z]/.test(name)) return 'Outfit';
+  if (/^CT[_A-Z]/.test(name)) return 'CT';
+  if (/^Plot[A-Z_]|^PLOT_/.test(name)) return 'Plot';
+  return 'Other';
+}
+
+// Compact summary line for one facet (one row in one folder). Shows folder
+// badge, link, in/out edge counts, and an "open in folder" arrow. Used inside
+// the facet aggregator's stacked card list.
+function renderFacetCard(node) {
+  const id = node.id;
+  const inCount = (incoming.get(id) ?? []).filter(e => !isCodeRefEdge(e)).length;
+  const outCount = (outgoing.get(id) ?? []).length;
+  const props = (window.NODE_PROPS ?? {})[id];
+  const strType = props && typeof props.strType === 'string' ? props.strType : null;
+  const strTypePill = strType
+    ? ` <span class="strtype-badge" title="strType — engine dispatch tag">${escapeHtml(strType)}</span>`
+    : '';
+  const fileLine = `<code class="facet-file">${escapeHtml(node.file)}</code>`;
+  return `
+    <div class="facet-card ${folderClass(node.folder)}">
+      <div class="facet-card-head">
+        ${renderFolderBadge(node.folder)}${strTypePill}
+        <a class="facet-open" href="#/o/${encodeURIComponent(node.folder)}/${encodeURIComponent(node.strName)}"
+           title="open the per-folder detail page">open ↗</a>
+      </div>
+      <div class="facet-card-body">
+        ${fileLine}
+        <span class="facet-counts" title="incoming · outgoing edges from this facet">
+          ${inCount.toLocaleString()} in · ${outCount.toLocaleString()} out
+        </span>
+      </div>
+    </div>
+  `;
+}
+
+function renderFacet(strName) {
+  const folders = nameToFolders.get(strName);
+  if (!folders || folders.size < 2) {
+    detailEl.innerHTML = `
+      <p class="hint">No multi-folder facet known for <code>${escapeHtml(strName)}</code>.
+      <a href="#/facets">Back to facets index</a>.</p>`;
+    return;
+  }
+  // Collect every node sharing this strName, in a folder order that matches
+  // the canonical Itm narrative (definition → instance → grant → overlay → audio).
+  const folderOrder = [
+    'items', 'condowners', 'loot', 'cooverlays', 'audioemitters',
+    'wounds', 'slots', 'slot_effects',
+    'conditions', 'conditions_simple', 'condtrigs', 'condrules',
+    'interactions', 'installables', 'pledges', 'personspecs',
+  ];
+  const nodes = [...folders].map(f => nodesById.get(`${f}:${strName}`)).filter(Boolean);
+  nodes.sort((a, b) => {
+    const ai = folderOrder.indexOf(a.folder), bi = folderOrder.indexOf(b.folder);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi) || a.folder.localeCompare(b.folder);
+  });
+
+  // Unified inbound block: every edge that targets ANY facet, deduplicated by
+  // (sourceId, sourceField). Within a row, list which target folders the source
+  // pointed at (commonly just one — the schema-routed one — but multi-target
+  // x-targets fields will list multiple).
+  const seenSrc = new Map(); // "sourceId|field" -> { sourceId, sourceField, targets:Set, kinds:Set, edge }
+  for (const n of nodes) {
+    const inc = (incoming.get(n.id) ?? []).filter(e => !isCodeRefEdge(e));
+    for (const e of inc) {
+      const key = `${e.source}|${e.sourceField}`;
+      if (!seenSrc.has(key)) {
+        seenSrc.set(key, { sourceId: e.source, sourceField: e.sourceField, targets: new Set(), kinds: new Set(), edge: e });
+      }
+      seenSrc.get(key).targets.add(n.folder);
+      if (e.kind) seenSrc.get(key).kinds.add(e.kind);
+    }
+  }
+  const unifiedInbound = [...seenSrc.values()].sort((a, b) => {
+    const [af, an] = splitId(a.sourceId);
+    const [bf, bn] = splitId(b.sourceId);
+    return af.localeCompare(bf) || an.localeCompare(bn) || a.sourceField.localeCompare(b.sourceField);
+  });
+
+  // Group inbound rows by source folder for readability.
+  const inboundByFolder = new Map();
+  for (const row of unifiedInbound) {
+    const sf = splitId(row.sourceId)[0];
+    if (!inboundByFolder.has(sf)) inboundByFolder.set(sf, []);
+    inboundByFolder.get(sf).push(row);
+  }
+
+  const familyLabel = facetFamilyOf(strName);
+  const familyBlurbs = {
+    Itm:    'The canonical multi-facet item record. Each surface is one face of the same in-game object: <code>items/</code> defines the static shape, <code>condowners/</code> is the runtime template, <code>loot/</code> is the "spawn one" recipe, <code>cooverlays/</code> wraps mode-switch overlays, <code>audioemitters/</code> binds sounds.',
+    Wound:  'A wound type ramified across the wound system: <code>wounds/</code> defines the wound, <code>condowners/</code> represents the runtime instance, <code>slots/</code> + <code>slot_effects/</code> bind it to body slots and per-slot consequences.',
+    Outfit: 'An outfit ramified across the equipment system: <code>cooverlays/</code> renders it, <code>loot/</code> grants it, <code>installables/</code> may install instances of it.',
+    Plot:   'A plot beat surface — see also <a href="#/plots">Plot beats</a> for the suffix-keyed view that groups all five plot prefixes.',
+    Other:  'Cross-folder strName collision. Each facet is the same name in a different folder; the unified inbound block below combines all references into one answer.',
+    CT:     'Cross-folder strName collision involving CT-prefixed entries. Inspect each facet to confirm the relationship is intentional.',
+  };
+  const familyBlurb = familyBlurbs[familyLabel] || familyBlurbs.Other;
+
+  const cardsHtml = nodes.map(renderFacetCard).join('');
+
+  const inboundHtml = inboundByFolder.size === 0
+    ? '<p class="muted">No incoming references from any facet.</p>'
+    : [...inboundByFolder.entries()]
+        .sort((a, b) => b[1].length - a[1].length)
+        .map(([sf, rows]) => `
+          <div class="facet-inbound-folder">
+            <h4>${renderFolderBadge(sf)} <span class="facet-inbound-count">${rows.length}</span></h4>
+            <ul>
+              ${rows.map(row => {
+                const [_sf, sn] = splitId(row.sourceId);
+                const targetsList = [...row.targets].sort().map(t =>
+                  `<span class="facet-target-tag" title="this source's edge resolves into ${escapeAttr(t)}/">→ ${escapeHtml(t)}</span>`
+                ).join('');
+                return `<li>
+                  <a href="#/o/${encodeURIComponent(_sf)}/${encodeURIComponent(sn)}"
+                     data-id="${escapeAttr(row.sourceId)}">${escapeHtml(sn)}</a>
+                  <span class="facet-inbound-field"><code>${escapeHtml(row.sourceField)}</code></span>
+                  ${targetsList}
+                </li>`;
+              }).join('')}
+            </ul>
+          </div>
+        `).join('');
+
+  detailEl.innerHTML = `
+    <div class="detail-head">
+      <div class="crumbs"><a href="#/facets">facets</a> · ${escapeHtml(familyLabel)}</div>
+      <h2>${escapeHtml(strName)}</h2>
+      <div class="file">${nodes.length} facets across ${nodes.length === 1 ? '1 folder' : nodes.length + ' folders'} · ${unifiedInbound.length} unique inbound source${unifiedInbound.length === 1 ? '' : 's'}</div>
+    </div>
+    <p class="page-blurb">${familyBlurb}</p>
+
+    <div class="refs-block">
+      <h3>Facets (${nodes.length})</h3>
+      <div class="facet-cards">${cardsHtml}</div>
+    </div>
+
+    <div class="refs-block">
+      <h3>Unified inbound (${unifiedInbound.length})</h3>
+      <p class="filter-row">
+        Every reference to any facet, deduplicated by <code>(source, field)</code>.
+        The <span class="facet-target-tag">→ tag</span> on each row shows which facet folder(s) that source's edge resolves into.
+      </p>
+      ${inboundHtml}
+    </div>
+  `;
+
+  detailEl.querySelectorAll('a[data-id]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = a.getAttribute('data-id');
+      const [tf, tn] = splitId(target);
+      window.location.hash = `#/o/${encodeURIComponent(tf)}/${encodeURIComponent(tn)}`;
+    });
+  });
+}
+
+function renderFacetsIndex() {
+  const byFamily = new Map();
+  for (const name of facetNames) {
+    const fam = facetFamilyOf(name);
+    if (!byFamily.has(fam)) byFamily.set(fam, []);
+    byFamily.get(fam).push(name);
+  }
+  // Family display order: Itm first (largest, most canonical), then alphabetical.
+  const familyOrder = ['Itm', 'Wound', 'Outfit', 'Plot', 'CT', 'Other'];
+  const sortedFamilies = familyOrder.filter(f => byFamily.has(f));
+  const familyBlocks = sortedFamilies.map(fam => {
+    const names = byFamily.get(fam).sort();
+    const cap = 100;
+    const visible = names.slice(0, cap);
+    return `
+      <div class="refs-block" data-scroll-anchor="facet-family-${escapeAttr(fam)}">
+        <h3>${escapeHtml(fam)} (${names.length})</h3>
+        <ul class="facets-name-list">
+          ${visible.map(name => {
+            const folderCount = nameToFolders.get(name)?.size ?? 0;
+            return `<li>
+              <a href="#/facet/${encodeURIComponent(name)}">${escapeHtml(name)}</a>
+              <span class="meta">${folderCount} folders</span>
+            </li>`;
+          }).join('')}
+          ${names.length > cap ? `<li class="muted">… and ${names.length - cap} more</li>` : ''}
+        </ul>
+      </div>
+    `;
+  }).join('');
+
+  detailEl.innerHTML = `
+    <div class="detail-head">
+      <div class="crumbs">facets</div>
+      <h2>Multi-folder facets</h2>
+      <div class="file">${facetNames.length.toLocaleString()} strNames live in 3+ folders simultaneously</div>
+    </div>
+    ${pageBlurb('facets')}
+    ${familyBlocks}
+  `;
+}
+
+/* ─── plot-beat aggregator (Tier 1) ────────────────────────── */
+
+// Bucket-narrative for the plot meta-page. Same shape as familyBlurbs above,
+// kept inline because there's only one family here.
+const PLOT_BUCKET_LABELS = {
+  conditions:   { label: 'Plot conditions',     desc: 'Player-visible <code>Plot&lt;X&gt;</code> conditions in <code>conditions/</code> — these are what get applied to the player or NPCs to mark plot state.' },
+  interactions: { label: 'Plot interactions',   desc: '<code>PLOT_&lt;X&gt;</code> / <code>Plot&lt;X&gt;</code> interactions in <code>interactions/</code> — the dialogue trees / actions that fire while the beat is active.' },
+  condtrigs:    { label: 'Plot selection gates', desc: '<code>CTPLOT_&lt;X&gt;</code> condition triggers in <code>condtrigs/</code> — the predicates that decide whether the beat (or one of its branches) is eligible for an actor.' },
+  loots:        { label: 'Plot grants',         desc: '<code>CONDPLOT_&lt;X&gt;</code> loot tables in <code>loot/</code> — the bundles that grant the <code>Plot&lt;X&gt;</code> conditions to advance the beat.' },
+  plotBeats:    { label: 'Plot-beat specs',     desc: 'Entries in <code>plot_beats/</code> — the beat\'s structural spec (phases, success/failure flow, transitions). The <code>aIATrigger</code> / <code>aIAEnd</code> chains here are how a beat starts and ends.' },
+  plots:        { label: 'Plot containers',     desc: 'Top-level <code>plots/</code> entries — the beat container that owns this collection of plot_beats. Often shared by multiple suffixes (e.g. NewOKLGFixer is one plot with many plot_beats).' },
+};
+
+function renderPlotBeat(suffix) {
+  const beat = plotBySuffix.get(suffix);
+  if (!beat) {
+    detailEl.innerHTML = `
+      <p class="hint">No plot beat indexed for suffix <code>${escapeHtml(suffix)}</code>.
+      <a href="#/plots">Back to plots index</a>.</p>`;
+    return;
+  }
+  const totalCount = Object.values(beat).reduce((sum, arr) => sum + arr.length, 0);
+  const bucketOrder = ['plotBeats', 'plots', 'condtrigs', 'loots', 'conditions', 'interactions'];
+  const bucketBlocks = bucketOrder.map(bk => {
+    const items = beat[bk] ?? [];
+    if (items.length === 0) return '';
+    const meta = PLOT_BUCKET_LABELS[bk];
+    const sorted = [...items].sort((a, b) => a.strName.localeCompare(b.strName));
+    return `
+      <div class="refs-block">
+        <h3>${escapeHtml(meta.label)} (${items.length})</h3>
+        <p class="filter-row">${meta.desc}</p>
+        <ul class="plot-bucket-list">
+          ${sorted.map(n => {
+            const inCount = (incoming.get(n.id) ?? []).filter(e => !isCodeRefEdge(e)).length;
+            const outCount = (outgoing.get(n.id) ?? []).length;
+            return `<li>
+              ${renderFolderBadge(n.folder)}
+              <a href="#/o/${encodeURIComponent(n.folder)}/${encodeURIComponent(n.strName)}">${escapeHtml(n.strName)}</a>
+              <span class="ref-counts">(${inCount}/${outCount})</span>
+            </li>`;
+          }).join('')}
+        </ul>
+      </div>
+    `;
+  }).join('');
+
+  detailEl.innerHTML = `
+    <div class="detail-head">
+      <div class="crumbs"><a href="#/plots">plots</a></div>
+      <h2>Plot beat · ${escapeHtml(suffix)}</h2>
+      <div class="file">${totalCount} entries across ${Object.values(beat).filter(arr => arr.length > 0).length} surfaces</div>
+    </div>
+    ${pageBlurb('plots')}
+    ${bucketBlocks || '<p class="muted">No surfaces found for this suffix.</p>'}
+  `;
+}
+
+function renderPlotsIndex() {
+  // Build per-suffix row first; same shape as before.
+  const rows = [...plotBySuffix.entries()]
+    .map(([suffix, beat]) => {
+      const total = Object.values(beat).reduce((sum, arr) => sum + arr.length, 0);
+      const buckets = {
+        ps: beat.plotBeats.length,
+        pl: beat.plots.length,
+        ct: beat.condtrigs.length,
+        lo: beat.loots.length,
+        co: beat.conditions.length,
+        ia: beat.interactions.length,
+      };
+      const surfaces = Object.values(buckets).filter(c => c > 0).length;
+      return { suffix, total, buckets, surfaces };
+    })
+    .filter(r => r.total > 0);
+
+  // Group by arc prefix (the part before the first _ in the suffix). Each arc
+  // becomes its own scroll-anchored section so the sidebar can jump to it.
+  const byArc = new Map();
+  for (const r of rows) {
+    const arc = plotArcPrefix(r.suffix);
+    if (!byArc.has(arc)) byArc.set(arc, []);
+    byArc.get(arc).push(r);
+  }
+  // Sort arcs by total beat count, ties broken alphabetically. Big arcs first
+  // so the page reads "here's the canonical content, then the long tail."
+  const sortedArcs = [...byArc.entries()]
+    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+
+  const renderRow = r => `<tr>
+    <td><a href="#/plot/${encodeURIComponent(r.suffix)}">${escapeHtml(r.suffix)}</a></td>
+    <td class="num">${r.surfaces}</td>
+    <td class="num">${r.buckets.ps || ''}</td>
+    <td class="num">${r.buckets.pl || ''}</td>
+    <td class="num">${r.buckets.ct || ''}</td>
+    <td class="num">${r.buckets.lo || ''}</td>
+    <td class="num">${r.buckets.co || ''}</td>
+    <td class="num">${r.buckets.ia || ''}</td>
+    <td class="num">${r.total}</td>
+  </tr>`;
+
+  const headHtml = `<thead><tr>
+    <th>suffix</th><th>surfaces</th>
+    <th title="plot_beats/">PB</th>
+    <th title="plots/">PL</th>
+    <th title="condtrigs/CTPLOT_*">CT</th>
+    <th title="loot/CONDPLOT_*">L</th>
+    <th title="conditions/Plot*">C</th>
+    <th title="interactions/PLOT_*">IA</th>
+    <th>total</th>
+  </tr></thead>`;
+
+  // Singletons (arcs with one beat each) clutter a per-arc render — fold them
+  // into one "Singletons" section at the bottom so the multi-beat arcs (the
+  // structurally-interesting ones) aren't drowned out.
+  const multi = sortedArcs.filter(([, list]) => list.length >= 2);
+  const singletons = sortedArcs.filter(([, list]) => list.length === 1).flatMap(([, list]) => list);
+
+  const arcBlocks = multi.map(([arc, list]) => {
+    const sortedList = [...list].sort((a, b) => b.surfaces - a.surfaces || a.suffix.localeCompare(b.suffix));
+    return `
+      <div class="refs-block" data-scroll-anchor="plot-arc-${escapeAttr(arc)}">
+        <h3>${escapeHtml(arc)} (${list.length} beat${list.length === 1 ? '' : 's'})</h3>
+        <table class="plots-table">
+          ${headHtml}
+          <tbody>${sortedList.map(renderRow).join('')}</tbody>
+        </table>
+      </div>
+    `;
+  }).join('');
+
+  const singletonsBlock = singletons.length > 0 ? `
+    <div class="refs-block" data-scroll-anchor="plot-arc-_singletons">
+      <h3>Singletons (${singletons.length})</h3>
+      <p class="filter-row">Arcs with only one suffix recorded. Often intentional (a one-off plot beat) or stub-shaped. Folded into one block so the multi-beat arcs read cleanly.</p>
+      <table class="plots-table">
+        ${headHtml}
+        <tbody>${singletons.sort((a, b) => a.suffix.localeCompare(b.suffix)).slice(0, 200).map(renderRow).join('')}</tbody>
+      </table>
+      ${singletons.length > 200 ? `<p class="muted">… and ${singletons.length - 200} more singletons (table capped at 200)</p>` : ''}
+    </div>
+  ` : '';
+
+  const totalArcs = sortedArcs.length;
+  const multiArcs = multi.length;
+
+  detailEl.innerHTML = `
+    <div class="detail-head">
+      <div class="crumbs">plots</div>
+      <h2>Plot beats</h2>
+      <div class="file">${rows.length.toLocaleString()} beats across ${totalArcs.toLocaleString()} arcs (${multiArcs} multi-beat, ${singletons.length} singleton)</div>
+    </div>
+    ${pageBlurb('plots')}
+    ${arcBlocks}
+    ${singletonsBlock}
+  `;
+}
+
+/* ─── derived sidebars (Tier 2 — paired patterns) ──────────── */
+
+// TIs<X> ↔ Is<X> twin sidebar. Surfaces the structural-but-implicit pairing
+// between a "test" condtrig and the boolean condition it tests, in either
+// direction. Pure name-pattern lookup — works whether or not aReqs explicitly
+// names the twin (which it usually does, but the rule may dangle pre-fix).
+function renderTIsIsTwinPanel(folder, strName) {
+  // From a TIs<X> condtrig, look for the bare Is<X> in conditions / conditions_simple.
+  if (folder === 'condtrigs' && /^TIs[A-Z]/.test(strName)) {
+    const twinName = strName.substring(1); // strip leading "T"
+    const twins = ['conditions_simple', 'conditions']
+      .map(f => nodesById.get(`${f}:${twinName}`))
+      .filter(Boolean);
+    if (twins.length === 0) {
+      return `
+        <div class="thresh-panel thresh-empty">
+          <h3>Boolean form</h3>
+          <p class="panel-blurb">No <code>${escapeHtml(twinName)}</code> entry exists in <code>conditions/</code> or <code>conditions_simple/</code>. Triggers in the <code>TIs*</code> family don't always have a static boolean twin — many compute their truth purely from <code>aReqs</code> chains over other condtrigs/conditions. Read this trigger's <em>References out</em> block to see what it's actually testing.</p>
+        </div>`;
+    }
+    const items = twins.map(n => `<li>
+      ${renderFolderBadge(n.folder)}
+      <a href="#/o/${encodeURIComponent(n.folder)}/${encodeURIComponent(n.strName)}">${escapeHtml(n.strName)}</a>
+      <span class="thresh-meta">[boolean condition]</span>
+    </li>`).join('');
+    return `
+      <div class="thresh-panel">
+        <h3>Boolean form of this trigger</h3>
+        <p class="panel-blurb"><code>TIs&lt;X&gt;</code> trigger ↔ <code>Is&lt;X&gt;</code> boolean condition. The trigger is a recipe for testing the boolean — its <code>aReqs</code> usually names this twin directly.</p>
+        <ul>${items}</ul>
+      </div>`;
+  }
+  // From an Is<X> condition, look for the TIs<X> trigger.
+  if ((folder === 'conditions' || folder === 'conditions_simple') && /^Is[A-Z]/.test(strName)) {
+    const twinName = `T${strName}`; // prepend "T"
+    const twin = nodesById.get(`condtrigs:${twinName}`);
+    if (!twin) return '';
+    return `
+      <div class="thresh-panel">
+        <h3>Trigger form of this boolean</h3>
+        <p class="panel-blurb"><code>Is&lt;X&gt;</code> boolean ↔ <code>TIs&lt;X&gt;</code> trigger. Use the trigger when something needs to <em>test</em> this flag (in <code>aReqs</code> / <code>aForbids</code>); use the boolean directly when something needs to <em>set</em> or <em>clear</em> it.</p>
+        <ul><li>
+          ${renderFolderBadge('condtrigs')}
+          <a href="#/o/condtrigs/${encodeURIComponent(twinName)}">${escapeHtml(twinName)}</a>
+          <span class="thresh-meta">[test trigger]</span>
+        </li></ul>
+      </div>`;
+  }
+  return '';
+}
+
+// Discomfort ladder. Three views:
+//   - On a Stat<X> condition: link to the Dc<X> CondRule that watches it (if any).
+//   - On a Dc<X> CondRule: list the leveled Dc<X>NN conditions and grant loots.
+//   - On a Dc<X>NN leaf condition: link back to the parent CondRule + Stat.
+function renderDcLadderPanel(folder, strName) {
+  // Stat<X> → CondRule Dc<X>?
+  if (folder === 'conditions' && /^Stat[A-Z]/.test(strName)) {
+    const subj = strName.substring(4); // "StatGrav" → "Grav"
+    // Most CondRules are named Dc<X>; some are exactly "Dc<Subject>" (regulating
+    // Stat<Subject>). Look for that pattern in condrules/.
+    const ruleName = `Dc${subj}`;
+    const rule = nodesById.get(`condrules:${ruleName}`);
+    if (!rule) return '';
+    return `
+      <div class="thresh-panel">
+        <h3>Discomfort ladder</h3>
+        <p class="panel-blurb">CondRule <code>${escapeHtml(ruleName)}</code> watches this stat and emits leveled <code>Dc${escapeHtml(subj)}NN</code> conditions when thresholds are crossed.</p>
+        <ul><li>
+          ${renderFolderBadge('condrules')}
+          <a href="#/o/condrules/${encodeURIComponent(ruleName)}">${escapeHtml(ruleName)}</a>
+          <span class="thresh-meta">[regulating CondRule]</span>
+        </li></ul>
+      </div>`;
+  }
+  // CondRule Dc<X> → list leveled discomfort conditions Dc<X>NN + grant loots CONDDc<X>NN.
+  if (folder === 'condrules' && /^Dc[A-Z]/.test(strName)) {
+    const subj = strName.substring(2);
+    // Find Dc<X>NN conditions and CONDDc<X>NN loots that match this rule.
+    const levelRe = new RegExp(`^Dc${subj.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\d+$`);
+    const grantRe = new RegExp(`^CONDDc${subj.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\d+$`);
+    const levels = (nodesByFolder.get('conditions') ?? []).filter(n => levelRe.test(n.strName));
+    const grants = (nodesByFolder.get('loot') ?? []).filter(n => grantRe.test(n.strName));
+    const stat = nodesById.get(`conditions:Stat${subj}`);
+    const sections = [];
+    if (stat) {
+      sections.push(`<li>
+        ${renderFolderBadge('conditions')}
+        <a href="#/o/conditions/${encodeURIComponent(stat.strName)}">${escapeHtml(stat.strName)}</a>
+        <span class="thresh-meta">[regulated stat]</span>
+      </li>`);
+    }
+    for (const n of levels) {
+      sections.push(`<li>
+        ${renderFolderBadge(n.folder)}
+        <a href="#/o/${encodeURIComponent(n.folder)}/${encodeURIComponent(n.strName)}">${escapeHtml(n.strName)}</a>
+        <span class="thresh-meta">[discomfort level]</span>
+      </li>`);
+    }
+    for (const n of grants) {
+      sections.push(`<li>
+        ${renderFolderBadge(n.folder)}
+        <a href="#/o/${encodeURIComponent(n.folder)}/${encodeURIComponent(n.strName)}">${escapeHtml(n.strName)}</a>
+        <span class="thresh-meta">[grant loot]</span>
+      </li>`);
+    }
+    if (sections.length === 0) return '';
+    return `
+      <div class="thresh-panel">
+        <h3>Discomfort ladder · ${escapeHtml(strName)}</h3>
+        <p class="panel-blurb">CondRules emit a <em>regulated stat</em> + <em>leveled discomfort conditions</em> at each threshold. The grant loots (<code>CONDDc&lt;X&gt;NN</code>) are how the engine applies the level when the threshold is crossed.</p>
+        <ul>${sections.join('')}</ul>
+      </div>`;
+  }
+  // Leaf Dc<X>NN → trace back to the parent rule and stat.
+  if (folder === 'conditions' && /^Dc[A-Z][\w]*\d+$/.test(strName)) {
+    const m = strName.match(/^(Dc[A-Z][\w]*?)\d+$/);
+    if (!m) return '';
+    const ruleName = m[1];
+    const rule = nodesById.get(`condrules:${ruleName}`);
+    const subj = ruleName.substring(2);
+    const stat = nodesById.get(`conditions:Stat${subj}`);
+    const items = [];
+    if (rule) items.push(`<li>
+      ${renderFolderBadge('condrules')}
+      <a href="#/o/condrules/${encodeURIComponent(ruleName)}">${escapeHtml(ruleName)}</a>
+      <span class="thresh-meta">[parent CondRule]</span>
+    </li>`);
+    if (stat) items.push(`<li>
+      ${renderFolderBadge('conditions')}
+      <a href="#/o/conditions/${encodeURIComponent(stat.strName)}">${escapeHtml(stat.strName)}</a>
+      <span class="thresh-meta">[regulated stat]</span>
+    </li>`);
+    if (items.length === 0) return '';
+    return `
+      <div class="thresh-panel">
+        <h3>Discomfort ladder · ancestry</h3>
+        <p class="panel-blurb">This is one rung of a CondRule's threshold ladder — the level fired when the regulated stat crosses a threshold.</p>
+        <ul>${items.join('')}</ul>
+      </div>`;
+  }
+  return '';
+}
+
+// "View as facet ↗" / "View as plot beat ↗" affordance for the detail-head.
+// Surfaces meta-page entry points where they're cheapest to discover.
+function renderMetaPageAffordance(folder, strName) {
+  const links = [];
+  if (facetNames.includes(strName)) {
+    links.push(`<a class="meta-page-link" href="#/facet/${encodeURIComponent(strName)}"
+      title="aggregator showing every folder this strName appears in, with unified inbound refs">view as facet ↗</a>`);
+  }
+  // Plot affordance: derive the suffix from the prefix convention and link if
+  // the resulting suffix has any other facets recorded.
+  let plotSuffix = null;
+  if (folder === 'conditions' && /^Plot[A-Z_]/.test(strName)) plotSuffix = strName.substring(4);
+  else if (folder === 'interactions' && strName.startsWith('PLOT_')) plotSuffix = strName.substring(5);
+  else if (folder === 'interactions' && /^Plot[A-Z_]/.test(strName)) plotSuffix = strName.substring(4);
+  else if (folder === 'condtrigs' && strName.startsWith('CTPLOT_')) plotSuffix = strName.substring(7);
+  else if (folder === 'loot' && strName.startsWith('CONDPLOT_')) plotSuffix = strName.substring(9);
+  else if (folder === 'plot_beats' || folder === 'plots') plotSuffix = strName;
+  if (plotSuffix && plotBySuffix.has(plotSuffix)) {
+    const beat = plotBySuffix.get(plotSuffix);
+    const surfaces = Object.values(beat).filter(arr => arr.length > 0).length;
+    if (surfaces >= 2) {
+      links.push(`<a class="meta-page-link" href="#/plot/${encodeURIComponent(plotSuffix)}"
+        title="this strName is one of ${surfaces} surfaces of plot beat '${escapeAttr(plotSuffix)}'">view as plot beat ↗</a>`);
+    }
+  }
+  return links.length ? `<div class="meta-page-links">${links.join(' ')}</div>` : '';
 }
 
 /* ─── health: coverage (extractor-integrity) ───────────────── */

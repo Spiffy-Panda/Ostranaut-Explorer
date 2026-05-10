@@ -132,6 +132,10 @@ public static class GraphExporter
     /// code-* nodes — array/object fields too (PLAN-AST Phase 2 packs <c>inPorts</c>
     /// and <c>produces</c> there). Data-side nodes still skip arrays/objects to
     /// keep the file lean; those values are graph edges, not viewable scalars.
+    /// One narrow data-side exception: <c>items/</c> entries pass through the
+    /// three socket arrays (<c>aSocketAdds</c>, <c>aSocketForbids</c>,
+    /// <c>aSocketReqs</c>) so the site can render the item-footprint grid +
+    /// derive the <c>Num Rows</c> field. None of these are graph edges.
     /// strName is always skipped — already on the node header in graph.js.
     /// </summary>
     private static void WritePropertiesFile(ObjectIndex index, string outPath)
@@ -149,6 +153,7 @@ public static class GraphExporter
             if (obj.Fields.ValueKind != JsonValueKind.Object) continue;
 
             var includeStructured = obj.Folder.StartsWith("code-", StringComparison.Ordinal);
+            var allowItemSockets = obj.Folder == "items";
             var any = false;
             foreach (var prop in obj.Fields.EnumerateObject())
             {
@@ -157,7 +162,8 @@ public static class GraphExporter
                 {
                     JsonValueKind.String or JsonValueKind.Number or JsonValueKind.True
                         or JsonValueKind.False or JsonValueKind.Null => true,
-                    JsonValueKind.Array or JsonValueKind.Object => includeStructured,
+                    JsonValueKind.Array or JsonValueKind.Object =>
+                        includeStructured || (allowItemSockets && IsItemSocketField(prop.Name)),
                     _ => false,
                 };
                 if (!include) continue;
@@ -176,6 +182,9 @@ public static class GraphExporter
         var suffix = System.Text.Encoding.UTF8.GetBytes(";\n");
         stream.Write(suffix, 0, suffix.Length);
     }
+
+    private static bool IsItemSocketField(string name) =>
+        name == "aSocketAdds" || name == "aSocketForbids" || name == "aSocketReqs";
 
     private static void WriteScalar(Utf8JsonWriter writer, string key, object value)
     {
