@@ -4,7 +4,7 @@ The fourth plan axis after [EXPLORER](PLAN-EXPLORER.md), [AST](PLAN-AST.md), and
 
 If you're picking up work cold, read [PLAN.md](PLAN.md) for routing context, then this file end-to-end, then jump to the section matching your phase.
 
-Phases 1 and 2 shipped 2026-05-10. The Phase 3 agent handoff (the inspector page itself) lives at [notes/agent-prompts/ship-inspector-builder-phase3.md](notes/agent-prompts/ship-inspector-builder-phase3.md). Earlier phase handoffs at [notes/agent-prompts/ship-inspector-builder.md](notes/agent-prompts/ship-inspector-builder.md) (Phase 1) and [notes/agent-prompts/ship-inspector-builder-phase2.md](notes/agent-prompts/ship-inspector-builder-phase2.md) (Phase 2) are kept for reference.
+Phases 1, 2, and 3 shipped 2026-05-10. The Phase 4 agent handoff (the explorer-nav edit) lives at [notes/agent-prompts/ship-inspector-builder-phase4.md](notes/agent-prompts/ship-inspector-builder-phase4.md). Earlier phase handoffs at [notes/agent-prompts/ship-inspector-builder.md](notes/agent-prompts/ship-inspector-builder.md) (Phase 1), [notes/agent-prompts/ship-inspector-builder-phase2.md](notes/agent-prompts/ship-inspector-builder-phase2.md) (Phase 2), and [notes/agent-prompts/ship-inspector-builder-phase3.md](notes/agent-prompts/ship-inspector-builder-phase3.md) (Phase 3) are kept for reference.
 
 ---
 
@@ -75,7 +75,15 @@ Lifted the `window.ROOMS` data array and the per-room-card render code out of [s
 
 Acceptance verified: `rooms-reference.html` pre-refactor and post-refactor DOM dumps of every priority-row and every card's `summary` + `body` `outerHTML` are byte-identical (18 rows, 18 cards). Preview-screenshot side-by-side confirms identical render. Deep-link `#room-Reactor` opens the Reactor card; clicking a priority row highlights it and opens the matching card; Esc clears the highlight — all unchanged from before.
 
-### Phase 3 — the inspector page · *next*
+### Phase 3 — the inspector page · *shipped 2026-05-10*
+
+Shipped [src/Ostranauts.Site/ship-inspector.html](src/Ostranauts.Site/ship-inspector.html) + [src/Ostranauts.Site/ship-inspector.js](src/Ostranauts.Site/ship-inspector.js). Phase 1's data feeds get a small loader-companion: [utils/python/build_ship_inspector_data.py](utils/python/build_ship_inspector_data.py) now emits a `.js` wrapper alongside each `.json` artifact (`canned-ships/<reg>.js` self-registers into `window.SHIP_INSPECTOR_CANNED["<reg>"]`; manifest exposes `window.SHIP_INSPECTOR_MANIFEST`; friendly-name map exposes `window.SHIP_FRIENDLY_NAMES`). The original JSONs stay in place — modders read `id-friendly-names.json` directly, the canned-ship JSONs round-trip cleanly for off-browser inspection. Per-ship scripts inject lazily on dropdown selection; the page only eager-loads the manifest + friendly-name map. The script-wrapper path (over `fetch()`) matches the rest of the site, where Chrome's `file://`-fetch block forces this convention.
+
+Upload-cache compression deferred for v1 — uploads stored uncompressed in localStorage with a 4 MB raw-text cap (refused above that). The lz-string vendoring path is documented in `ship-inspector.js`'s header comment for whichever phase wants to revisit it. Visual layout uses a single `<canvas>` rendering items binned to integer tiles with walls overdrawing floors (3-color: wall / floor / empty); the spec's "OR a room's tile list claims it" floor-paint rule is deferred to v1.5 because the `aRooms[].aTiles` flat indices live in a coordinate space that doesn't align trivially with the `aItems[].fX/fY` plane, and items alone already cover the full hull on every canned ship inspected.
+
+Recorded layout gotcha for downstream pages: [style.css](src/Ostranauts.Site/style.css)'s global `main { display: grid; grid-template-columns: 240px 1fr; }` (the explorer's sidebar+detail layout) leaks into any new top-level page; the inspector overrides with `main.inspector { display: block; }` in its page-local `<style>` block. Room-card CSS duplicated inline (rooms-reference.html still owns the canonical copy in its `<style>` block); a follow-up should lift the shared rules into `style.css` and drop both copies — flagged in the inspector's `<style>` comment.
+
+Original Phase 3 spec (kept for context):
 
 `src/Ostranauts.Site/ship-inspector.html` + `ship-inspector.js`. Plain vanilla JS, no build framework, runs from `file://` (matches site convention). Layout:
 
@@ -133,7 +141,7 @@ Print stylesheet (`@media print`):
 - Show component checklist + pinned rooms only.
 - Preserve checkbox visual state so a printed checklist matches the live one.
 
-### Phase 4 — nav surface · *trivial, last*
+### Phase 4 — nav surface · *next*
 
 One small edit in [src/Ostranauts.Site/explorer.html](src/Ostranauts.Site/explorer.html): add a "Ship Inspector" link on the **right side** of the `<nav id="tabs">`, visually separated from the Explorer/Schemas/Plots cluster (e.g. via `margin-left: auto` on the link, or a sibling `<span class="nav-spacer"></span>`). The inspector page does **not** add a backlink to the explorer for v1.
 

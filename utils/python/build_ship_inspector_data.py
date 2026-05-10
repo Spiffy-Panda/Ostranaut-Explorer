@@ -2,12 +2,18 @@
 build_ship_inspector_data.py — extract data feeds for the static-site
 ship-inspector tool (PLAN-BUILDER.md, Phase 1).
 
-Produces four artifacts under src/Ostranauts.Site/data/:
-  * canned-ships/<reg>.json           — stripped per-ship copies
-  * canned-ships-manifest.json        — dropdown driver
-  * id-friendly-names.json            — strName → strNameFriendly map
+Produces both .json and .js artifacts under src/Ostranauts.Site/data/:
+  * canned-ships/<reg>.json + .js     — stripped per-ship copies
+  * canned-ships-manifest.json + .js  — dropdown driver
+  * id-friendly-names.json + .js      — strName → strNameFriendly map
                                         (covers full base game, not just
                                         intersection-with-canned-ships)
+
+The .js wrappers exist so ship-inspector.html can `<script src="…">` the
+data without fetch(), which Chrome blocks under file://. The .json
+copies stay as-is — modders read id-friendly-names.json directly, and
+the canned-ships JSONs round-trip cleanly through `python -m json.tool`
+for anyone wanting to inspect a single ship outside the browser.
 
 Inputs:
   * data/loot/loot.json               — the five Random* ship loot tables
@@ -116,6 +122,28 @@ def write_json(path: Path, data: Any, *, compact: bool = False) -> None:
         else:
             json.dump(data, f, ensure_ascii=False, indent=2)
         f.write("\n")
+
+
+def write_js_wrapper(path: Path, data: Any, *, assignment: str, compact: bool = False) -> None:
+    """Emit a `<script src>`-loadable wrapper that assigns the JSON payload
+    to a window global. `assignment` is the literal LHS text — e.g.
+    'window.SHIP_FRIENDLY_NAMES' or
+    '(window.SHIP_INSPECTOR_CANNED = window.SHIP_INSPECTOR_CANNED || {})["Coffin"]'.
+    The file is gitignore-friendly: a single trailing newline, no BOM."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if compact:
+        payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    else:
+        payload = json.dumps(data, ensure_ascii=False, indent=2)
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(f"{assignment} = {payload};\n")
+
+
+def js_string_literal(s: str) -> str:
+    """Encode a Python str as a JS string literal — used for ship registries
+    in `window.SHIP_INSPECTOR_CANNED["<reg>"] = …`. JSON-encoding a string
+    yields a valid JS string literal (matching quote rules + escapes)."""
+    return json.dumps(s, ensure_ascii=False)
 
 
 # ---------- loot enumeration --------------------------------------------------
@@ -338,8 +366,10 @@ def main() -> int:
     print(f"[3/5] stripping + classifying per-ship JSON → {CANNED_SHIP_DIR.relative_to(REPO_ROOT)}/")
     CANNED_SHIP_DIR.mkdir(parents=True, exist_ok=True)
     # Wipe any stale outputs so re-runs after a loot-table edit don't leave
-    # ghosts behind.
+    # ghosts behind. Includes the .js wrappers alongside the .json files.
     for stale in CANNED_SHIP_DIR.glob("*.json"):
+        stale.unlink()
+    for stale in CANNED_SHIP_DIR.glob("*.js"):
         stale.unlink()
 
     manifest: list[dict] = []
@@ -367,6 +397,12 @@ def main() -> int:
         # by-line diffs of a regeneration aren't useful and pretty-print
         # bloated the commit by ~10x.
         write_json(CANNED_SHIP_DIR / f"{reg}.json", [stripped], compact=True)
+        write_js_wrapper(
+            CANNED_SHIP_DIR / f"{reg}.js",
+            [stripped],
+            assignment=f"(window.SHIP_INSPECTOR_CANNED = window.SHIP_INSPECTOR_CANNED || {{}})[{js_string_literal(reg)}]",
+            compact=True,
+        )
         manifest.append(manifest_entry(reg, stripped, bucket_counts, source_by_reg[reg]))
 
     if missing_regs:
@@ -379,11 +415,21 @@ def main() -> int:
     print(f"[4/5] writing manifest → {MANIFEST_PATH.relative_to(REPO_ROOT)}")
     manifest.sort(key=lambda m: m["reg"].lower())
     write_json(MANIFEST_PATH, manifest)
+    write_js_wrapper(
+        MANIFEST_PATH.with_suffix(".js"),
+        manifest,
+        assignment="window.SHIP_INSPECTOR_MANIFEST",
+    )
 
     # 5. Friendly-name map.
     print(f"[5/5] writing friendly-name map → {NAMES_PATH.relative_to(REPO_ROOT)}")
     name_map = build_friendly_name_map()
     write_json(NAMES_PATH, name_map)
+    write_js_wrapper(
+        NAMES_PATH.with_suffix(".js"),
+        name_map,
+        assignment="window.SHIP_FRIENDLY_NAMES",
+    )
     print(f"        {len(name_map)} strName → strNameFriendly entries")
 
     # Summary report.

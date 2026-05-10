@@ -4,6 +4,117 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-10 — PLAN-BUILDER Phase 3: ship-inspector page
+
+Shipped Phase 3 of the ship-inspector axis. New self-contained page at
+[src/Ostranauts.Site/ship-inspector.html](src/Ostranauts.Site/ship-inspector.html)
+plus its module
+[src/Ostranauts.Site/ship-inspector.js](src/Ostranauts.Site/ship-inspector.js).
+Modder picks a canned ship from a dropdown (driven by the Phase 1
+manifest, 43 entries) or uploads their own ship JSON; the page lays out
+a coarse 2D wall/floor plan computed from `aItems[].fX`/`fY` binned to
+integer tiles, lists components grouped by bucket with per-instance
+checkboxes, and shows per-room requirement cards with pin-to-top
+behavior using the Phase 2 `window.renderRoomCard` shared renderer.
+
+**Loader plumbing.** Added a small step to
+[utils/python/build_ship_inspector_data.py](utils/python/build_ship_inspector_data.py)
+that emits a `.js` wrapper next to each Phase 1 `.json` artifact:
+`canned-ships/<reg>.js` self-registers into
+`window.SHIP_INSPECTOR_CANNED["<reg>"]`, the manifest exposes
+`window.SHIP_INSPECTOR_MANIFEST`, the friendly-name map exposes
+`window.SHIP_FRIENDLY_NAMES`. The `.json` originals stay as-is — modders
+read `id-friendly-names.json` directly, the canned ship JSONs round-
+trip through `python -m json.tool` for off-browser inspection. Picked
+the script-wrapper path over `fetch()` because Chrome blocks `fetch()`
+on `file://` and the rest of the site already loads its data via
+`<script src="data/*.js">` (see `explorer.html`'s `graph.js` /
+`properties.js` block). Per-ship scripts are injected lazily on
+selection, so loading the page costs only the manifest + friendly-name
+map.
+
+**Upload cache.** Skipped lz-string compression for v1; uploads are
+stored uncompressed in localStorage with a 4 MB raw-text cap (refused
+above that with a friendly error). The compression path is documented
+in the JS module header for whichever phase wants to revisit it;
+vendoring lz-string adds a dependency for what is, for now, a
+usability nice-to-have rather than a blocker.
+
+**State and persistence.** localStorage keys per the PLAN-BUILDER
+table: `ship-inspector:active-ship`, `ship-inspector:checkboxes:<key>`,
+`ship-inspector:pinned-rooms:<key>`, `ship-inspector:upload-cache:<hash>`,
+`ship-inspector:upload-meta:<hash>`. Upload identity is a djb2 hash of
+the JSON text — non-cryptographic but stable and synchronous,
+sufficient for "did the modder re-upload the same ship?" cache lookup.
+Bucket filter pills + free-text search both live on the components
+section; filter state itself persists under `ship-inspector:bucket-
+filters`.
+
+**Visual layout.** A single `<canvas>` rendered client-side: items are
+binned to `Math.round(fX, fY)`, walls overdraw floors, all other
+buckets render transparent — a 3-color plan (wall / floor / empty) per
+spec. Pixel size adapts to the container width with a 12 px cap, so
+the 105-tile-wide RF-72m fits without horizontal scroll. The Phase 1
+spec's "OR a room's tile list claims it" floor-paint rule is deferred:
+`aRooms[].aTiles` are flat indices into an `nRows × nCols` grid in a
+coordinate space that doesn't trivially align with the `fX/fY` item
+plane, and items alone already cover the full hull on every canned
+ship inspected. Re-instating it would be a v1.5 once the index→coord
+mapping is reconciled.
+
+**Modded-component tooltip.** The component list resolves friendly
+names via `window.SHIP_FRIENDLY_NAMES`; misses get a small "mod?"
+badge with a `title="this ID isn't in the shipped name table — likely
+a mod component"` tooltip, and the line falls back to the raw
+`strName`. Uploaded ships whose items are missing `_bucket` (because
+they didn't go through `make ship-inspector-data`) get a best-effort
+prefix-pattern bucket guess (`ItmWall*` → walls, `ItmFloor*` → floors,
+`ItmConduit/Wire/Power*` → conduits, etc.) so the foldouts still
+populate; the inferred bucket only fires when `_bucket` is absent.
+
+**Layout gotcha worth flagging.** [style.css](src/Ostranauts.Site/style.css)
+has a global `main { display: grid; grid-template-columns: 240px 1fr; }`
+to drive the explorer's sidebar+detail layout. The inspector uses a
+single-column flow, so `main.inspector { display: block; }` overrides
+that explicitly in the page-local `<style>` block. Any new top-level
+page added later will hit this same trap.
+
+**Print stylesheet.** `@media print` hides the header chrome, the ship
+picker, the search/filter controls, the visual canvas section, and the
+unpinned rooms list — leaving the progress bar, pinned room cards, and
+component checklist with checkboxes preserving their state. Foldouts
+print whichever sections the user has opened; no auto-expand magic for
+v1.
+
+**Room-card CSS duplicated for now.** rooms-reference.html keeps the
+card styles in its page-local `<style>` block (Phase 2 left them
+there). The inspector duplicates the `.room-card` rule set inline
+because it needs the same render. The natural follow-up is to lift the
+shared rules into `style.css` and drop both copies — flagged in the
+inspector's `<style>` comment so the next pass knows where to look.
+
+**Verified via preview.** Coffin selection from the dropdown renders
+the visual layout (314 components, 27×15 hull), the six populated
+buckets with manifest-matching counts (66 walls / 149 floors / 1 door /
+63 conduits / 27 equipment / 8 other), and two room cards (both Blank).
+Checking a wall checkbox + pinning the BridgeArea-spec card, then
+reloading and re-selecting Coffin via the dropdown, restores both
+checkbox and pin from localStorage. Switching to Katydid then back to
+Coffin preserves Coffin's state independently. The deep-link
+`#/ship/Coffin` selects that ship on cold load.
+
+**Pre-push fair-use note.** Factor 1 transformative — modder build-
+checklist tooling, no game prose. Factor 2 our prose + JS + Python +
+derived bucket counts; the canned-ship payloads are stripped data
+already shipped from Phase 1 and judged passable then. Factor 3
+nothing new of substance — just one more page consuming the same data
+feeds. Factor 4 useless without owning the game (and even more useless
+without the modder building a ship). Cleared.
+
+Phase 4 handoff written at
+[notes/agent-prompts/ship-inspector-builder-phase4.md](notes/agent-prompts/ship-inspector-builder-phase4.md)
+covering the explorer-nav edit (one link, no backlink for v1).
+
 ## 2026-05-10 — PLAN-BUILDER Phase 2: rooms.js extraction
 
 Shipped Phase 2 of the ship-inspector axis. The `window.ROOMS` data array
