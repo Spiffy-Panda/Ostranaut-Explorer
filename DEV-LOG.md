@@ -4,6 +4,20 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-10 — handoff: sprite scaling for item mods (v2)
+
+Additive v2 pass on [notes/handoff/sprite-scaling-for-item-mods.html](notes/handoff/sprite-scaling-for-item-mods.html). Three additions:
+
+**1. Installables section.** Wall-mounted fixtures (light fixtures, capacitors, reactor modules, etc.) use two separate item definitions linked by an `installables/` record. The installed form uses `TILFixtureAdds` sockets and carries `IsInstalled=1.0x1` / `IsHiddenInv=1.0x1` starting conditions; the loose (inventory) form uses `TILItemAdds` sockets and can be freely carried. Each form has its own `strImg` and the standard `nCols × 16 px` / `(aSocketAdds.Count / nCols) × 16 px` formula applies independently to each. Worked example: `ItmCapacitor01` (2 wide × 5 tall, 32×80 px installed) vs. `ItmCapacitor01Loose` (2 wide × 3 tall, 32×48 px loose), linked via `Capacitor01Install` / `Capacitor01Uninstall` records in `data/installables/installables.json`. The sprite scaling code path is identical for installables — no special branch.
+
+**2. Bump map bug confirmed.** `Item.cs:447-449` (`SetUpInventoryMaterial`) guards on `strImgNormOverride != "blank"` but then loads `strImgOverride + ".png"` (the diffuse texture) for `_BumpMap` instead of `strImgNormOverride + ".png"`. The world-render path (`DataHandler.GetMaterial`, `DataHandler.cs:3464-3466`) does this correctly. Effect: inventory icons receive no functional normal map even when `strImgNorm` is set — the bump-map slot gets a second copy of the diffuse texture. Was flagged as "unverified aside" in v1; now marked verified.
+
+**3. Decomp foldouts + decompiled-source callout.** Added a green callout near the top explaining what the `decomp/Assembly-CSharp/*.cs` files are (ILSpy/dnSpy decompile of `Assembly-CSharp.dll`, ground truth for what the engine reads). Added `<details>`/`<summary>` foldouts citing specific C# lines for every claim that previously relied on JSON-only evidence: `Item.cs:271-272` (logical footprint), `Item.cs:282-289` (visual footprint + `_Aspect`), `GUIInventoryItem.cs:156` (no separate icon field), `DataHandler.cs:3464-3468` (world BumpMap binding), `Item.cs:447-449` (inventory BumpMap bug), `CondOwner.cs:7357-7363` (mapPoints offsets only). Confidence table updated: **9 verified, 0 inferred** (was 6 verified, 0 inferred).
+
+**Pre-push fair-use note (v2 additions).** Factor 1 transformative — modder explainer, not game guide. Factor 2 our prose + C# identifiers from decompile + field names; no game art or string tables. Factor 3 two small JSON excerpts (10 fields each) from `data/items/items.json` and `data/installables/installables.json` as representative examples, plus 5–12 line C# snippets per foldout — minimal representative extracts. Factor 4 no substitution risk; data is useless without the local game install. All four factors clear.
+
+---
+
 ## 2026-05-10 — handoff: sprite scaling for item mods
 
 Added [notes/handoff/sprite-scaling-for-item-mods.html](notes/handoff/sprite-scaling-for-item-mods.html), a modder-facing explainer for the three-symptom cluster (too-big / off-center / no inventory icon) that comes from mismatching PNG pixel dimensions against the game's logical tile footprint. Investigation confirmed all six claims as verified (0 inferred) against decompiled C# and live data:

@@ -177,15 +177,39 @@
   }
   .qr h3 { margin-top: 0; }
   .qr ol { margin-bottom: 0; }
+  details {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    margin: 8px 0 16px;
+    padding: 0;
+  }
+  details[open] { padding-bottom: 4px; }
+  details summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 13.5px;
+    padding: 10px 14px;
+    list-style: none;
+    user-select: none;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before { content: "\25B6\A0"; font-size: 10px; }
+  details[open] summary::before { content: "\25BC\A0"; }
+  details pre { margin: 0 14px 10px; }
 </style>
 </head>
 <body>
 <main>
 
-<a class="back" href="index.html">← back to handoffs</a>
+<a class="back" href="index.html">&larr; back to handoffs</a>
 
 <h1>Sprite scaling for item mods</h1>
-<p class="subtitle">Why your custom item renders too big, off-center, or without an inventory icon — and how to fix each symptom.</p>
+<p class="subtitle">Why your custom item renders too big, off-center, or without an inventory icon &mdash; and how to fix each symptom.</p>
+
+<div class="callout good">
+<p><strong>About the decompiled source citations on this page.</strong> Files like <code>decomp/Assembly-CSharp/Item.cs</code> are decompiled C# recovered from the game's <code>Assembly-CSharp.dll</code> via ILSpy/dnSpy. They are ground truth for what fields the game actually reads. The data in <code>data/*.json</code> shows what modders write; the decomp shows what the engine does with it. When the two disagree, decomp wins. When this page cites <code>Item.cs:271</code>, that is the runtime code you would hit if you stepped through the game in a debugger. The JSON example next to it shows what data feeds that code path.</p>
+</div>
 
 <h2>The three symptoms</h2>
 
@@ -197,7 +221,7 @@
   <li><strong>No inventory icon, or a stretched/wrong-size icon.</strong> The item shows a blank or garbled cell in inventory grids.</li>
 </ul>
 
-<p>All three trace back to a mismatch between two independent measures: the <em>logical footprint</em> (how many inventory-grid tiles the item occupies, derived from your JSON data) and the <em>visual footprint</em> (the pixel size of the source PNG, interpreted against a hard-coded tile-pixel constant). This page covers both, plus the inventory icon and normal-map fields that are easy to miss.</p>
+<p>All three trace back to a mismatch between two independent measures: the <em>logical footprint</em> (how many inventory-grid tiles the item occupies, derived from your JSON data) and the <em>visual footprint</em> (the pixel size of the source PNG, interpreted against a hard-coded tile-pixel constant). This page covers both, plus the inventory icon and normal-map fields that are easy to miss, and a section on installable items that need a separate sprite for their uninstalled (inventory) form.</p>
 
 <h2>How logical footprint works</h2>
 
@@ -216,7 +240,19 @@
 this.nHeightInTiles = this.aSocketAdds.Count / this.jid.nCols;
 </code></pre>
 
-<p><strong>No height field in the JSON.</strong> There is no <code>nRows</code> or <code>nHeight</code> key. Height is always inferred from <code>aSocketAdds.Count / nCols</code>. The socket array entries themselves are loot-table names like <code>"TILItemAdds"</code> — their <em>count</em> is what determines footprint; their <em>values</em> govern what tiles the item may be placed on.</p>
+<details>
+  <summary>Decomp proof &mdash; <code>Item.cs:271-272</code></summary>
+  <pre><code>// Item.cs lines ~265-272 (inside Item.SetData / load path)
+this.bHasSpriteSheet = this.jid.bHasSpriteSheet;
+if (this.jid.ctSpriteSheet != null)
+{
+    this.ctSpriteSheet = DataHandler.GetCondTrigger(this.jid.ctSpriteSheet);
+}
+this.nWidthInTiles  = this.jid.nCols;
+this.nHeightInTiles = this.aSocketAdds.Count / this.jid.nCols;</code></pre>
+</details>
+
+<p><strong>No height field in the JSON.</strong> There is no <code>nRows</code> or <code>nHeight</code> key. Height is always inferred from <code>aSocketAdds.Count / nCols</code>. The socket array entries themselves are loot-table names like <code>"TILItemAdds"</code> &mdash; their <em>count</em> is what determines footprint; their <em>values</em> govern what tiles the item may be placed on.</p>
 
 <h3>Canonical examples from <code>data/items/items.json</code></h3>
 
@@ -247,7 +283,7 @@ this.nHeightInTiles = this.aSocketAdds.Count / this.jid.nCols;
 </table>
 
 <div class="callout warn">
-<p><strong>Edge case: <code>aSocketAdds</code> is empty.</strong> If you omit <code>aSocketAdds</code> entirely, the C# default is an empty list, so <code>Count / nCols = 0 / 1 = 0</code>. The item will have a 1&times;0 footprint — it will load but won't fit on any floor tile. Always include at least one socket entry for an item that's supposed to sit in the world.</p>
+<p><strong>Edge case: <code>aSocketAdds</code> is empty.</strong> If you omit <code>aSocketAdds</code> entirely, the C# default is an empty list, so <code>Count / nCols = 0 / 1 = 0</code>. The item will have a 1&times;0 footprint &mdash; it will load but won't fit on any floor tile. Always include at least one socket entry for an item that's supposed to sit in the world.</p>
 </div>
 
 <h2>How visual footprint works</h2>
@@ -260,7 +296,26 @@ this.vScale.y = (float)Mathf.Max(MathUtils.RoundToInt(
     1f * (float)this.rend.sharedMaterial.GetTexture("_MainTex").height / 16f), 1);
 </code></pre>
 
-<p><strong>The tile size constant is 16 pixels.</strong> The game divides raw PNG width and height by 16 to get the number of tiles the sprite occupies visually. There is no config variable for this — it is a hard-coded integer literal throughout the rendering code. (The same constant appears in the inventory renderer at <code>GUIInventoryItem.cs:173,177</code> and in the <code>GetPos</code> offset math at <code>CondOwner.cs:7360</code>.)</p>
+<details>
+  <summary>Decomp proof &mdash; <code>Item.cs:282-289</code></summary>
+  <pre><code>// Item.cs lines ~282-289 (static-sprite path inside Item.SetData)
+else
+{
+    this.rend.sharedMaterial = DataHandler.GetMaterial(this.rend,
+        this.strImgOverride, this.strImgNormOverride,
+        this.strImgDamagedOverride, this.strDmgColorOverride);
+    this.vScale.x = (float)Mathf.Max(MathUtils.RoundToInt(
+        1f * (float)this.rend.sharedMaterial.GetTexture("_MainTex").width  / 16f), 1);
+    this.vScale.y = (float)Mathf.Max(MathUtils.RoundToInt(
+        1f * (float)this.rend.sharedMaterial.GetTexture("_MainTex").height / 16f), 1);
+}
+this.rend.sharedMaterial.SetVector("_Aspect", new Vector4(
+    (float)this.nWidthInTiles, (float)this.nHeightInTiles,
+    (float)this.rend.sharedMaterial.GetTexture("_MainTex").width,
+    (float)this.rend.sharedMaterial.GetTexture("_MainTex").height));</code></pre>
+</details>
+
+<p><strong>The tile size constant is 16 pixels.</strong> The game divides raw PNG width and height by 16 to get the number of tiles the sprite occupies visually. There is no config variable for this &mdash; it is a hard-coded integer literal throughout the rendering code. (The same constant appears in the inventory renderer at <code>GUIInventoryItem.cs:173,177</code> and in the <code>GetPos</code> offset math at <code>CondOwner.cs:7360</code>.)</p>
 
 <p>So for a sprite to display as an <em>N</em>&times;<em>M</em> tile item:</p>
 
@@ -278,7 +333,7 @@ PNG height = M * 16 px
 
 <h3>Symptom 1: PNG too big</h3>
 
-<p>Your PNG is, say, 64&times;64 pixels. The game divides by 16 and gets a <code>vScale</code> of (4, 4) — a 4&times;4-tile visual footprint. But your item's <code>aSocketAdds</code> has one entry (<code>nWidthInTiles = 1</code>, <code>nHeightInTiles = 1</code>), so the <code>_Aspect</code> vector says 1&times;1. The shader stretches a 64&times;64 texture across a 1-tile cell, and the item renders giant.</p>
+<p>Your PNG is, say, 64&times;64 pixels. The game divides by 16 and gets a <code>vScale</code> of (4, 4) &mdash; a 4&times;4-tile visual footprint. But your item's <code>aSocketAdds</code> has one entry (<code>nWidthInTiles = 1</code>, <code>nHeightInTiles = 1</code>), so the <code>_Aspect</code> vector says 1&times;1. The shader stretches a 64&times;64 texture across a 1-tile cell, and the item renders giant.</p>
 
 <p><strong>Fix:</strong> Resize the PNG so its pixel dimensions match the intended logical footprint:</p>
 
@@ -304,6 +359,91 @@ aSocketAdds.Count == nCols * (intended height in tiles)
 <p><strong>Asymmetric mistake.</strong> A common trap is to set <code>"nCols": 2</code> but only include one socket entry. <code>Count / nCols = 1 / 2 = 0</code> (integer division rounds down). The item gets a zero-height footprint, which makes it impossible to place and will produce silent failures, not obvious error messages.</p>
 </div>
 
+<h2>Installables &mdash; two items, two sprites</h2>
+
+<p>Wall-mounted fixtures &mdash; capacitors, pipes, light fixtures, reactor modules &mdash; exist in two separate <code>condowners/</code> entries with two separate <code>items/</code> item definitions. Neither entry is the "primary" one. They are genuinely different objects that the install/uninstall system swaps between.</p>
+
+<ul>
+  <li>The <strong>installed form</strong> is the wall-mounted object. Its <code>aSocketAdds</code> entries use fixture-type sockets (<code>"TILFixtureAdds"</code>, <code>"TILFixtureAdds"</code>, etc.) and its starting conditions include <code>IsInstalled=1.0x1</code> and <code>IsHiddenInv=1.0x1</code>. <code>IsHiddenInv</code> prevents it from showing as a loose item in inventory UIs. This entry drives the world sprite &mdash; the form you see bolted to the wall.</li>
+  <li>The <strong>loose form</strong> is the same physical object once uninstalled. Its <code>aSocketAdds</code> entries use floor-placement sockets (<code>"TILItemAdds"</code>), it can be picked up and carried, and its sprite is typically a compact "folded" or side-on representation sized to fit comfortably in an inventory slot. The loose form has <strong>no <code>IsInstalled</code> or <code>IsHiddenInv</code> condition</strong>.</li>
+</ul>
+
+<p>The install/uninstall transition is mediated by an entry in <code>data/installables/installables.json</code> (deserialized as <code>JsonInstallable</code>). An installable record ties the two forms together: <code>strActionCO</code> names the loose CondOwner, <code>aLootCOs</code> names the installed CondOwner that replaces it, and <code>strStartInstall</code> names the installed item definition used to position the installed form on the ship grid.</p>
+
+<p>Neither form uses a special sprite field &mdash; each uses the standard <code>strImg</code> on its own <code>JsonItemDef</code>. The sprite scaling rules (<code>nCols &times; 16</code> px wide, <code>aSocketAdds.Count / nCols &times; 16</code> px tall) apply independently to each form.</p>
+
+<h3>Worked example: fusion reactor capacitor</h3>
+
+<p>The fusion reactor capacitor is the clearest example in the base game data. Its two entries are in <code>data/items/items.json</code> and <code>data/condowners/condowners_reactor.json</code>:</p>
+
+<p><strong>Installed form &mdash; <code>ItmCapacitor01</code></strong></p>
+
+<pre><code>{
+  "strName"       : "ItmCapacitor01",
+  "strImg"        : "ItmCapacitor01",
+  "strImgNorm"    : "ItmCapacitor01n",
+  "nCols"         : 2,
+  "aSocketAdds"   : [
+    "TILFixtureAdds", "TILFixtureAdds",
+    "TILFixtureAdds", "TILFixtureAdds",
+    "TILFixtureAdds", "Blank",
+    "TILFixtureAdds", "Blank",
+    "TILFusionReactorPartsFixtureAdds", "Blank"
+  ]
+}</code></pre>
+
+<ul>
+  <li><code>nCols = 2</code>, <code>aSocketAdds.Count = 10</code> &rarr; logical footprint <strong>2 wide &times; 5 tall</strong>, so the installed-form PNG must be <strong>32 &times; 80 px</strong>.</li>
+  <li>Socket type: <code>TILFixtureAdds</code> &mdash; fixture-mount tiles only. This form cannot be dragged into a cargo bay; it can only be placed on a ship wall by the install interaction.</li>
+</ul>
+
+<p>The matching <code>condowners_reactor.json</code> entry starts with <code>IsInstalled=1.0x1</code> and <code>IsHiddenInv=1.0x1</code>, which keep it invisible to the inventory UI while mounted.</p>
+
+<p><strong>Loose form &mdash; <code>ItmCapacitor01Loose</code></strong></p>
+
+<pre><code>{
+  "strName"       : "ItmCapacitor01Loose",
+  "strImg"        : "ItmCapacitor01Loose",
+  "strImgNorm"    : "ItmCapacitor01Loosen",
+  "nCols"         : 2,
+  "aSocketAdds"   : [
+    "TILItemAdds", "TILItemAdds",
+    "TILItemAdds", "TILItemAdds",
+    "TILItemAdds", "TILItemAdds"
+  ]
+}</code></pre>
+
+<ul>
+  <li><code>nCols = 2</code>, <code>aSocketAdds.Count = 6</code> &rarr; logical footprint <strong>2 wide &times; 3 tall</strong>, so the loose-form PNG must be <strong>32 &times; 48 px</strong>.</li>
+  <li>Socket type: <code>TILItemAdds</code> &mdash; floor tiles. This form can be set down, picked up, and moved freely.</li>
+</ul>
+
+<p>The installable record connecting them is in <code>data/installables/installables.json</code>:</p>
+
+<pre><code>{ "strName": "Capacitor01Install",
+  "strActionCO": "ItmCapacitor01Loose",
+  "aLootCOs": [ "ItmCapacitor01" ],
+  "strStartInstall": "ItmCapacitor01",
+  "strJobType": "install", ... }
+
+{ "strName": "Capacitor01Uninstall",
+  "strActionCO": "ItmCapacitor01",
+  "aLootCOs": [ "ItmCapacitor01Loose" ],
+  "strJobType": "uninstall", ... }</code></pre>
+
+<div class="callout warn">
+<p><strong>The sprite scaling formula is the same for both forms.</strong> There is no separate sprite-scaling code path for installable items. Both the installed and the loose form go through the same <code>Item.SetData</code> load path at <code>Item.cs:271-272</code> and <code>Item.cs:285-286</code>. The only difference is which socket type each form's <code>aSocketAdds</code> references &mdash; fixture sockets vs. floor sockets &mdash; and which entry has <code>IsInstalled</code> / <code>IsHiddenInv</code> in its starting conditions.</p>
+</div>
+
+<h3>What to do when modding an installable</h3>
+
+<ol>
+  <li>Create <strong>two</strong> <code>items/</code> entries and <strong>two</strong> <code>condowners/</code> entries: one installed form (fixture sockets, <code>IsInstalled</code>, <code>IsHiddenInv</code>), one loose form (floor sockets, pickup/drop interactions).</li>
+  <li>Create <strong>two</strong> <code>installables/</code> entries: one <code>strJobType: "install"</code> and one <code>strJobType: "uninstall"</code>, linking the loose CondOwner to the installed CondOwner and back.</li>
+  <li>Size each PNG independently. The installed form's PNG should match its wall-mount footprint (<code>nCols &times; 16</code> wide, socket-count-rows &times; 16 tall); the loose form's PNG should match its carry/inventory footprint, which is typically smaller.</li>
+  <li>Both entries can have their own <code>strImgNorm</code>. The loose form often uses the same normal map as the installed form (as the capacitor does: both reference <code>ItmCapacitor01n</code> / <code>ItmCapacitor01Loosen</code>), but they can differ.</li>
+</ol>
+
 <h2>Inventory icon</h2>
 
 <p>The inventory icon is <em>not</em> a separate sprite field. The inventory grid renders the same <code>strImg</code> PNG that the floor view uses, loaded via <code>item.ImgOverride</code> (which defaults to <code>jid.strImg</code>). The rendered size in the inventory grid is determined at <code>GUIInventoryItem.cs:154-182</code>:</p>
@@ -311,27 +451,68 @@ aSocketAdds.Count == nCols * (intended height in tiles)
 <ol>
   <li>Start from the raw PNG width/height.</li>
   <li>If the item's CondOwner definition (in <code>data/condowners/condowners.json</code>) has a non-zero <code>inventoryWidth</code> or <code>inventoryHeight</code>, override the pixel count: <code>num = inventoryWidth * 16</code> (same 16-px constant). Then pass those dimensions to the <code>_Aspect</code> shader vector.</li>
-  <li>If both <code>inventoryWidth</code> and <code>inventoryHeight</code> are zero or absent (the common case — no base-game item in the current data uses these fields), the inventory falls back to the raw texture dimensions.</li>
+  <li>If both <code>inventoryWidth</code> and <code>inventoryHeight</code> are zero or absent (the common case &mdash; no base-game item in the current data uses these fields), the inventory falls back to the raw texture dimensions.</li>
 </ol>
 
 <p>The grid slot size itself comes from <code>GUIInventoryItem.GetWidthHeightForCO</code> (<code>GUIInventoryItem.cs:18-37</code>): it starts with <code>item.nWidthInTiles</code> / <code>nHeightInTiles</code>, then overrides with <code>inventoryWidth</code> / <code>inventoryHeight</code> from the CondOwner def if set.</p>
 
+<details>
+  <summary>Decomp proof &mdash; <code>GUIInventoryItem.cs:156</code> (no separate icon field)</summary>
+  <pre><code>// GUIInventoryItem.cs:154-157 (inside DrawItem)
+// Inventory renders from item.ImgOverride, which is jid.strImg
+// No strImgIcon or strImgInventory field exists on JsonItemDef.
+texture = DataHandler.LoadPNG(item.ImgOverride + ".png", false, false);
+material.SetTexture("_MainTex", texture);</code></pre>
+</details>
+
 <div class="callout warn">
-<p><strong>If your item has no inventory icon.</strong> The most common cause is that <code>strImg</code> in the item def resolves to a file that doesn't exist, or resolves to <code>"blank"</code>. The game calls <code>DataHandler.LoadPNG(item.ImgOverride + ".png")</code> — the <code>.png</code> extension is appended automatically; don't include it in <code>strImg</code>. If the file is missing, the texture load silently returns a blank and the inventory slot appears empty.</p>
+<p><strong>If your item has no inventory icon.</strong> The most common cause is that <code>strImg</code> in the item def resolves to a file that doesn't exist, or resolves to <code>"blank"</code>. The game calls <code>DataHandler.LoadPNG(item.ImgOverride + ".png")</code> &mdash; the <code>.png</code> extension is appended automatically; don't include it in <code>strImg</code>. If the file is missing, the texture load silently returns a blank and the inventory slot appears empty.</p>
 </div>
 
 <dl class="field-list">
   <dt>strImg</dt>
   <dd>On the <code>items/</code> entry (<code>JsonItemDef</code>). Path to the PNG without extension. Used for both the floor render and the inventory icon. Example: <code>"strImg": "ItmDrinkFlask01"</code> loads <code>ItmDrinkFlask01.png</code>.</dd>
   <dt>inventoryWidth / inventoryHeight</dt>
-  <dd>On the <code>condowners/</code> entry (<code>JsonCondOwner</code>). Optional override for the inventory grid slot size, in tiles. Rarely needed — only set these if you want the inventory representation to differ from what the PNG dimensions imply. Zero (or absent) means "use the PNG dimensions."</dd>
+  <dd>On the <code>condowners/</code> entry (<code>JsonCondOwner</code>). Optional override for the inventory grid slot size, in tiles. Rarely needed &mdash; only set these if you want the inventory representation to differ from what the PNG dimensions imply. Zero (or absent) means "use the PNG dimensions."</dd>
 </dl>
 
-<h2>strImgNorm — the normal map</h2>
+<h2>strImgNorm &mdash; the normal map</h2>
 
 <p><code>strImgNorm</code> is the field on <code>JsonItemDef</code> (in your <code>items/</code> entry) that points to the normal-map texture. The game passes it to <code>DataHandler.GetMaterial</code> alongside <code>strImg</code>, and the shader reads it as the <code>_BumpMap</code> texture to compute per-pixel lighting direction. Without it, the item renders with flat lighting.</p>
 
+<details>
+  <summary>Decomp proof &mdash; <code>DataHandler.cs:3464-3468</code> (world render BumpMap binding)</summary>
+  <pre><code>// DataHandler.cs:3461-3468 (inside DataHandler.GetMaterial)
+material.SetTexture("_MainTex", DataHandler.LoadPNG(strImg + ".png", false, false));
+material.mainTextureScale  = new Vector2(1f, 1f);
+material.mainTextureOffset = default(Vector2);
+if (strImgNorm != "blank")
+{
+    material.SetTexture("_BumpMap", DataHandler.LoadPNG(strImgNorm + ".png", true, false));
+    material.SetTextureScale("_BumpMap",  new Vector2(1f, 1f));
+    material.SetTextureOffset("_BumpMap", default(Vector2));
+}</code></pre>
+</details>
+
 <p>The field is <strong>optional.</strong> If you omit <code>strImgNorm</code> or set it to <code>"blank"</code>, the item will still render; it just won't respond to the ship's dynamic lighting the way vanilla items do. For quick prototyping, you can skip it entirely and add it later.</p>
+
+<div class="callout pit">
+<p><strong>Inventory bump map bug (verified).</strong> The game has a confirmed bug in <code>Item.SetUpInventoryMaterial</code> at <code>Item.cs:447-449</code>. The inventory material setup correctly checks whether <code>strImgNormOverride</code> is set, but then loads the wrong file: it loads <code>strImgOverride</code> (your diffuse texture) as the <code>_BumpMap</code> instead of <code>strImgNormOverride</code>. The world-render path (<code>DataHandler.GetMaterial</code>) does this correctly. The inventory path does not.</p>
+<p>In practice: even when you set <code>strImgNorm</code>, the inventory icon receives <strong>no functional normal map</strong> &mdash; the <code>_BumpMap</code> slot is just a second copy of the diffuse texture, which is a degenerate flat normal. Set <code>strImgNorm</code> for the benefit of the world (floor) rendering; expect no extra per-pixel shading from it in the inventory view.</p>
+</div>
+
+<details>
+  <summary>Decomp proof &mdash; <code>Item.cs:447-449</code> (inventory bump map bug)</summary>
+  <pre><code>// Item.cs:447-449 (inside Item.SetUpInventoryMaterial)
+if (this.strImgNormOverride != "blank" && this.strImgNormOverride != "" && this.strImgNormOverride != null)
+{
+    // BUG: loads strImgOverride (the diffuse texture) instead of strImgNormOverride
+    material.SetTexture("_BumpMap", DataHandler.LoadPNG(this.strImgOverride + ".png", false, false));
+}
+
+// Compare: DataHandler.GetMaterial (world render, correct):
+// material.SetTexture("_BumpMap", DataHandler.LoadPNG(strImgNorm + ".png", true, false));</code></pre>
+</details>
 
 <p>When you are ready to add a normal map, the standard workflow (used for all vanilla assets) is:</p>
 
@@ -343,24 +524,37 @@ aSocketAdds.Count == nCols * (intended height in tiles)
 </ol>
 
 <div class="callout good">
-<p><strong>Naming convention.</strong> Vanilla items follow the pattern <code>&lt;strImg&gt;n</code> for the normal map: <code>ItmDrinkFlask01</code> &rarr; <code>ItmDrinkFlask01n</code>. This is convention only — the field is a free path — but matching it keeps your mod's asset folder readable.</p>
+<p><strong>Naming convention.</strong> Vanilla items follow the pattern <code>&lt;strImg&gt;n</code> for the normal map: <code>ItmDrinkFlask01</code> &rarr; <code>ItmDrinkFlask01n</code>. This is convention only &mdash; the field is a free path &mdash; but matching it keeps your mod's asset folder readable.</p>
 </div>
 
 <h2>Off-center rendering and mapPoints</h2>
 
-<p>The floor render positions the item's GameObject at the world coordinates <code>(fX, fY)</code> from the ship JSON, then sets <code>localScale</code> to <code>(vScale.x, vScale.y, 1)</code> (<code>Item.cs:591-593</code>). The origin of a Unity sprite is the center of its renderer bounds — so a 16&times;16 sprite on a 1&times;1-tile cell is centered on the tile grid point. A 32&times;16 sprite is centered on the midpoint between its two tile columns.</p>
+<p>The floor render positions the item's GameObject at the world coordinates <code>(fX, fY)</code> from the ship JSON, then sets <code>localScale</code> to <code>(vScale.x, vScale.y, 1)</code> (<code>Item.cs:591-593</code>). The origin of a Unity sprite is the center of its renderer bounds &mdash; so a 16&times;16 sprite on a 1&times;1-tile cell is centered on the tile grid point. A 32&times;16 sprite is centered on the midpoint between its two tile columns.</p>
 
-<p><strong>What causes off-center rendering.</strong> If your PNG is not an integer multiple of 16 px in each dimension, the <code>MathUtils.RoundToInt(... / 16f)</code> call rounds to the nearest integer tile count. A 20-px-wide sprite rounds to 1 tile of visual scale (20/16 = 1.25, rounds to 1), so the extra 4 px get cropped. A 24-px sprite rounds to 2 tiles (24/16 = 1.5, rounds to 2), so it renders at 2-tile width with most pixels unused — both cases look "off" in different ways. Keep PNG dimensions to exact multiples of 16.</p>
+<p><strong>What causes off-center rendering.</strong> If your PNG is not an integer multiple of 16 px in each dimension, the <code>MathUtils.RoundToInt(... / 16f)</code> call rounds to the nearest integer tile count. A 20-px-wide sprite rounds to 1 tile of visual scale (20/16 = 1.25, rounds to 1), so the extra 4 px get cropped. A 24-px sprite rounds to 2 tiles (24/16 = 1.5, rounds to 2), so it renders at 2-tile width with most pixels unused &mdash; both cases look "off" in different ways. Keep PNG dimensions to exact multiples of 16.</p>
 
-<p><strong>mapPoints — named interaction offsets.</strong> The <code>mapPoints</code> field (on the <code>JsonItemDef</code> entry, and also on <code>JsonCondOwner</code> entries) defines named pixel offsets from the item's world position. Each entry is a comma-separated string <code>"name,x,y"</code> where <code>x</code> and <code>y</code> are in pixels relative to the item's center, divided by 16 to convert to world units (<code>CondOwner.cs:7360</code>). For example, <code>"use,24,0"</code> places the "use" interaction point 24 px (1.5 tiles) to the right of center.</p>
+<p><strong>mapPoints &mdash; named interaction offsets.</strong> The <code>mapPoints</code> field (on the <code>JsonItemDef</code> entry, and also on <code>JsonCondOwner</code> entries) defines named pixel offsets from the item's world position. Each entry is a comma-separated string <code>"name,x,y"</code> where <code>x</code> and <code>y</code> are in pixels relative to the item's center, divided by 16 to convert to world units (<code>CondOwner.cs:7360</code>). For example, <code>"use,24,0"</code> places the "use" interaction point 24 px (1.5 tiles) to the right of center.</p>
 
-<p><code>mapPoints</code> does <strong>not</strong> shift the sprite itself — it only affects where crew stand when interacting with the item, and where things like power cables connect. The sprite's visual anchor is always at the sprite center; <code>mapPoints</code> cannot be used to "nudge" the rendered image relative to the tile grid.</p>
+<details>
+  <summary>Decomp proof &mdash; <code>CondOwner.cs:7357-7363</code> (mapPoints is offsets only)</summary>
+  <pre><code>// CondOwner.cs:7357-7363 (inside CondOwner.GetPos)
+// mapPoints values are used ONLY to offset interaction points.
+// The sprite transform is set independently in Item.ResetTransforms.
+foreach (string entry in this.mapPoints)
+{
+    string[] parts = entry.Split(',');
+    if (parts[0] == strPointName)
+        return new Vector2(float.Parse(parts[1]) / 16f, float.Parse(parts[2]) / 16f);
+}</code></pre>
+</details>
+
+<p><code>mapPoints</code> does <strong>not</strong> shift the sprite itself &mdash; it only affects where crew stand when interacting with the item, and where things like power cables connect. The sprite's visual anchor is always at the sprite center; <code>mapPoints</code> cannot be used to "nudge" the rendered image relative to the tile grid.</p>
 
 <div class="callout pit">
 <p><strong>Common off-center pitfall.</strong> Resizing a PNG in a tool that pads to a power-of-two (e.g. from 20&times;20 to 32&times;32 with transparent padding) will center the art content inside a larger canvas. The game sees a 32&times;32 sprite (2 tiles wide, 2 tiles tall) and renders it over 2&times;2 tiles, but the actual art content is in the center quarter. The fix is to crop the canvas tightly to the art and then resize to an exact tile multiple.</p>
 </div>
 
-<h2>Confidence — what was verified vs. inferred</h2>
+<h2>Confidence &mdash; what was verified vs. inferred</h2>
 
 <table>
   <thead>
@@ -370,12 +564,12 @@ aSocketAdds.Count == nCols * (intended height in tiles)
     <tr>
       <td>Tile size constant is 16 px</td>
       <td><span class="verified ok">verified</span></td>
-      <td><code>Item.cs:285-286</code> (floor renderer), <code>GUIInventoryItem.cs:173,177</code> (inventory renderer), <code>CondOwner.cs:7360</code> (mapPoints offset math) — the literal <code>16f</code> appears independently in all three</td>
+      <td><code>Item.cs:285-286</code> (floor renderer), <code>GUIInventoryItem.cs:173,177</code> (inventory renderer), <code>CondOwner.cs:7360</code> (mapPoints offset math) &mdash; the literal <code>16f</code> appears independently in all three</td>
     </tr>
     <tr>
       <td>Logical footprint: <code>nWidthInTiles = jid.nCols</code>, <code>nHeightInTiles = aSocketAdds.Count / jid.nCols</code></td>
       <td><span class="verified ok">verified</span></td>
-      <td><code>Item.cs:271-272</code>; confirmed against four items in <code>data/items/items.json</code> (Flask01 1&times;1, Flask02 1&times;2, Nightstick01 1&times;1, Nightstick02 2&times;1)</td>
+      <td><code>Item.cs:271-272</code>; confirmed against four items in <code>data/items/items.json</code></td>
     </tr>
     <tr>
       <td>Visual footprint: <code>vScale = round(px / 16)</code> with minimum 1</td>
@@ -388,29 +582,45 @@ aSocketAdds.Count == nCols * (intended height in tiles)
       <td><code>GUIInventoryItem.cs:156</code> loads <code>item.ImgOverride + ".png"</code>; <code>JsonItemDef.cs</code> has no <code>strImgIcon</code> or similar field</td>
     </tr>
     <tr>
-      <td><code>strImgNorm</code> is optional and drives the normal-map (<code>_BumpMap</code>) shader slot</td>
+      <td><code>strImgNorm</code> drives the normal-map (<code>_BumpMap</code>) shader slot in world render</td>
       <td><span class="verified ok">verified</span></td>
-      <td><code>Item.cs:284</code> passes <code>strImgNormOverride</code> to <code>DataHandler.GetMaterial</code>; <code>Item.cs:447-449</code> shows <code>SetUpInventoryMaterial</code> binds it as <code>_BumpMap</code></td>
+      <td><code>Item.cs:284</code> passes <code>strImgNormOverride</code> to <code>DataHandler.GetMaterial</code>; <code>DataHandler.cs:3464-3466</code> binds it as <code>_BumpMap</code></td>
+    </tr>
+    <tr>
+      <td><code>SetUpInventoryMaterial</code> binds diffuse texture (<code>strImgOverride</code>) to <code>_BumpMap</code> instead of <code>strImgNormOverride</code> &mdash; inventory normal map is broken</td>
+      <td><span class="verified ok">verified</span></td>
+      <td><code>Item.cs:447-449</code>: the condition guards on <code>strImgNormOverride</code> but the <code>LoadPNG</code> call passes <code>strImgOverride</code>; contrast with <code>DataHandler.GetMaterial</code> which passes <code>strImgNorm</code> correctly</td>
     </tr>
     <tr>
       <td><code>mapPoints</code> controls interaction offsets only, not sprite anchor</td>
       <td><span class="verified ok">verified</span></td>
       <td><code>CondOwner.cs:7357-7363</code>: <code>mapPoints</code> values used only inside <code>GetPos(strPointName)</code>; sprite transform set independently in <code>Item.ResetTransforms</code> at <code>Item.cs:588-605</code></td>
     </tr>
+    <tr>
+      <td>Installables use two separate <code>items/</code> entries (installed + loose); each has its own <code>strImg</code> and independent sprite sizing</td>
+      <td><span class="verified ok">verified</span></td>
+      <td><code>data/items/items.json</code> (<code>ItmCapacitor01</code> and <code>ItmCapacitor01Loose</code>); <code>data/installables/installables.json</code> (<code>Capacitor01Install</code>/<code>Capacitor01Uninstall</code>); no special sprite path in <code>Item.cs</code> for installables &mdash; same <code>SetData</code> code runs for both</td>
+    </tr>
+    <tr>
+      <td>Installed form distinguished by <code>IsInstalled=1.0x1</code> and <code>IsHiddenInv=1.0x1</code> starting conditions; loose form has neither</td>
+      <td><span class="verified ok">verified</span></td>
+      <td><code>data/condowners/condowners_reactor.json</code> (<code>ItmCapacitor01</code> CondOwner entry vs. <code>ItmCapacitor01Loose</code> entry); installable socket type (<code>TILFixtureAdds</code> vs. <code>TILItemAdds</code>) also distinguishes the two</td>
+    </tr>
   </tbody>
 </table>
 
-<p><strong>Summary: 6 verified, 0 inferred.</strong> All six claims are grounded in specific lines of decompiled C# and confirmed against live data/items entries.</p>
+<p><strong>Summary: 9 verified, 0 inferred.</strong> All nine claims are grounded in specific lines of decompiled C# and/or confirmed against live data entries.</p>
 
 <div class="qr">
-<h3>Quick reference — sprite misbehaving checklist</h3>
+<h3>Quick reference &mdash; sprite misbehaving checklist</h3>
 <ol>
   <li><strong>Measure your PNG.</strong> Width and height should each be an exact multiple of 16 px and equal to <code>nCols * 16</code> and <code>(aSocketAdds.Count / nCols) * 16</code> respectively.</li>
   <li><strong>Count your sockets.</strong> <code>aSocketAdds.Count</code> must equal <code>nCols &times; intended_height_in_tiles</code>. A count that's not divisible by <code>nCols</code> gives fractional tiles (C# integer division truncates).</li>
   <li><strong>Check your PNG path.</strong> <code>strImg</code> must be a filename <em>without</em> the <code>.png</code> extension. The game appends it. A typo or missing file gives a blank inventory icon.</li>
   <li><strong>Off-center?</strong> Crop the PNG canvas tightly to the art. No power-of-two padding. Keep pixel dimensions at multiples of 16.</li>
-  <li><strong>No lighting response?</strong> Add <code>strImgNorm</code> pointing to a normal-map PNG (GIMP: Filters &rarr; Generic &rarr; Normal Map on your base sprite). Optional but recommended for any item that will be in lit spaces.</li>
+  <li><strong>No lighting response?</strong> Add <code>strImgNorm</code> pointing to a normal-map PNG (GIMP: Filters &rarr; Generic &rarr; Normal Map on your base sprite). Affects world (floor) rendering; inventory normal map is broken in the engine regardless.</li>
   <li><strong>Inventory slot wrong size?</strong> The slot size comes from <code>nWidthInTiles</code> / <code>nHeightInTiles</code>, which come from <code>nCols</code> / <code>aSocketAdds</code>. Fix step 2. If you specifically need an inventory size that differs from the world footprint, set <code>inventoryWidth</code> / <code>inventoryHeight</code> on the CondOwner entry (rare; no base-game item currently uses this override).</li>
+  <li><strong>Modding an installable (e.g. a wall-mount fixture)?</strong> You need two item defs and two CondOwner entries: one installed form (<code>TILFixtureAdds</code> sockets, <code>IsInstalled</code>, <code>IsHiddenInv</code>) and one loose form (<code>TILItemAdds</code> sockets, no <code>IsInstalled</code>). Add two entries to <code>installables/</code> (one install, one uninstall) linking the loose and installed CondOwners. Size each PNG independently against its own <code>nCols</code>/<code>aSocketAdds</code>.</li>
 </ol>
 </div>
 
