@@ -4,6 +4,282 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-10 — handoff: sprite scaling for item mods
+
+Added [notes/handoff/sprite-scaling-for-item-mods.html](notes/handoff/sprite-scaling-for-item-mods.html), a modder-facing explainer for the three-symptom cluster (too-big / off-center / no inventory icon) that comes from mismatching PNG pixel dimensions against the game's logical tile footprint. Investigation confirmed all six claims as verified (0 inferred) against decompiled C# and live data:
+
+1. Tile-size constant is **16 px** — hard-coded literal in `Item.cs:285-286`, `GUIInventoryItem.cs:173,177`, and `CondOwner.cs:7360`.
+2. Logical footprint is `nWidthInTiles = jid.nCols` / `nHeightInTiles = aSocketAdds.Count / jid.nCols` — confirmed at `Item.cs:271-272`, cross-checked against four items in `data/items/items.json`.
+3. Visual footprint is `vScale = round(texturePx / 16f)` clamped to minimum 1 — `Item.cs:285-286`; same formula in the animated path at `Item.cs:196-197`.
+4. Inventory icon uses the same `strImg` PNG; there is no separate icon field on `JsonItemDef` — `GUIInventoryItem.cs:156`, `JsonItemDef.cs` field list.
+5. `strImgNorm` is optional; drives the `_BumpMap` shader slot — `Item.cs:447-449` (`SetUpInventoryMaterial`).
+6. `mapPoints` controls named interaction-point offsets only (used by `GetPos` in `CondOwner.cs:7357-7363`), not the sprite anchor — sprite origin is always the renderer center set in `Item.ResetTransforms`.
+
+Motivating observation: community thread, BlueBottleGames Discord #modding-discussion, 2026-05-08 to 2026-05-10.
+
+Also updated [notes/handoff/index.html](notes/handoff/index.html) with a new list entry for the page.
+
+**Pre-push fair-use note.** Factor 1 transformative — modder tooling explaining mechanics, not reproducing game prose. Factor 2 our prose + field names + C# identifiers; no game text or art included. Factor 3 two short JSON snippets (field names + values) from `data/items/items.json` as representative examples — minimal extract, well within fair use. Factor 4 the page is useless without the game's data files present locally; no substitution risk. All four factors clear.
+
+---
+
+## 2026-05-10 — save-map page (ship positions from objSS)
+
+Shipped a save-map view at
+[src/Ostranauts.Site/save-map.html](src/Ostranauts.Site/save-map.html)
+that plots every ship in an Ostranauts save zip at its
+`objSS.(vPosx, vPosy)` position. Icon area is sqrt-scaled from
+`fShallowMass` (a 132 t station vs. a 1 t pod is ~11× area, not 130×)
+and icons are colored by `fLastVisit` existence — blue if the player
+has ever visited (`fLastVisit > 0`), gray if not (`0.0`). Hovering an
+icon shows a tooltip with public name / regID / designation / make
+& model / mass / orbit-body / visit state; clicking locks a detail
+panel below the canvas with the full metadata and a deep link into
+[save-inspector.html#/ship/<reg>](src/Ostranauts.Site/save-inspector.html)
+for that ship.
+
+**Per-ship metadata lives at end-of-file** (`objSS` and `fShallowMass`
+are written *after* the giant `aItems[]` / `aRooms[]` blocks in the
+save's per-ship JSON), so there's no fast header-only path — every
+ship must be fully decompressed and JSON-parsed. The page parallelizes
+4 decompressions at a time via `Promise.all` workers, re-rendering the
+canvas after every batch so the map fills in visibly while loading.
+For the test save (`cares catherine ruiz_1778371145.zip`, 142 ships,
+~250 MB total uncompressed) the full plot lands in ~5-10 seconds.
+Discarded fields are GC'd immediately — only the small per-ship
+record (reg, name strings, mass, position, visit timestamps) survives.
+
+**Phyllotaxis spiral for co-located ships.** A station and the ships
+docked at it share an exact (`vPosx`, `vPosy`) within ~6-decimal
+precision; without per-ship offset the 13 visited ships in the test
+save rendered as a single blue dot occluded behind the station's gray
+disk, making the "colored by last visited" signal invisible. The fix
+groups ships by quantized (x, y) and spirals each cluster's members
+out by small canvas-pixel offsets (5 px × √i) along the golden angle.
+Within a cluster, unvisited+heaviest sort to the center and visited
+land on the outer ring so the visit-state color is most visible at
+the periphery. Hit-testing applies the same offset, so clicking a
+spiraled dot still maps to the right ship.
+
+**Standalone module.** save-map.js doesn't share inspector-core.js —
+the map page has no progress / bucket / room sections, only a canvas
+plus picker plus selection panel. It does share `inspector.css`
+(.ship-picker, .empty-hint, etc.) for picker UX consistency and adds
+.map-canvas / .map-tooltip / .map-selected / .map-legend rules
+beside the existing inspector styles. The vendored
+[save-zip-reader.js](src/Ostranauts.Site/save-zip-reader.js)
+(DecompressionStream-based, no third-party dep) is reused verbatim.
+
+**Persistence.** None — the save-map is a read-only visualization; no
+checkbox state to track. Like the save-inspector, the uploaded zip
+itself is not persisted across reloads (re-upload required). Hash
+routing is intentionally absent because the URL can't carry the zip
+bytes the page needs to render anything.
+
+**Cross-page nav wired.** Both ship-inspector and save-inspector now
+link to the save map in their nav bar and in their picker's link
+row. The save-map's picker links back to save-inspector ("drill into
+one ship") and ship-inspector ("vanilla ships").
+
+**Verified via preview.** Loaded the same 42 MB test save:
+142 ships plotted in ~6 seconds, 13 visited / 129 not (matches a hand
+count of `fLastVisit > 0` entries). Hovering over the spiraled blue
+cluster pops the tooltip for individual ships (e.g. "Nothing To Lose
+J-LMWS · Survey · Testudo Ibex · mass 23.1 t · orbiting 1036
+Ganymed · visited"). Clicking locks the selection panel with the
+full field set including `Position: 1.050504, -1.557869` and
+`Visited: epoch 65627889354.8 (first 65627889249.4)`. Deep link
+`→ Open J-LMWS in save inspector` resolves to
+`save-inspector.html#/ship/J-LMWS`. Visit-state and mass signal both
+read correctly in the rendered canvas (1024 blue pixels concentrated
+into a single dot in the pre-spiral version became 3151 pixels
+spread across a 75×68 ring after the spiral landed).
+
+**Spiral removed, replaced with stack-list UX.** Modder feedback after
+the cluster-coordinate fix: the phyllotaxis spiral was synthetic — the
+spread it showed wasn't in the save file, and that obscured the game's
+actual nav-display behavior. The three reference screencaps from the
+in-game nav (`debug/` folder of save `1778427283`, 0.89 km / 480 km /
+4894 km zoom range) show the game just renders each ship at its actual
+position and uses log-scale zoom to resolve sub-km separations. Map
+now matches: every ship plots at raw `vPos`, overlapping icons just
+stack into a single visual dot, and a multi-hit hover/click surfaces
+the list. `ZOOM_MAX` bumped from 50× to 1e9× so the modder can keep
+scrolling until ships meters apart are individually distinct (data
+has separations down to ~1e-8 AU ≈ 1.5 km — requires ~6e5× scale to
+resolve as a pixel apart).
+
+Stack interaction: hover over an icon → if 1 ship there, single-line
+tooltip; if 2+, list-style tooltip with first 10 rows (regID, name,
+mass, visit dot) plus "+ N others" footer. The tooltip's header line
+shows the count and the most-common `boPORShip` across stack members
+("87 ships at this pixel · near 1036 Ganymed"). Click → selection
+panel below the canvas; if a stack, renders a scrollable list of every
+ship at the pixel with click-to-swap, and the active ship's full detail
+block + deep link to save-inspector renders below.
+
+Verified: at autoFit on the test save, K-Leg collapses to a single
+visited (blue) dot. Hover finds 87 ships there. Click locks the panel
+with all 87 rows; clicking any swaps the detail block. At 60 wheel
+ticks (~6.5e5× zoom centered on the cluster), the same canvas pixel
+now overlaps just 2 ships (OKLG and OKLG_FLOT — 1e-5 AU apart in vPos,
+on the edge of resolvable at that zoom).
+
+**Cluster coordinate-frame fix.** The game stores `JsonShipSitu` such
+that for any ship orbiting or docked at a body, `vPos` is the **body's**
+absolute system-frame position and the actual ship-vs-body separation
+lives in `vBOOffset` (typical magnitude ~1e-6 world units, sub-pixel at
+any reasonable map scale). The math is verified at
+[ShipSitu.cs:164,251](decomp/Assembly-CSharp/ShipSitu.cs):
+`vPos = boReference.dXReal + vBOOffset`. Consequence: a station and
+every ship moored to it all collapse to the same dot — they share the
+station's `vPos`. Sub-stations of a port (OKLG, OKLG_RES, OKLG_FLOT,
+OKLG_ATC, OKLG_NAV0, …) each declare themselves as their own BO and
+end up at *nearly* the same `vPos` (differing by 1e-8 to 1e-4) too.
+
+Initial map shipped with a phyllotaxis-cluster bucket of `EPS=1e-5`,
+which was tight enough that sub-stations sometimes landed in
+**different** buckets (round(1.05050/1e-5)=105050 vs.
+round(1.05051/1e-5)=105051), defeating the merge and rendering K-Leg
+sub-stations as separate single-ship dots a fraction of a canvas
+pixel apart. The user reported "OKLG and OKLG_RES are far from one
+another" — they weren't: same vPos to 8 decimals; the bucketing just
+fragmented the cluster. Coarsened `EPS` to 1e-3 (1 milli-AU) so every
+ship at K-Leg/Ganymed merges into one big spiral. The matched data
+sample: OKLG (1.050504689989, -1.557869569732), OKLG_RES
+(1.050504696633, -1.557869586158), OKLG_BIZ (1.050504694411,
+-1.557869579891), OKLG_FLOT (1.050515128634, -1.557867884994), …
+all now in bucket (1051, -1558) together with BWVN, B-REG, the
+visited cluster, and the unvisited stragglers around Ganymed.
+
+**Hollow center for big clusters.** The user also reported "the
+cluster surrounds a random ship opposed to a hollow where Ganymede is
+supposed to be." That random ship was the heaviest-unvisited at the
+cluster (BWVN before the bucket fix, others after), sitting at spiral
+index 0 — i.e. at the cluster's exact center. That center conceptually
+belongs to the body these ships orbit; filling it with a member ship
+reads as "this ship IS Ganymed." For clusters of size ≥3 the spiral
+now starts at index 1 with an additional 10 px inner gap, leaving a
+visible ~20 px hollow at autoFit (scales with zoom). Until we plot
+bodies separately (a v2 — would require parsing
+`objSystem.aBOs[]` from the top-level `<PlayerName>.json` GameSave
+inside the zip), the hollow communicates "a body sits here" implicitly.
+
+**Zoom + pan.** Wheel zooms around the cursor (deltaY → 1.15× per tick,
+clamped to 0.4×–50×); the world point under the cursor is re-pinned
+after every zoom step so the modder doesn't lose what they were
+looking at. Drag-pan is left-mousedown + mousemove (tracked at
+document level so dragging off the canvas keeps panning) with a 4 px
+threshold to distinguish a pan from a click — pans suppress the
+following mouseup-click so they don't accidentally select a ship.
+Top-right corner has +/− buttons (zoom around the canvas center) and
+a reset (⟲) button. The bottom-left scale hint adapts to current
+effective scale, switching between AU / milli-AU / micro-AU as the
+modder zooms in; current zoom multiplier renders in the bottom-right
+when ≠ 1×. Cluster spiral offsets and ship positions both scale with
+zoom (so a tightly clustered station's docked-ship spiral opens up
+when zoomed in), but icon radius stays fixed (so tiny pods don't
+disappear as you zoom out). Hit-testing applies the same view
+transform so clicking a ship at high zoom still resolves correctly.
+Verified: 6× wheel zoom centered on the visited cluster keeps the
+Weaver's Needle (BWVN) ship pinned to the cursor pixel; reset returns
+to auto-fit; drag dispatches without errors and re-renders.
+
+**Pre-push fair-use note.** Factor 1 transformative — modder save-
+visualization tool, no game prose. Factor 2 our prose + JS + Python,
+no game prose included; canvas-rendered dots from numeric position
+fields are not creative content. Factor 3 no new game data shipped to
+the public bundle — save zips stay on the modder's disk (everything
+client-side). Factor 4 useless without owning the game (you can't
+produce a save to load without playing). Cleared.
+
+## 2026-05-10 — save-inspector page + inspector-core extraction
+
+Shipped a save-file inspector at
+[src/Ostranauts.Site/save-inspector.html](src/Ostranauts.Site/save-inspector.html)
+that lets a modder upload an Ostranauts save zip (the
+`<name>_<epoch>.zip` from any `Saves/<name>_<epoch>/` folder), enumerates
+the per-ship JSONs inside it, and renders the picked ship through the
+same component checklist / floor plan / room cards the ship-inspector
+page uses. The save-format per-ship JSON is a runtime superset of
+`data/ships/<reg>.json` — same `aItems[]` with `fX`/`fY`/`strName`,
+same `aRooms[]`, plus runtime extras (`aCondOverrides[]` carrying
+per-item damage state, `aCOs[]` of CondOwners) that the inspector
+ignores. No bucket-classification step is needed because the existing
+upload-path prefix-pattern fallback (`inferBucket(strName)`) already
+covers save-shape items that lack the `_bucket` annotation.
+
+**Refactor.** Hoisted the shared rendering core out of
+[ship-inspector.js](src/Ostranauts.Site/ship-inspector.js) into
+[inspector-core.js](src/Ostranauts.Site/inspector-core.js) — exposes
+`window.InspectorCore.{ init, activateShip, clearShip, uploadError,
+isShipShaped, el, djb2, friendlyName, ... }`. Each consumer page builds
+its own picker UI, then calls `InspectorCore.init({ rootEl, lsPrefix,
+friendlyNames, rooms })` to stand up the progress / visual / rooms /
+components sections, and `InspectorCore.activateShip(key, shipDict,
+label)` whenever the user picks a ship. ship-inspector.js shrank from
+920 lines to 270; the new save-inspector.js is 290. Page-local CSS
+moved to [inspector.css](src/Ostranauts.Site/inspector.css) so both
+pages share an identical visual treatment without a 500-line `<style>`
+duplicate. Verified ship-inspector still renders pixel-identically
+(canned-ship dropdown, prior-state restore, hash routing, component
+counts all unchanged).
+
+**ZIP reading.** No third-party dependency —
+[save-zip-reader.js](src/Ostranauts.Site/save-zip-reader.js) uses the
+platform `DecompressionStream("deflate-raw")` API (Chrome/Firefox 113+,
+Safari 16.4+) plus a hand-rolled central-directory walker. Entries
+are lazy: `readEntries(uint8Array)` returns metadata immediately
+(filename, sizes, method, LFH offset) and only decompresses one entry
+when the modder picks that ship. Skip-list: ZIP64 and compression
+methods other than STORE/DEFLATE — game saves don't use either. The
+page feature-detects DecompressionStream at boot and shows a clear
+"upgrade your browser" banner if missing rather than failing silently.
+
+**Save identity + state.** The save zip is *not* persisted across
+reloads (a 42 MB zip blows past localStorage's 5 MB cap and even
+IndexedDB churn doesn't justify itself for v1). Per-ship checkbox /
+pin state IS persisted, keyed by `<saveHash>:<shipReg>` so two saves
+with the same reg stay isolated. `saveHash` is a sampled djb2 over the
+zip's head + middle + tail + length — stable across re-uploads of the
+same file, fast, non-cryptographic. Re-uploading the same save brings
+each ship's state back. Cross-page keys are namespaced under
+`save-inspector:` / `ship-inspector:` prefixes.
+
+**Picker UX.** Same shell as ship-inspector with two changes: the
+upload control accepts `.zip` instead of `.json`, and the canned-ship
+dropdown becomes a "ships in this save" dropdown that's disabled until
+a zip is uploaded. A save-summary line below the dropdown shows
+playerName / shipName / version pulled from the bundled `saveInfo.json`
+(the load-screen sidecar that lives next to the zip's main payload).
+Each option label is `<reg> (<size>)` — friendly per-ship name
+resolution is deferred to v2 (would require decompressing every ship
+on upload to read `strName`; the active ship's friendly name *is*
+resolved and shown in the header label once the modder picks it).
+
+**Verified via preview.** Loaded `cares catherine ruiz_1778371145.zip`
+(42 MB, 142 ships, 0.15.0.25): dropdown populates with all 142
+`ships/*.json` entries in <2s, save-summary line shows player "Cares
+Catherine Ruiz" + flagship "K-Leg: Azikiwe Commercial". Picking B-REG
+renders the floor plan (192×168 canvas, 60% pixel coverage), 6 buckets
+totalling 273 components (39 walls / 134 floors / 3 doors / 36
+conduits / 1 container / 60 other), and 4 room cards (BridgeRoom,
+Airlock, Engineering, Blank — matches the per-room screenshot PNGs
+that exist for B-REG in the zip). Setting a wall count to 3 + pinning
+BridgeRoom + switching to B-1XFL (0/114) + switching back to B-REG
+restores the 3-wall count and the pinned BridgeRoom. localStorage keys
+`save-inspector:counts:707f8e0f:B-REG` and `pinned-specs:707f8e0f:B-REG`
+appear with the expected values.
+
+**Pre-push fair-use note.** Factor 1 transformative — modder save-
+file inspection tool, no game prose. Factor 2 our prose + JS, no game
+prose included; the save-zip parser is hand-rolled from the public ZIP
+spec, not derived from any game binary. Factor 3 nothing new shipped
+to the public bundle — the save zips themselves stay on the modder's
+disk (uploads are processed entirely client-side). Factor 4 useless
+without the game (you can't even produce a save without playing it).
+Cleared.
+
 ## 2026-05-10 — PLAN-BUILDER Phase 3: ship-inspector page
 
 Shipped Phase 3 of the ship-inspector axis. New self-contained page at

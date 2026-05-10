@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ostranauts sprite scaling for item mods</title>
+<style>
+  :root {
+    --bg: #14171c;
+    --panel: #1c2026;
+    --panel-2: #232830;
+    --ink: #e6e9ef;
+    --ink-dim: #aab0bc;
+    --rule: #2c323b;
+    --accent: #7fb4ff;
+    --warn-bg: #3a2a14;
+    --warn-bd: #6b4a1c;
+    --warn-ink: #ffd89a;
+    --good-bg: #16301f;
+    --good-bd: #2c5b3c;
+    --good-ink: #b9e9c5;
+    --pit-bg: #2a1620;
+    --pit-bd: #5b2c40;
+    --pit-ink: #f3b9d0;
+    --code-bg: #0f1217;
+    --code-ink: #d8dde5;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 4px;
+    line-height: 1.25;
+  }
+  h1 + .subtitle {
+    color: var(--ink-dim);
+    margin: 0 0 32px;
+    font-size: 15px;
+  }
+  h2 {
+    font-size: 20px;
+    margin: 40px 0 12px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+  }
+  h3 {
+    font-size: 16px;
+    margin: 24px 0 8px;
+    color: var(--ink);
+  }
+  h4 {
+    font-size: 14px;
+    margin: 18px 0 6px;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  p { margin: 0 0 12px; }
+  a { color: var(--accent); }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 4px; }
+  code {
+    font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    background: var(--panel-2);
+    color: var(--code-ink);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 14px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    margin: 0 0 16px;
+  }
+  pre code { background: none; padding: 0; }
+  .callout {
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 16px 0 24px;
+    border: 1px solid var(--rule);
+  }
+  .callout.warn {
+    background: var(--warn-bg);
+    border-color: var(--warn-bd);
+    color: var(--warn-ink);
+  }
+  .callout.good {
+    background: var(--good-bg);
+    border-color: var(--good-bd);
+    color: var(--good-ink);
+  }
+  .callout.pit {
+    background: var(--pit-bg);
+    border-color: var(--pit-bd);
+    color: var(--pit-ink);
+  }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout strong { color: inherit; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8px 0 20px;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--rule);
+    padding: 7px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--panel-2);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  td code { background: var(--code-bg); }
+  .field-list dt {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 13.5px;
+    color: var(--ink);
+    margin-top: 10px;
+  }
+  .field-list dd {
+    margin: 0 0 6px 18px;
+    color: var(--ink-dim);
+    font-size: 14px;
+  }
+  .verified {
+    display: inline-block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .verified.ok {
+    background: #1e3a25;
+    color: #b9e9c5;
+    border: 1px solid #2c5b3c;
+  }
+  .verified.inferred {
+    background: #2a2218;
+    color: #ffd89a;
+    border: 1px solid #6b4a1c;
+  }
+  .back {
+    display: inline-block;
+    margin-bottom: 24px;
+    color: var(--ink-dim);
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .back:hover { color: var(--accent); }
+  .qr {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin: 24px 0 0;
+  }
+  .qr h3 { margin-top: 0; }
+  .qr ol { margin-bottom: 0; }
+</style>
+</head>
+<body>
+<main>
+
+<a class="back" href="index.html">← back to handoffs</a>
+
+<h1>Sprite scaling for item mods</h1>
+<p class="subtitle">Why your custom item renders too big, off-center, or without an inventory icon — and how to fix each symptom.</p>
+
+<h2>The three symptoms</h2>
+
+<p>When a custom item's PNG doesn't match what the game expects, you'll see a consistent trio of problems:</p>
+
+<ul>
+  <li><strong>Too big on the ship floor.</strong> The item sprite fills several tiles when it should occupy one or two.</li>
+  <li><strong>Off-center on the tile.</strong> The item renders shifted relative to its socket footprint.</li>
+  <li><strong>No inventory icon, or a stretched/wrong-size icon.</strong> The item shows a blank or garbled cell in inventory grids.</li>
+</ul>
+
+<p>All three trace back to a mismatch between two independent measures: the <em>logical footprint</em> (how many inventory-grid tiles the item occupies, derived from your JSON data) and the <em>visual footprint</em> (the pixel size of the source PNG, interpreted against a hard-coded tile-pixel constant). This page covers both, plus the inventory icon and normal-map fields that are easy to miss.</p>
+
+<h2>How logical footprint works</h2>
+
+<p>The game reads an item's tile dimensions at load time from two fields on the item's <code>items/</code> entry (the <code>JsonItemDef</code> struct):</p>
+
+<dl class="field-list">
+  <dt>nCols</dt>
+  <dd>Width in tiles. Integer; defaults to <code>1</code> if omitted. Confirmed in <code>JsonItemDef.cs</code> constructor: <code>this.nCols = 1</code>.</dd>
+  <dt>aSocketAdds</dt>
+  <dd>Array of loot-table strNames, one entry per body-socket slot. Length of this array divided by <code>nCols</code> gives the height in tiles. Single-tile items have one entry; a 2-tile-tall item has two entries for each column.</dd>
+</dl>
+
+<p>The C# that performs this calculation is at <code>Item.cs:271-272</code>:</p>
+
+<pre><code>this.nWidthInTiles  = this.jid.nCols;
+this.nHeightInTiles = this.aSocketAdds.Count / this.jid.nCols;
+</code></pre>
+
+<p><strong>No height field in the JSON.</strong> There is no <code>nRows</code> or <code>nHeight</code> key. Height is always inferred from <code>aSocketAdds.Count / nCols</code>. The socket array entries themselves are loot-table names like <code>"TILItemAdds"</code> — their <em>count</em> is what determines footprint; their <em>values</em> govern what tiles the item may be placed on.</p>
+
+<h3>Canonical examples from <code>data/items/items.json</code></h3>
+
+<table>
+  <thead>
+    <tr><th>Item</th><th><code>nCols</code></th><th><code>aSocketAdds</code> length</th><th>Logical footprint</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>ItmDrinkFlask01</code> (4 L flask)</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1 wide &times; 1 tall</td>
+    </tr>
+    <tr>
+      <td><code>ItmDrinkFlask02</code> (8 L flask)</td>
+      <td>1</td>
+      <td>2</td>
+      <td>1 wide &times; 2 tall</td>
+    </tr>
+    <tr>
+      <td><code>ItmWeaponNightstick02</code></td>
+      <td>2</td>
+      <td>2</td>
+      <td>2 wide &times; 1 tall</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout warn">
+<p><strong>Edge case: <code>aSocketAdds</code> is empty.</strong> If you omit <code>aSocketAdds</code> entirely, the C# default is an empty list, so <code>Count / nCols = 0 / 1 = 0</code>. The item will have a 1&times;0 footprint — it will load but won't fit on any floor tile. Always include at least one socket entry for an item that's supposed to sit in the world.</p>
+</div>
+
+<h2>How visual footprint works</h2>
+
+<p>For a static (non-animated, non-sprite-sheet) item, the game computes a scale vector from the source PNG dimensions at load time. The relevant lines are at <code>Item.cs:285-286</code>:</p>
+
+<pre><code>this.vScale.x = (float)Mathf.Max(MathUtils.RoundToInt(
+    1f * (float)this.rend.sharedMaterial.GetTexture("_MainTex").width  / 16f), 1);
+this.vScale.y = (float)Mathf.Max(MathUtils.RoundToInt(
+    1f * (float)this.rend.sharedMaterial.GetTexture("_MainTex").height / 16f), 1);
+</code></pre>
+
+<p><strong>The tile size constant is 16 pixels.</strong> The game divides raw PNG width and height by 16 to get the number of tiles the sprite occupies visually. There is no config variable for this — it is a hard-coded integer literal throughout the rendering code. (The same constant appears in the inventory renderer at <code>GUIInventoryItem.cs:173,177</code> and in the <code>GetPos</code> offset math at <code>CondOwner.cs:7360</code>.)</p>
+
+<p>So for a sprite to display as an <em>N</em>&times;<em>M</em> tile item:</p>
+
+<pre><code>PNG width  = N * 16 px
+PNG height = M * 16 px
+</code></pre>
+
+<p>A 1&times;1 item needs a 16&times;16 PNG. A 2&times;1 item needs a 32&times;16 PNG. A 1&times;2 item needs a 16&times;32 PNG.</p>
+
+<div class="callout good">
+<p><strong>The <code>_Aspect</code> shader vector.</strong> Immediately after computing <code>vScale</code>, the game also calls <code>material.SetVector("_Aspect", ...)</code> with both the logical dimensions (<code>nWidthInTiles</code>, <code>nHeightInTiles</code>) and the raw pixel dimensions. The shader uses this vector to correctly tile and position the texture within the logical footprint. If <code>vScale</code> and the logical dimensions agree, everything lines up. When they diverge, the shader sees inconsistent inputs and the sprite renders too large or clipped.</p>
+</div>
+
+<h2>The two ways sprite size goes wrong</h2>
+
+<h3>Symptom 1: PNG too big</h3>
+
+<p>Your PNG is, say, 64&times;64 pixels. The game divides by 16 and gets a <code>vScale</code> of (4, 4) — a 4&times;4-tile visual footprint. But your item's <code>aSocketAdds</code> has one entry (<code>nWidthInTiles = 1</code>, <code>nHeightInTiles = 1</code>), so the <code>_Aspect</code> vector says 1&times;1. The shader stretches a 64&times;64 texture across a 1-tile cell, and the item renders giant.</p>
+
+<p><strong>Fix:</strong> Resize the PNG so its pixel dimensions match the intended logical footprint:</p>
+
+<pre><code>target PNG width  = nCols                         * 16 px
+target PNG height = (aSocketAdds.Count / nCols)   * 16 px
+</code></pre>
+
+<p>For a standard single-slot item: 16&times;16 px. For a 2-wide weapon: 32&times;16 px.</p>
+
+<h3>Symptom 2: Logical footprint wrong</h3>
+
+<p>The opposite: your PNG is the right size but you forgot to set <code>nCols</code> or <code>aSocketAdds</code> to match the intended footprint. The item visually occupies 1 tile but its socket array says it's 2&times;1, so it won't fit into 1-tile-wide inventory slots.</p>
+
+<p><strong>Fix:</strong> Audit <code>nCols</code> and <code>aSocketAdds.Count</code> together. The relationship must be:</p>
+
+<pre><code>nCols == intended width in tiles
+aSocketAdds.Count == nCols * (intended height in tiles)
+</code></pre>
+
+<p>If you want a 2-wide, 1-tall item: set <code>"nCols": 2</code> and supply exactly 2 entries in <code>aSocketAdds</code>.</p>
+
+<div class="callout pit">
+<p><strong>Asymmetric mistake.</strong> A common trap is to set <code>"nCols": 2</code> but only include one socket entry. <code>Count / nCols = 1 / 2 = 0</code> (integer division rounds down). The item gets a zero-height footprint, which makes it impossible to place and will produce silent failures, not obvious error messages.</p>
+</div>
+
+<h2>Inventory icon</h2>
+
+<p>The inventory icon is <em>not</em> a separate sprite field. The inventory grid renders the same <code>strImg</code> PNG that the floor view uses, loaded via <code>item.ImgOverride</code> (which defaults to <code>jid.strImg</code>). The rendered size in the inventory grid is determined at <code>GUIInventoryItem.cs:154-182</code>:</p>
+
+<ol>
+  <li>Start from the raw PNG width/height.</li>
+  <li>If the item's CondOwner definition (in <code>data/condowners/condowners.json</code>) has a non-zero <code>inventoryWidth</code> or <code>inventoryHeight</code>, override the pixel count: <code>num = inventoryWidth * 16</code> (same 16-px constant). Then pass those dimensions to the <code>_Aspect</code> shader vector.</li>
+  <li>If both <code>inventoryWidth</code> and <code>inventoryHeight</code> are zero or absent (the common case — no base-game item in the current data uses these fields), the inventory falls back to the raw texture dimensions.</li>
+</ol>
+
+<p>The grid slot size itself comes from <code>GUIInventoryItem.GetWidthHeightForCO</code> (<code>GUIInventoryItem.cs:18-37</code>): it starts with <code>item.nWidthInTiles</code> / <code>nHeightInTiles</code>, then overrides with <code>inventoryWidth</code> / <code>inventoryHeight</code> from the CondOwner def if set.</p>
+
+<div class="callout warn">
+<p><strong>If your item has no inventory icon.</strong> The most common cause is that <code>strImg</code> in the item def resolves to a file that doesn't exist, or resolves to <code>"blank"</code>. The game calls <code>DataHandler.LoadPNG(item.ImgOverride + ".png")</code> — the <code>.png</code> extension is appended automatically; don't include it in <code>strImg</code>. If the file is missing, the texture load silently returns a blank and the inventory slot appears empty.</p>
+</div>
+
+<dl class="field-list">
+  <dt>strImg</dt>
+  <dd>On the <code>items/</code> entry (<code>JsonItemDef</code>). Path to the PNG without extension. Used for both the floor render and the inventory icon. Example: <code>"strImg": "ItmDrinkFlask01"</code> loads <code>ItmDrinkFlask01.png</code>.</dd>
+  <dt>inventoryWidth / inventoryHeight</dt>
+  <dd>On the <code>condowners/</code> entry (<code>JsonCondOwner</code>). Optional override for the inventory grid slot size, in tiles. Rarely needed — only set these if you want the inventory representation to differ from what the PNG dimensions imply. Zero (or absent) means "use the PNG dimensions."</dd>
+</dl>
+
+<h2>strImgNorm — the normal map</h2>
+
+<p><code>strImgNorm</code> is the field on <code>JsonItemDef</code> (in your <code>items/</code> entry) that points to the normal-map texture. The game passes it to <code>DataHandler.GetMaterial</code> alongside <code>strImg</code>, and the shader reads it as the <code>_BumpMap</code> texture to compute per-pixel lighting direction. Without it, the item renders with flat lighting.</p>
+
+<p>The field is <strong>optional.</strong> If you omit <code>strImgNorm</code> or set it to <code>"blank"</code>, the item will still render; it just won't respond to the ship's dynamic lighting the way vanilla items do. For quick prototyping, you can skip it entirely and add it later.</p>
+
+<p>When you are ready to add a normal map, the standard workflow (used for all vanilla assets) is:</p>
+
+<ol>
+  <li>Open your <code>strImg</code> PNG in GIMP.</li>
+  <li>Go to <strong>Filters &rarr; Generic &rarr; Normal Map</strong>.</li>
+  <li>Adjust depth to taste (vanilla items typically use modest depth values so the lighting reads subtly). Export as a separate PNG.</li>
+  <li>Set <code>"strImgNorm": "&lt;your-normal-map-filename-without-extension&gt;"</code> in the item def.</li>
+</ol>
+
+<div class="callout good">
+<p><strong>Naming convention.</strong> Vanilla items follow the pattern <code>&lt;strImg&gt;n</code> for the normal map: <code>ItmDrinkFlask01</code> &rarr; <code>ItmDrinkFlask01n</code>. This is convention only — the field is a free path — but matching it keeps your mod's asset folder readable.</p>
+</div>
+
+<h2>Off-center rendering and mapPoints</h2>
+
+<p>The floor render positions the item's GameObject at the world coordinates <code>(fX, fY)</code> from the ship JSON, then sets <code>localScale</code> to <code>(vScale.x, vScale.y, 1)</code> (<code>Item.cs:591-593</code>). The origin of a Unity sprite is the center of its renderer bounds — so a 16&times;16 sprite on a 1&times;1-tile cell is centered on the tile grid point. A 32&times;16 sprite is centered on the midpoint between its two tile columns.</p>
+
+<p><strong>What causes off-center rendering.</strong> If your PNG is not an integer multiple of 16 px in each dimension, the <code>MathUtils.RoundToInt(... / 16f)</code> call rounds to the nearest integer tile count. A 20-px-wide sprite rounds to 1 tile of visual scale (20/16 = 1.25, rounds to 1), so the extra 4 px get cropped. A 24-px sprite rounds to 2 tiles (24/16 = 1.5, rounds to 2), so it renders at 2-tile width with most pixels unused — both cases look "off" in different ways. Keep PNG dimensions to exact multiples of 16.</p>
+
+<p><strong>mapPoints — named interaction offsets.</strong> The <code>mapPoints</code> field (on the <code>JsonItemDef</code> entry, and also on <code>JsonCondOwner</code> entries) defines named pixel offsets from the item's world position. Each entry is a comma-separated string <code>"name,x,y"</code> where <code>x</code> and <code>y</code> are in pixels relative to the item's center, divided by 16 to convert to world units (<code>CondOwner.cs:7360</code>). For example, <code>"use,24,0"</code> places the "use" interaction point 24 px (1.5 tiles) to the right of center.</p>
+
+<p><code>mapPoints</code> does <strong>not</strong> shift the sprite itself — it only affects where crew stand when interacting with the item, and where things like power cables connect. The sprite's visual anchor is always at the sprite center; <code>mapPoints</code> cannot be used to "nudge" the rendered image relative to the tile grid.</p>
+
+<div class="callout pit">
+<p><strong>Common off-center pitfall.</strong> Resizing a PNG in a tool that pads to a power-of-two (e.g. from 20&times;20 to 32&times;32 with transparent padding) will center the art content inside a larger canvas. The game sees a 32&times;32 sprite (2 tiles wide, 2 tiles tall) and renders it over 2&times;2 tiles, but the actual art content is in the center quarter. The fix is to crop the canvas tightly to the art and then resize to an exact tile multiple.</p>
+</div>
+
+<h2>Confidence — what was verified vs. inferred</h2>
+
+<table>
+  <thead>
+    <tr><th>Claim</th><th>Status</th><th>Source</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Tile size constant is 16 px</td>
+      <td><span class="verified ok">verified</span></td>
+      <td><code>Item.cs:285-286</code> (floor renderer), <code>GUIInventoryItem.cs:173,177</code> (inventory renderer), <code>CondOwner.cs:7360</code> (mapPoints offset math) — the literal <code>16f</code> appears independently in all three</td>
+    </tr>
+    <tr>
+      <td>Logical footprint: <code>nWidthInTiles = jid.nCols</code>, <code>nHeightInTiles = aSocketAdds.Count / jid.nCols</code></td>
+      <td><span class="verified ok">verified</span></td>
+      <td><code>Item.cs:271-272</code>; confirmed against four items in <code>data/items/items.json</code> (Flask01 1&times;1, Flask02 1&times;2, Nightstick01 1&times;1, Nightstick02 2&times;1)</td>
+    </tr>
+    <tr>
+      <td>Visual footprint: <code>vScale = round(px / 16)</code> with minimum 1</td>
+      <td><span class="verified ok">verified</span></td>
+      <td><code>Item.cs:285-286</code>; same formula in animated path at <code>Item.cs:196-197</code></td>
+    </tr>
+    <tr>
+      <td>Inventory icon uses same <code>strImg</code> PNG; no separate icon field on <code>JsonItemDef</code></td>
+      <td><span class="verified ok">verified</span></td>
+      <td><code>GUIInventoryItem.cs:156</code> loads <code>item.ImgOverride + ".png"</code>; <code>JsonItemDef.cs</code> has no <code>strImgIcon</code> or similar field</td>
+    </tr>
+    <tr>
+      <td><code>strImgNorm</code> is optional and drives the normal-map (<code>_BumpMap</code>) shader slot</td>
+      <td><span class="verified ok">verified</span></td>
+      <td><code>Item.cs:284</code> passes <code>strImgNormOverride</code> to <code>DataHandler.GetMaterial</code>; <code>Item.cs:447-449</code> shows <code>SetUpInventoryMaterial</code> binds it as <code>_BumpMap</code></td>
+    </tr>
+    <tr>
+      <td><code>mapPoints</code> controls interaction offsets only, not sprite anchor</td>
+      <td><span class="verified ok">verified</span></td>
+      <td><code>CondOwner.cs:7357-7363</code>: <code>mapPoints</code> values used only inside <code>GetPos(strPointName)</code>; sprite transform set independently in <code>Item.ResetTransforms</code> at <code>Item.cs:588-605</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Summary: 6 verified, 0 inferred.</strong> All six claims are grounded in specific lines of decompiled C# and confirmed against live data/items entries.</p>
+
+<div class="qr">
+<h3>Quick reference — sprite misbehaving checklist</h3>
+<ol>
+  <li><strong>Measure your PNG.</strong> Width and height should each be an exact multiple of 16 px and equal to <code>nCols * 16</code> and <code>(aSocketAdds.Count / nCols) * 16</code> respectively.</li>
+  <li><strong>Count your sockets.</strong> <code>aSocketAdds.Count</code> must equal <code>nCols &times; intended_height_in_tiles</code>. A count that's not divisible by <code>nCols</code> gives fractional tiles (C# integer division truncates).</li>
+  <li><strong>Check your PNG path.</strong> <code>strImg</code> must be a filename <em>without</em> the <code>.png</code> extension. The game appends it. A typo or missing file gives a blank inventory icon.</li>
+  <li><strong>Off-center?</strong> Crop the PNG canvas tightly to the art. No power-of-two padding. Keep pixel dimensions at multiples of 16.</li>
+  <li><strong>No lighting response?</strong> Add <code>strImgNorm</code> pointing to a normal-map PNG (GIMP: Filters &rarr; Generic &rarr; Normal Map on your base sprite). Optional but recommended for any item that will be in lit spaces.</li>
+  <li><strong>Inventory slot wrong size?</strong> The slot size comes from <code>nWidthInTiles</code> / <code>nHeightInTiles</code>, which come from <code>nCols</code> / <code>aSocketAdds</code>. Fix step 2. If you specifically need an inventory size that differs from the world footprint, set <code>inventoryWidth</code> / <code>inventoryHeight</code> on the CondOwner entry (rare; no base-game item currently uses this override).</li>
+</ol>
+</div>
+
+</main>
+</body>
+</html>
