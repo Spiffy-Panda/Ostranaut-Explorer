@@ -4,6 +4,20 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-10 — PLAN-BUILDER: ship-inspector axis opened + Phase 1 agent handoff
+
+Pulled from a community ask in the BlueBottleGames Discord modding channel: **El** asked whether someone could build a tool that takes a ship file and emits a component checklist (how many walls, floors, conduits, lights — to assemble a "kit" for building from scratch). **Ne** seconded. **Ro** proposed the rough shape — make a DTO of the ship + enumerate components by ID, then dump the list — and identified the load-bearing complication: friendly-name resolution would need the user's local game install path so the tool can read the base-game data tree. Talked through it with user; observation: that resolution **already lives on the explorer** (we ship `properties.js`/`graph.js` derived from `data/condowners/` + `data/cooverlays/`), so a static-site tool layered on the explorer's data avoids the install-path problem entirely. Picked option 1 of three (site-side tool inside the explorer) over a static handoff guide or a standalone CLI. No verbatim chat content quoted; pre-existing rule in CLAUDE.local.md against full-handles in tracked notes still applies, abbreviated initials used here for workflow brevity.
+
+[PLAN-BUILDER.md](PLAN-BUILDER.md) is the fourth plan axis after EXPLORER / AST / DESIGN. Four phases: (1) Python data extractor that walks `RandomShip` / `RandomDerelict{Small,Medium,Big}` / `RandomShipOld` loot tables, strips each `data/ships/<reg>.json` to inspector-relevant fields, classifies every CO into one of eight buckets (walls/floors/doors/conduits/containers/equipment/decorative/other) by `aStartingConds`, emits a manifest + canned-ship JSONs + a base-game-wide ID→friendly-name table; (2) refactor `window.ROOMS` and the per-room card render function out of `rooms-reference.html` into a shared `rooms.js`; (3) the `ship-inspector.html` page itself — dropdown + upload, coarse 2D wall/floor/empty grid, foldout component checklists with persistent localStorage state, pinnable per-room requirement cards, gzip-compressed upload caching so re-opens rehydrate; (4) add a "Ship Inspector" link on the right side of the `explorer.html` nav (no backlink for v1; surrounding site isn't ready for cross-linking).
+
+[notes/agent-prompts/ship-inspector-builder.md](notes/agent-prompts/ship-inspector-builder.md) is a self-contained Phase-1 handoff for a fresh agent session — required-reading list in dependency order, exact deliverable spec, sanity-check criteria, commit hygiene, and instructions to write a Phase-2 prompt at `notes/agent-prompts/ship-inspector-builder-phase2.md` when Phase 1 lands. New `notes/agent-prompts/` folder convention is intentionally distinct from `notes/handoff/` (modder-facing HTML guides) — agent prompts are project-internal bootstrap docs, not redistributable artifacts.
+
+PLAN.md routing not yet updated; that's a follow-up coordination edit (move from "three plans" to "four plans" in the routing summary).
+
+Pre-push fair-use: factor 1 transformative (project planning + agent-bootstrap docs, our prose), factor 2 our writing — no game prose, no decompiled C# excerpts, factor 3 nothing taken, factor 4 no substitution risk. All four trivially clear.
+
+---
+
 ## 2026-05-10 — Land deferred frontend + housekeeping batch
 
 Catch-up commit landing several stretches of frontend + tooling whose DEV-LOG entries were committed in `1d29d3e` but whose code hadn't been staged yet:
