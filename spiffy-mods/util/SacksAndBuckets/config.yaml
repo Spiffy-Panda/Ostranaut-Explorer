@@ -29,38 +29,24 @@ kiosk_stock:
   bucket_count_min: 1
   bucket_count_max: 1
 
-# Sprite generation. The script reads PNGs of the base container + the
-# scavenge material from `sprite_sources/<name>.png` (you stage them by
-# copying from your game install or extracting via UABE/AssetStudio),
-# composites them, and writes new PNGs to `out_root` below. items.json
-# generation references these names via `strImg`.
+# Sprite generation. Fully procedural: emit_sprites.py draws each sack
+# and bucket from PIL primitives, fills with the item's `color`, and
+# stamps a 2-char `label` in the center. No vanilla PNG extraction
+# required.
 sprite_gen:
-  # Where to look for source PNGs (vanilla bag/crate art + each item's
-  # icon). You stage these manually -- the script doesn't fetch from the
-  # game install, since extraction tooling and asset paths vary.
-  sources_dir: spiffy-mods/util/SacksAndBuckets/sprite_sources
-
   # Where the generated sprites land. Per DataHandler.LoadPNG (decomp at
   # DataHandler.cs:1196), the runtime looks for images at
   # <modroot>/images/<strImg>.png -- so the output dir is the mod's
   # images/ folder (a *sibling* of data/, not under it).
   output_dir: spiffy-mods/mods/SacksAndBuckets/images
 
-  # Base art for each container variant. Filenames are <name>.png in
-  # sources_dir (so sack_base = "ItmBackpack02" -> ItmBackpack02.png).
-  sack_base: ItmBackpack02
-  bucket_base: ItmCrate01
+  # Canvas size in pixels (square). 64 is a comfortable default --
+  # readable label, recognisable shape. Drop to 32 for a chunkier
+  # pixel-art feel.
+  sprite_size: 64
 
-  # Scavenge-material overlay properties.
-  # Scale is the material's size relative to the base (0.667 = 2/3).
-  # Offset is in pixels from the base's center; positive = right/down.
-  material_scale: 0.667
-  material_offset_x: 0
-  material_offset_y: 0
-
-  # If a source file is missing, write a placeholder PNG with the base
-  # art only and log a warning. Set false to fail hard instead.
-  warn_on_missing_material: true
+  # Label point size. Should be ~1/3 of sprite_size for legibility.
+  label_size: 22
 
 # The 12 item types. Each entry produces:
 #   * 1 sack CO + 1 bucket CO (in condowners.json)
@@ -71,87 +57,93 @@ sprite_gen:
 #   * 2 generated sprite PNGs (sack + bucket, blended from base + sprite_source)
 #
 # Field meanings:
-#   suffix         -- appended to ItmSack / ItmBucket; also the strName
-#                     suffix of the fit-gate (TIsFitContainer<suffix>).
-#   source         -- the vanilla *condowner* strName this container is
-#                     "for". Documentary; not used by generators.
-#   sprite_source  -- the vanilla *strImg* (sprite name) we composite as
-#                     the material overlay. Read by emit_sprites.py:
-#                     looks for <sprite_source>.png in sources_dir.
-#                     Five of these differ from `source` because the
-#                     source CO's strItemDef points at a *shared*
-#                     ItemDef -- e.g. ItmScrapTrash uses ItmTrash02 art,
-#                     ItmScrapCarbonFiber uses ItmTrash01 art, etc.
-#                     If you can't find <sprite_source>.png in your
-#                     game install, run:
-#                       grep '"strName":"<source>"' data/condowners/*
-#                     and follow strItemDef -> data/items/items.json's
-#                     strImg to find the canonical sprite name.
-#   gate           -- TIsFitContainer<suffix> condtrig the sack/bucket
-#                     points its strContainerCT at.
-#   noun           -- plural noun used in strNameFriendly / strDesc.
+#   suffix  -- appended to ItmSack / ItmBucket; also the strName suffix
+#              of the fit-gate (TIsFitContainer<suffix>).
+#   source  -- the vanilla *condowner* strName this container is "for".
+#              Documentary; not used by generators.
+#   gate    -- TIsFitContainer<suffix> condtrig the sack/bucket points
+#              its strContainerCT at.
+#   noun    -- plural noun used in strNameFriendly / strDesc.
+#   color   -- hex RGB string. emit_sprites.py fills the sack/bucket
+#              body with this colour. Pick something distinct +
+#              evocative of the held material; the label provides the
+#              tiebreaker for similar colours.
+#   label   -- exactly 2 characters. Stamped centred on every sprite
+#              of this type. Designed so a player can identify the
+#              contents at a glance even if colours blur.
 items:
   - suffix: Trash
     source: ItmScrapTrash
-    sprite_source: ItmTrash02            # ItmScrapTrash.strItemDef = ItmTrash02
     gate: TIsFitContainerTrash
     noun: trash
+    color: "#6B5B3E"     # muddy brown
+    label: TR
   - suffix: PartsMechSmall
     source: ItmPartsMechSmall01
-    sprite_source: ItmPartsMechSmall01
     gate: TIsFitContainerPartsMechSmall
     noun: small mech parts
+    color: "#696969"     # dim gray (mechanical)
+    label: MP
   - suffix: ScrapSteel
     source: ItmScrapSteel
-    sprite_source: ItmScrapMetal01       # shared steel/metal sprite
     gate: TIsFitContainerScrapSteel
     noun: steel scrap
+    color: "#8B8B8B"     # steel gray
+    label: SS
   - suffix: PartsElecSmall
     source: ItmPartsElecSmall01
-    sprite_source: ItmPartsElecSmall01
     gate: TIsFitContainerPartsElecSmall
     noun: small elec parts
+    color: "#2E8B57"     # sea green (elec parts often have green PCB)
+    label: EP
   - suffix: ComponentMobo
     source: ItmComponentMobo01
-    sprite_source: ItmComponentMobo01
     gate: TIsFitContainerComponentMobo
     noun: motherboards
+    color: "#1A5F3F"     # dark green (PCB substrate)
+    label: MB
   - suffix: ScrapAluminum
     source: ItmScrapAluminum
-    sprite_source: ItmScrapMetal02       # shared aluminum/metal sprite
     gate: TIsFitContainerScrapAluminum
     noun: aluminum scrap
+    color: "#C0C0C0"     # silver
+    label: SA
   - suffix: ComponentMotor
     source: ItmComponentMotor01
-    sprite_source: ItmComponentMotor01
     gate: TIsFitContainerComponentMotor
     noun: small motors
+    color: "#B87333"     # copper
+    label: MT
   - suffix: HeatSink
     source: ItmHeatSink01
-    sprite_source: ItmHeatSink01
     gate: TIsFitContainerHeatSink
     noun: heat sinks
+    color: "#708090"     # slate gray (anodized aluminum)
+    label: HS
   - suffix: ScrapCarbonFiber
     source: ItmScrapCarbonFiber
-    sprite_source: ItmTrash01            # shared trash sprite -- vanilla
-                                         # uses Trash01 art for carbon scrap
     gate: TIsFitContainerScrapCarbonFiber
     noun: carbon fiber scrap
+    color: "#1C1C1C"     # near-black
+    label: CF
   - suffix: PartsScreen
     source: ItmPartsScreen01
-    sprite_source: ItmPartsScreen01
     gate: TIsFitContainerPartsScreen
     noun: screen fragments
+    color: "#1E3A5F"     # dark blue (screen glass)
+    label: SC
   - suffix: ScrapPlastic
     source: ItmScrapPlastic
-    sprite_source: ItmScrapPlastic01     # numbered variant
     gate: TIsFitContainerScrapPlastic
     noun: plastic scrap
+    color: "#DAA520"     # goldenrod (yellow-tinted plastic)
+    label: PL
   - suffix: ScrapClothDirty
     source: ItmScrapClothDirty
-    sprite_source: ItmScrapClothDirty
     gate: TIsFitContainerScrapClothDirty
     noun: dirty cloth scraps
+    color: "#C2B280"     # dirty tan
+    label: CL
 
 # The kiosk CO. Modeled on ItmKioskSupplies01 but with crate-shape
 # spawnability (no IsInstalled, has IsOversized/IsRigid) so

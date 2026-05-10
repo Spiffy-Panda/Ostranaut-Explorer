@@ -1,53 +1,28 @@
-"""Composite scavenge-material PNGs onto base sack/crate sprites.
+"""Procedural sprite generator for SacksAndBuckets.
 
-For each item in config.yaml's `items` list, produces two PNGs in
-sprite_gen.output_dir:
-  ItmSack<Suffix>.png    = sack_base + <sprite_source> material at material_scale
-  ItmBucket<Suffix>.png  = bucket_base + <sprite_source> material at material_scale
+For each item in config.yaml's `items` list, draws two PNGs in
+sprite_gen.output_dir using PIL primitives:
+  ItmSack<Suffix>.png    -- rounded sack silhouette filled with `color`,
+                            stamped with the 2-char `label` in the centre.
+  ItmBucket<Suffix>.png  -- rigid trapezoidal bucket with rim + handle,
+                            same colour + label.
+
+No vanilla sprite extraction required -- everything is drawn from
+shapes (polygon, rounded_rectangle, ellipse, arc, line) and PIL's
+truetype text rendering.
 
 Output path: per DataHandler.LoadPNG (decomp DataHandler.cs:1196), the
 runtime resolves item sprites as <modroot>/images/<strImg>.png. So
-output_dir in config.yaml is set to mods/SacksAndBuckets/images/ -- a
-sibling of data/, not under it. The mod's items.json sets each
-container's strImg = its strName, so e.g. ItmSackTrash.png ends up at
+sprite_gen.output_dir in config.yaml is set to
+mods/SacksAndBuckets/images/. items.json sets each container's strImg
+= its strName, so e.g. ItmSackTrash.png ends up at
 mods/SacksAndBuckets/images/ItmSackTrash.png and the runtime finds it.
 
-A note on sprite sheets: items with bHasSpriteSheet=true (decomp
-JsonItemDef.cs:75) load their PNG via DataHandler.GetMaterialSheet
-(DataHandler.cs:3495), which treats the file as a 16-px-cell grid:
-  cellWidth_uv  = tileWidth * 16 / texture.width
-  cellHeight_uv = tileHeight * 16 / texture.height
-  nCols = round(1 / cellWidth_uv)   # derived from texture pixel size
-  nRows = round(1 / cellHeight_uv)
-  cellRow = floor(nIndex / nCols);  cellCol = nIndex % nCols
-This is what auto-tiling walls/floors use (e.g. ItmFloorGrate01_4x4 is
-a 4x4 = 16-cell sheet). Our containers are bHasSpriteSheet=false
-(single image), so this doesn't apply -- we just paste the whole
-material PNG. If you ever want a SacksAndBuckets entry to use a sheet
-source as material, this script will need to extract the right cell
-first; not implemented since none of the 12 current sources are
-sheets.
-
-Source PNGs are read from sprite_gen.sources_dir (you stage them by
-copying from your game install or extracting via UABE / AssetStudio --
-the script doesn't fetch from the game install since extraction tooling
-and asset paths vary by Ostranauts version). Expected filenames:
-  <sack_base>.png        e.g. ItmBackpack02.png
-  <bucket_base>.png      e.g. ItmCrate01.png
-  <sprite_source>.png    one per item -- this is the strImg name of the
-                         vanilla item, not the strName. They diverge for
-                         5 of the 12: ItmScrapTrash uses ItmTrash02 art,
-                         ItmScrapSteel uses ItmScrapMetal01, etc. The
-                         per-item sprite_source field in config.yaml
-                         spells out which file to expect.
-
-Material is centered on the base by default; configurable via
-material_offset_x / material_offset_y in config.yaml.
-
-If a material PNG is missing and warn_on_missing_material is true, the
-script writes a copy of the base alone and logs a warning -- so the
-generation still produces a complete sprite set even if some items
-haven't been staged yet. Set warn_on_missing_material false to fail hard.
+Style is "graphic icon" not pixel art -- the shapes are anti-aliased.
+For a chunkier pixel-art feel, drop sprite_size in config to 32 or
+even 16. Anti-aliasing remains; for true blocky pixels you'd render
+to a tiny canvas and upscale with Image.NEAREST (not implemented;
+deferred until a style pass).
 
 Run: python spiffy-mods/util/SacksAndBuckets/emit_sprites.py
 """
@@ -57,107 +32,270 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 from _lib import REPO_ROOT, load_config
 
 
-def composite(base: Image.Image, material: Image.Image, scale: float, ox: int, oy: int) -> Image.Image:
-    """Return base with material pasted at scale*base, centered + offset.
+# ---------------------------------------------------------------------------
+# Colour utilities
+# ---------------------------------------------------------------------------
 
-    Both images are converted to RGBA. The material is resized so its
-    *longer* edge equals scale * base's longer edge (preserves aspect),
-    then anchor-centered on the base with optional pixel offset.
+def hex_to_rgb(hex_str: str) -> tuple[int, int, int]:
+    h = hex_str.lstrip("#")
+    if len(h) != 6:
+        raise ValueError(f"expected 6-char hex colour, got {hex_str!r}")
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+def darken(rgb: tuple[int, int, int], factor: float) -> tuple[int, int, int]:
+    """Multiply each channel by `factor` (0..1), clamping to [0, 255]."""
+    return tuple(max(0, min(255, int(c * factor))) for c in rgb)  # type: ignore[return-value]
+
+
+def label_color_for(bg: tuple[int, int, int]) -> tuple[int, int, int]:
+    """Pick black or white for label text given a background colour, by
+    relative luminance (Rec. 601). Dark backgrounds get white text."""
+    luminance = 0.299 * bg[0] + 0.587 * bg[1] + 0.114 * bg[2]
+    return (255, 255, 255) if luminance < 128 else (0, 0, 0)
+
+
+# ---------------------------------------------------------------------------
+# Font lookup -- try common system fonts, fall back to PIL bitmap default
+# ---------------------------------------------------------------------------
+
+_FONT_CANDIDATES = [
+    # Windows
+    r"C:\Windows\Fonts\arialbd.ttf",
+    r"C:\Windows\Fonts\arial.ttf",
+    r"C:\Windows\Fonts\segoeuib.ttf",
+    # Linux (Debian/Ubuntu typical)
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    # macOS
+    "/System/Library/Fonts/Helvetica.ttc",
+    "/Library/Fonts/Arial Bold.ttf",
+]
+
+
+def get_font(point_size: int) -> ImageFont.ImageFont:
+    for p in _FONT_CANDIDATES:
+        if Path(p).exists():
+            try:
+                return ImageFont.truetype(p, point_size)
+            except Exception:
+                continue
+    print(
+        "warning: no truetype font found; falling back to PIL's default "
+        "bitmap font (label will be tiny). Add a font path to "
+        "_FONT_CANDIDATES to fix.",
+        file=sys.stderr,
+    )
+    return ImageFont.load_default()
+
+
+# ---------------------------------------------------------------------------
+# Drawing
+# ---------------------------------------------------------------------------
+
+def draw_sack(color: tuple[int, int, int], label: str, size: int, label_pt: int) -> Image.Image:
+    """A potato-sack silhouette: narrow tied top, wide rounded bottom.
+
+    Approximated as a polygon with extra width below the cinch. The cinch
+    is a darker band; the body fills with `color`. Label centred over body.
     """
-    base = base.convert("RGBA")
-    material = material.convert("RGBA")
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    outline = darken(color, 0.55)
 
-    bw, bh = base.size
-    mw, mh = material.size
+    # Coordinate landmarks scaled to canvas size.
+    s = size
+    margin = max(1, s // 16)
+    cinch_y = s // 5                    # the tied throat of the sack
+    bottom_y = s - margin
+    cinch_half_w = s // 6
+    body_half_w = (s - margin * 2) // 2
 
-    # Resize material so its longer edge = scale * base's longer edge.
-    base_long = max(bw, bh)
-    target_long = max(1, round(scale * base_long))
-    if mw >= mh:
-        new_mw = target_long
-        new_mh = max(1, round(mh * (target_long / mw)))
+    cx = s // 2
+
+    # Body: 6-point polygon, hourglass-ish above the cinch line, swollen below.
+    body_pts = [
+        (cx - cinch_half_w, cinch_y),                  # top-left of cinch
+        (cx + cinch_half_w, cinch_y),                  # top-right of cinch
+        (cx + body_half_w, cinch_y + (s // 6)),        # widening shoulder right
+        (cx + body_half_w, bottom_y - (s // 8)),       # straight side right
+        (cx + body_half_w - (s // 12), bottom_y),      # rounded bottom right
+        (cx - body_half_w + (s // 12), bottom_y),      # rounded bottom left
+        (cx - body_half_w, bottom_y - (s // 8)),       # straight side left
+        (cx - body_half_w, cinch_y + (s // 6)),        # widening shoulder left
+    ]
+    draw.polygon(body_pts, fill=color + (255,), outline=outline + (255,))
+
+    # Cinch band -- darker horizontal stripe at the throat.
+    cinch_y2 = cinch_y + max(2, s // 24)
+    draw.rectangle(
+        [(cx - cinch_half_w - 2, cinch_y - 1), (cx + cinch_half_w + 2, cinch_y2)],
+        fill=outline + (255,),
+    )
+
+    # Drawstring stub above the cinch.
+    stub_top_y = max(1, margin)
+    stub_w = max(1, s // 32)
+    draw.line(
+        [(cx, stub_top_y), (cx, cinch_y - 1)],
+        fill=outline + (255,),
+        width=stub_w * 2,
+    )
+    # Two little knot blobs.
+    knot_r = max(2, s // 24)
+    draw.ellipse(
+        [(cx - knot_r - 2, stub_top_y - 1), (cx - 2, stub_top_y + knot_r * 2 - 1)],
+        fill=outline + (255,),
+    )
+    draw.ellipse(
+        [(cx + 2, stub_top_y - 1), (cx + knot_r + 2, stub_top_y + knot_r * 2 - 1)],
+        fill=outline + (255,),
+    )
+
+    # Label. Vertically centred between the cinch and the bottom.
+    label_band_top = cinch_y2 + 2
+    label_band_bot = bottom_y
+    draw_label(draw, label, (s, s), label_pt, label_color_for(color),
+               y_band=(label_band_top, label_band_bot))
+    return img
+
+
+def draw_bucket(color: tuple[int, int, int], label: str, size: int, label_pt: int) -> Image.Image:
+    """A trapezoidal bucket: top rim wider than bottom, with arc handle."""
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    outline = darken(color, 0.55)
+    highlight = darken(color, 1.25)  # >1 actually clamps to 255 → lighter
+
+    s = size
+    margin = max(1, s // 16)
+    rim_y = s // 4
+    bottom_y = s - margin
+    rim_half_w = (s - margin * 2) // 2
+    bot_half_w = rim_half_w - (s // 10)
+    cx = s // 2
+
+    # Trapezoidal body.
+    body_pts = [
+        (cx - rim_half_w, rim_y),
+        (cx + rim_half_w, rim_y),
+        (cx + bot_half_w, bottom_y),
+        (cx - bot_half_w, bottom_y),
+    ]
+    draw.polygon(body_pts, fill=color + (255,), outline=outline + (255,))
+
+    # Top rim -- ellipse cap that gives the bucket a 3D feel.
+    rim_h = max(3, s // 10)
+    draw.ellipse(
+        [(cx - rim_half_w, rim_y - rim_h // 2),
+         (cx + rim_half_w, rim_y + rim_h // 2)],
+        fill=highlight + (255,),
+        outline=outline + (255,),
+    )
+
+    # Handle arc above the rim.
+    handle_top = max(1, margin)
+    handle_h = rim_y - handle_top + 2
+    handle_w = rim_half_w - (s // 16)
+    arc_w = max(2, s // 32)
+    draw.arc(
+        [(cx - handle_w, handle_top),
+         (cx + handle_w, handle_top + handle_h * 2)],
+        start=180,
+        end=360,
+        fill=outline + (255,),
+        width=arc_w,
+    )
+
+    # Bottom shadow strip for depth.
+    shadow_w = max(2, s // 32)
+    draw.line(
+        [(cx - bot_half_w + 2, bottom_y - 1),
+         (cx + bot_half_w - 2, bottom_y - 1)],
+        fill=outline + (255,),
+        width=shadow_w,
+    )
+
+    # Label. Centred in the trapezoid body.
+    label_band_top = rim_y + rim_h // 2 + 2
+    label_band_bot = bottom_y - 2
+    draw_label(draw, label, (s, s), label_pt, label_color_for(color),
+               y_band=(label_band_top, label_band_bot))
+    return img
+
+
+def draw_label(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    canvas: tuple[int, int],
+    point_size: int,
+    color: tuple[int, int, int],
+    y_band: tuple[int, int] | None = None,
+) -> None:
+    """Stamp `text` centred horizontally + vertically in `y_band` (or in
+    the whole canvas if y_band is None). Adds a contrast stroke."""
+    font = get_font(point_size)
+    cw, ch = canvas
+    bbox = draw.textbbox((0, 0), text, font=font, stroke_width=1)
+    tw = bbox[2] - bbox[0]
+    th = bbox[3] - bbox[1]
+    if y_band is None:
+        y_top, y_bot = 0, ch
     else:
-        new_mh = target_long
-        new_mw = max(1, round(mw * (target_long / mh)))
-    material = material.resize((new_mw, new_mh), Image.Resampling.LANCZOS)
+        y_top, y_bot = y_band
+    x = (cw - tw) // 2 - bbox[0]
+    y = y_top + ((y_bot - y_top) - th) // 2 - bbox[1]
+    stroke_fill = (0, 0, 0) if color == (255, 255, 255) else (255, 255, 255)
+    draw.text(
+        (x, y),
+        text,
+        fill=color,
+        font=font,
+        stroke_width=1,
+        stroke_fill=stroke_fill,
+    )
 
-    out = base.copy()
-    # Center the material; offset is from center, positive = right/down.
-    px = (bw - new_mw) // 2 + ox
-    py = (bh - new_mh) // 2 + oy
-    out.alpha_composite(material, (px, py))
-    return out
 
-
-def load_or_none(path: Path) -> Image.Image | None:
-    if not path.exists():
-        return None
-    return Image.open(path)
-
+# ---------------------------------------------------------------------------
+# Driver
+# ---------------------------------------------------------------------------
 
 def main() -> int:
     cfg = load_config()
     sprite_cfg = cfg["sprite_gen"]
-    sources_dir = REPO_ROOT / sprite_cfg["sources_dir"]
     output_dir = REPO_ROOT / sprite_cfg["output_dir"]
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    sack_base_path = sources_dir / f"{sprite_cfg['sack_base']}.png"
-    bucket_base_path = sources_dir / f"{sprite_cfg['bucket_base']}.png"
-    sack_base = load_or_none(sack_base_path)
-    bucket_base = load_or_none(bucket_base_path)
-
-    if sack_base is None or bucket_base is None:
-        print(
-            f"ERROR: missing base sprite(s) under {sources_dir.relative_to(REPO_ROOT)}\n"
-            f"  expected {sprite_cfg['sack_base']}.png and {sprite_cfg['bucket_base']}.png\n"
-            f"  stage them by copying from your game install (extract via UABE or AssetStudio).",
-            file=sys.stderr,
-        )
-        return 1
-
-    scale = sprite_cfg["material_scale"]
-    ox = int(sprite_cfg["material_offset_x"])
-    oy = int(sprite_cfg["material_offset_y"])
-    warn_missing = bool(sprite_cfg["warn_on_missing_material"])
+    sprite_size = int(sprite_cfg.get("sprite_size", 64))
+    label_pt = int(sprite_cfg.get("label_size", max(8, sprite_size // 3)))
 
     written = 0
-    skipped: list[str] = []
     for item in cfg["items"]:
         suffix = item["suffix"]
-        # sprite_source is the vanilla strImg (the actual sprite filename);
-        # `source` (the strName) is documentary only since 5 of 12 items
-        # use a shared/aliased ItemDef whose strImg differs from the strName.
-        sprite_name = item.get("sprite_source") or item["source"]
-        material_path = sources_dir / f"{sprite_name}.png"
-        material = load_or_none(material_path)
+        try:
+            color = hex_to_rgb(item["color"])
+        except KeyError:
+            print(f"ERROR: item {suffix!r} missing `color` field", file=sys.stderr)
+            return 1
+        label = str(item.get("label", suffix[:2].upper()))
+        if len(label) != 2:
+            print(
+                f"warning: item {suffix!r} label {label!r} is not 2 chars; "
+                f"truncating/padding", file=sys.stderr,
+            )
+            label = (label + "??")[:2]
 
-        if material is None:
-            msg = f"missing material {sprite_name}.png; "
-            if warn_missing:
-                print(f"warning: {msg}using base alone for ItmSack{suffix} / ItmBucket{suffix}", file=sys.stderr)
-                sack_out = sack_base.copy().convert("RGBA")
-                bucket_out = bucket_base.copy().convert("RGBA")
-                skipped.append(source)
-            else:
-                print(f"ERROR: {msg}aborting (warn_on_missing_material=false)", file=sys.stderr)
-                return 1
-        else:
-            sack_out = composite(sack_base, material, scale, ox, oy)
-            bucket_out = composite(bucket_base, material, scale, ox, oy)
-
-        sack_out.save(output_dir / f"ItmSack{suffix}.png")
-        bucket_out.save(output_dir / f"ItmBucket{suffix}.png")
+        sack_img = draw_sack(color, label, sprite_size, label_pt)
+        bucket_img = draw_bucket(color, label, sprite_size, label_pt)
+        sack_img.save(output_dir / f"ItmSack{suffix}.png")
+        bucket_img.save(output_dir / f"ItmBucket{suffix}.png")
         written += 2
 
     print(f"Wrote {written} sprite(s) to {output_dir.relative_to(REPO_ROOT)}")
-    if skipped:
-        print(f"  ({len(skipped)} material PNG(s) missing; used base alone for: {', '.join(skipped)})")
     return 0
 
 

@@ -12,9 +12,8 @@ util/SacksAndBuckets/
 ├── emit_condowners.py      writes mods/SacksAndBuckets/data/condowners/condowners.json
 ├── emit_items.py           writes mods/SacksAndBuckets/data/items/items.json
 ├── emit_loot.py            writes mods/SacksAndBuckets/data/loot/loot.json + loot_self_reference.json
-├── emit_sprites.py         composites scavenge-material PNGs onto base sack/crate sprites
-├── emit_all.py             runs all four in order (sprites first, then JSON)
-└── sprite_sources/         (gitignored) drop your staged vanilla PNGs here
+├── emit_sprites.py         draws sack/bucket PNGs from PIL primitives + per-item colour + 2-char label
+└── emit_all.py             runs all four in order (sprites first, then JSON)
 ```
 
 `condtrigs.json` and `interactions.json` and `guipropmaps.json` are not
@@ -22,63 +21,39 @@ generated -- they're small enough (12 / 1 / 1 entries) that hand-editing
 in [mods/SacksAndBuckets/data/](../../mods/SacksAndBuckets/data/) is the
 clearer source of truth.
 
-## Sprite sources -- staging vanilla PNGs
+## Sprites -- fully procedural, no vanilla extraction
 
-`emit_sprites.py` reads PNGs from the path given by
-`sprite_gen.sources_dir` in [config.yaml](config.yaml) (default:
-`spiffy-mods/util/SacksAndBuckets/sprite_sources/`). You stage them by
-copying from your game install or extracting via UABE / AssetStudio --
-the script doesn't fetch from the game install since extraction tooling
-and asset paths vary by Ostranauts version.
+`emit_sprites.py` draws every sprite from PIL primitives. There are
+no source PNGs to stage; the only inputs are the per-item `color`
+and `label` fields in [config.yaml](config.yaml).
 
-Expected filenames in `sources_dir/`:
+For each row in `items:`, the script writes two PNGs:
 
-- The two base container sprites: `ItmBackpack02.png`, `ItmCrate01.png`.
-- One material sprite per item type, named after the **vanilla
-  `strImg`** (sprite name), not the condowner's `strName`. These
-  diverge for 5 of the 12 items because vanilla aliases shared art
-  through `strItemDef`. The mapping:
+- **`ItmSack<Suffix>.png`** -- a rounded sack silhouette: cinched neck,
+  drawstring stub with knot blobs, swollen body. Filled with the row's
+  `color`; outlined in a darkened version. The 2-char `label` is
+  stamped centred in the body.
+- **`ItmBucket<Suffix>.png`** -- a rigid trapezoidal bucket: top rim
+  (lighter ellipse), trapezoidal body, arc handle above the rim,
+  shadow line on the bottom. Same colour + label.
 
-  | condowner strName     | sprite to stage           |
-  |-----------------------|---------------------------|
-  | `ItmScrapTrash`       | **`ItmTrash02.png`**      |
-  | `ItmPartsMechSmall01` | `ItmPartsMechSmall01.png` |
-  | `ItmScrapSteel`       | **`ItmScrapMetal01.png`** |
-  | `ItmPartsElecSmall01` | `ItmPartsElecSmall01.png` |
-  | `ItmComponentMobo01`  | `ItmComponentMobo01.png`  |
-  | `ItmScrapAluminum`    | **`ItmScrapMetal02.png`** |
-  | `ItmComponentMotor01` | `ItmComponentMotor01.png` |
-  | `ItmHeatSink01`       | `ItmHeatSink01.png`       |
-  | `ItmScrapCarbonFiber` | **`ItmTrash01.png`**      |
-  | `ItmPartsScreen01`    | `ItmPartsScreen01.png`    |
-  | `ItmScrapPlastic`     | **`ItmScrapPlastic01.png`**|
-  | `ItmScrapClothDirty`  | `ItmScrapClothDirty.png`  |
+Per-item palette + label live in `items:`:
 
-  The per-item `sprite_source` field in [config.yaml](config.yaml)
-  records which file each row expects. To verify yourself for any
-  vanilla strName: grep its CO entry in `data/condowners/*.json` for
-  `strItemDef`, then look that ItemDef up in `data/items/items.json`
-  and read its `strImg`. That's the sprite filename.
+```yaml
+items:
+  - suffix: Trash
+    color: "#6B5B3E"     # muddy brown
+    label: TR
+  - suffix: ScrapSteel
+    color: "#8B8B8B"     # steel gray
+    label: SS
+  ...
+```
 
-### Sprite sheets vs single PNGs
-
-Some vanilla items load their sprite as a **single-image PNG**;
-others load it as an **atlas/sprite-sheet** with multiple cells
-(auto-tiling walls, floor grates, etc., e.g. `ItmFloorGrate01_4x4`
-is a 4×4 = 16-cell sheet). The distinction is the
-`bHasSpriteSheet` field on the ItemDef:
-
-| `bHasSpriteSheet` | runtime path                | file shape                                             |
-|-------------------|------------------------------|--------------------------------------------------------|
-| `false` (default) | `DataHandler.GetMaterial`    | one image per item                                     |
-| `true`            | `DataHandler.GetMaterialSheet` | one PNG holding N cells, indexed by `nIndex`. Cell size is 16 × `tileWidth` / `tileHeight` px. nCols/nRows are *derived* from the texture's pixel dimensions, not stored in the JSON. |
-
-All 14 sprites this mod uses (`ItmBackpack02`, `ItmCrate01`, plus the
-12 material sources) are `bHasSpriteSheet: false` — single PNGs.
-`emit_sprites.py` assumes that and pastes the whole material onto the
-whole base. If a future row's `sprite_source` points at a sheet,
-the generator will paste the entire atlas onto the base and look
-ridiculous; it'd need a cell-extraction step first.
+The 12 colours are picked to be evocative (steel = grey, plastic =
+yellow, copper-coloured motors, etc.) and to land in distinct regions
+of colour-space when possible. Where colours collide (e.g. several
+greys), the 2-char label is the tiebreaker.
 
 ### Output path
 
@@ -89,13 +64,40 @@ runtime resolves item sprites via `DataHandler.LoadPNG` (decomp
 for `<modroot>/images/<strImg>.png`. So a strImg of `ItmSackTrash` →
 `mods/SacksAndBuckets/images/ItmSackTrash.png`.
 
-Materials should have **transparent backgrounds**. The script resizes
-them to `material_scale` of the base's longer edge (default 0.667 = 2/3),
-center-paste with optional offset, alpha-composited.
+### Style + canvas size
 
-If a material PNG is missing and `warn_on_missing_material: true`, the
-script writes a copy of the base alone for that item and logs a warning
--- so you can stage materials incrementally without breaking generation.
+Default canvas is 64×64 RGBA. Drop `sprite_gen.sprite_size` to 32 for
+a chunkier feel. The drawn shapes are anti-aliased PIL polygons /
+ellipses / arcs -- the result is "graphic icon", not pixel art. For
+true blocky pixel art a pass that renders to a tiny canvas and
+upscales with `Image.NEAREST` would be the fix; not implemented.
+
+### Font lookup
+
+Labels need a truetype font. The script tries common system paths in
+order (Windows Arial, then Linux DejaVu/Liberation Sans, then macOS
+Helvetica/Arial). If none are found it falls back to PIL's tiny
+default bitmap font and logs a warning -- the sprites still write,
+the label just becomes hard to read. Add a path to `_FONT_CANDIDATES`
+in `emit_sprites.py` if your system font lives somewhere else.
+
+### Atlas / sprite-sheet aside (irrelevant for this mod)
+
+Some vanilla items load their sprite as a **single-image PNG**;
+others load it as an **atlas/sprite-sheet** with multiple cells
+(auto-tiling walls, floor grates, etc., e.g. `ItmFloorGrate01_4x4`
+is a 4×4 = 16-cell sheet). The distinction is the `bHasSpriteSheet`
+field on the ItemDef:
+
+| `bHasSpriteSheet` | runtime path                | file shape                                             |
+|-------------------|------------------------------|--------------------------------------------------------|
+| `false` (default) | `DataHandler.GetMaterial`    | one image per item                                     |
+| `true`            | `DataHandler.GetMaterialSheet` | one PNG holding N cells, indexed by `nIndex`. Cell size is 16 × `tileWidth` / `tileHeight` px. nCols/nRows are *derived* from the texture's pixel dimensions, not stored in the JSON. |
+
+Our generated sprites are 64×64 single PNGs (no sheet) and our
+ItemDef entries have `bHasSpriteSheet: false`, so this doesn't apply
+-- but it's worth knowing if a future SacksAndBuckets variant ever
+needs an auto-tiled wall mount or similar.
 
 ## Tuning knobs in config.yaml
 
@@ -105,12 +107,15 @@ script writes a copy of the base alone for that item and logs a warning
   is past the empirically-validated envelope.
 - **Kiosk stock weights** (`kiosk_stock`): chance + count range per
   sack/bucket entry in the kiosk's aLoots.
-- **Material overlay** (`sprite_gen.material_scale` /
-  `material_offset_x` / `material_offset_y`): how the scavenge-material
-  sprite sits on the base.
-- **Items table** (`items:`): the 12 item types. Add or remove a row
-  here and re-run `emit_all.py`; everything downstream (condowners,
-  items, loot, sprites) updates in lockstep.
+- **Sprite size** (`sprite_gen.sprite_size`): canvas in pixels (square).
+  Default 64. Drop to 32 for chunkier sprites.
+- **Label point size** (`sprite_gen.label_size`): label font size.
+  Default 22 (~1/3 of sprite_size, comfortable legibility).
+- **Items table** (`items:`): the 12 item types -- each row carries
+  `color` (hex RGB) and `label` (2 chars) for the sprite gen plus the
+  fields the JSON gens use. Add or remove a row here and re-run
+  `emit_all.py`; everything downstream (condowners, items, loot,
+  sprites) updates in lockstep.
 
 ## Running
 
