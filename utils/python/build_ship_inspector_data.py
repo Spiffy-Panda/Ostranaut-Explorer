@@ -214,27 +214,36 @@ class CondResolver:
         return []
 
 
-def classify_bucket(conds: list[str]) -> str:
-    """Priority-ordered bucket classifier. See module docstring for the table."""
-    cond_names = [c.split("=", 1)[0] for c in conds]
-    has = lambda *prefixes: any(n.startswith(prefixes) for n in cond_names)
+# Bucket predicates — single source of truth. Each rule has a `match` set
+# of cond-name prefixes (any one matches) and an optional `excludes` set of
+# cond names that must NOT also be present. First match wins. The `other`
+# bucket is the catch-all for anything that didn't match a previous rule.
+# Mirrored verbatim into the emitted id-component-categories.json so the
+# file documents its own classifier.
+BUCKET_RULES = [
+    {"bucket": "walls",      "match": ["IsWall", "IsLitWall"]},
+    {"bucket": "floors",     "match": ["IsFloor"]},
+    {"bucket": "doors",      "match": ["IsDoor", "IsDockSys"]},
+    {"bucket": "conduits",   "match": ["IsConduit", "IsPowerConduit"]},
+    {"bucket": "containers", "match": ["IsContainer"], "excludes": ["IsInstalled"]},
+    {"bucket": "equipment",  "match": ["IsInstalled"]},
+    {"bucket": "decorative", "match": ["IsCarried"]},
+]
 
-    if has("IsWall", "IsLitWall"):
-        return "walls"
-    if has("IsFloor"):
-        return "floors"
-    if has("IsDoor", "IsDockSys"):
-        return "doors"
-    if has("IsConduit", "IsPowerConduit"):
-        return "conduits"
-    has_container = has("IsContainer")
-    has_installed = "IsInstalled" in cond_names
-    if has_container and not has_installed:
-        return "containers"
-    if has_installed:
-        return "equipment"
-    if "IsCarried" in cond_names:
-        return "decorative"
+
+def classify_bucket(conds: list[str]) -> str:
+    """First-match-wins over BUCKET_RULES. See the rule table for prefixes
+    and exclusions; `other` is the implicit catch-all."""
+    cond_names = [c.split("=", 1)[0] for c in conds]
+    cond_set = set(cond_names)
+    for rule in BUCKET_RULES:
+        prefixes = tuple(rule["match"])
+        if not any(n.startswith(prefixes) for n in cond_names):
+            continue
+        excludes = rule.get("excludes") or []
+        if any(x in cond_set for x in excludes):
+            continue
+        return rule["bucket"]
     return "other"
 
 
@@ -373,6 +382,33 @@ def load_color_map() -> dict[str, str]:
     return out
 
 
+def item_footprint(items: dict[str, dict], strName: str) -> tuple[int | None, int | None]:
+    """Return (nCols, nRows) in tile units for a strName, by walking the
+    strCOBase chain through items/. Mirrors the engine's own derivation in
+    Item.cs:271-272 — `nWidthInTiles = jid.nCols`,
+    `nHeightInTiles = aSocketAdds.Count / nCols`. Returns (None, None) when
+    the strName has no items/ entry (e.g. CondOwners that aren't placeable
+    items, or characters)."""
+    seen: set[str] = set()
+    name = strName
+    while name and name not in seen:
+        seen.add(name)
+        e = items.get(name)
+        if e is None:
+            return (None, None)
+        ncols = e.get("nCols")
+        adds = e.get("aSocketAdds")
+        if isinstance(ncols, int) and ncols > 0 and isinstance(adds, list):
+            nrows = len(adds) // ncols
+            return (ncols, nrows)
+        nxt = e.get("strCOBase")
+        if nxt and nxt != name:
+            name = nxt
+            continue
+        return (None, None)
+    return (None, None)
+
+
 def build_component_categories(
     condowners: dict[str, dict],
     items: dict[str, dict],
@@ -433,6 +469,11 @@ def build_component_categories(
         dmg_max = parse_stat_value(conds, "StatDamageMax")
         if dmg_max is not None: meta["durability"] = dmg_max
 
+        ncols, nrows = item_footprint(items, sn)
+        if ncols is not None and nrows is not None:
+            meta["nCols"] = ncols
+            meta["nRows"] = nrows
+
         if dmg_color_name:
             meta["dmgTint"] = dmg_color_name
             if dmg_color_hex: meta["dmgTintHex"] = dmg_color_hex
@@ -448,20 +489,39 @@ def build_component_categories(
         ))
 
     counts = {b: len(by_bucket[b]) for b in by_bucket}
+
+    classifier = {
+        "_description": (
+            "First-match-wins. For each rule, an entry's resolved aStartingConds "
+            "(walking strCOBase chains via the same logic the engine uses on "
+            "load) is checked. `match` lists cond-name prefixes — any one of "
+            "which routes the entry into this bucket. `excludes` lists cond "
+            "names that must NOT also be present (used to keep "
+            "containers separate from installable equipment)."
+        ),
+        "rules": [dict(r) for r in BUCKET_RULES] + [
+            {"bucket": "other", "match": [], "_note": "implicit catch-all"},
+        ],
+    }
+
     return {
         "_generated_by": "utils/python/build_ship_inspector_data.py",
         "_buckets": list(by_bucket.keys()),
         "_counts": counts,
-        "_notes": (
-            "Per-strName bucket classification for every CondOwner / Item / "
-            "CooverLay in the base game whose aStartingConds resolves through "
-            "strCOBase. The bucket rule mirrors what the ship-inspector page "
-            "applies to ship components. dmgTint is the cooverlay's "
-            "strDmgColor name (resolved against data/colors/colors.json into "
-            "#rrggbb under dmgTintHex when available); it's the *damage* "
-            "tint, not the base sprite color, but useful as a coarse "
-            "color-family hint."
-        ),
+        "_field_glossary": {
+            "friendly":     "strNameFriendly — modder-facing display name.",
+            "short":        "strNameShort — included only when distinct from `friendly`.",
+            "category":     "Names lifted from any IsCategory<X> conds (Hull, Electronics, …).",
+            "basePrice":    "StatBasePrice — base sale price in $.",
+            "mass":         "StatMass — kg.",
+            "durability":   "StatDamageMax — hit points before destruction.",
+            "nCols":        "Footprint width in tiles. Engine: nWidthInTiles = items[strName].nCols (Item.cs:271).",
+            "nRows":        "Footprint height in tiles. Engine: nHeightInTiles = aSocketAdds.Count / nCols (Item.cs:272).",
+            "dmgTint":      "Cooverlay strDmgColor name (only present on cooverlays).",
+            "dmgTintHex":   "dmgTint resolved against data/colors/colors.json as `#rrggbb` (or `#rrggbbaa` for α<255).",
+            "source":       "Which folder produced the row: 'condowner', 'item', or 'cooverlay'.",
+        },
+        "_classifier": classifier,
         "byBucket": by_bucket,
     }
 

@@ -20,7 +20,77 @@ window.SHIP_COMPONENT_CATEGORIES = {
     "decorative": 0,
     "other": 1000
   },
-  "_notes": "Per-strName bucket classification for every CondOwner / Item / CooverLay in the base game whose aStartingConds resolves through strCOBase. The bucket rule mirrors what the ship-inspector page applies to ship components. dmgTint is the cooverlay's strDmgColor name (resolved against data/colors/colors.json into #rrggbb under dmgTintHex when available); it's the *damage* tint, not the base sprite color, but useful as a coarse color-family hint.",
+  "_field_glossary": {
+    "friendly": "strNameFriendly — modder-facing display name.",
+    "short": "strNameShort — included only when distinct from `friendly`.",
+    "category": "Names lifted from any IsCategory<X> conds (Hull, Electronics, …).",
+    "basePrice": "StatBasePrice — base sale price in $.",
+    "mass": "StatMass — kg.",
+    "durability": "StatDamageMax — hit points before destruction.",
+    "nCols": "Footprint width in tiles. Engine: nWidthInTiles = items[strName].nCols (Item.cs:271).",
+    "nRows": "Footprint height in tiles. Engine: nHeightInTiles = aSocketAdds.Count / nCols (Item.cs:272).",
+    "dmgTint": "Cooverlay strDmgColor name (only present on cooverlays).",
+    "dmgTintHex": "dmgTint resolved against data/colors/colors.json as `#rrggbb` (or `#rrggbbaa` for α<255).",
+    "source": "Which folder produced the row: 'condowner', 'item', or 'cooverlay'."
+  },
+  "_classifier": {
+    "_description": "First-match-wins. For each rule, an entry's resolved aStartingConds (walking strCOBase chains via the same logic the engine uses on load) is checked. `match` lists cond-name prefixes — any one of which routes the entry into this bucket. `excludes` lists cond names that must NOT also be present (used to keep containers separate from installable equipment).",
+    "rules": [
+      {
+        "bucket": "walls",
+        "match": [
+          "IsWall",
+          "IsLitWall"
+        ]
+      },
+      {
+        "bucket": "floors",
+        "match": [
+          "IsFloor"
+        ]
+      },
+      {
+        "bucket": "doors",
+        "match": [
+          "IsDoor",
+          "IsDockSys"
+        ]
+      },
+      {
+        "bucket": "conduits",
+        "match": [
+          "IsConduit",
+          "IsPowerConduit"
+        ]
+      },
+      {
+        "bucket": "containers",
+        "match": [
+          "IsContainer"
+        ],
+        "excludes": [
+          "IsInstalled"
+        ]
+      },
+      {
+        "bucket": "equipment",
+        "match": [
+          "IsInstalled"
+        ]
+      },
+      {
+        "bucket": "decorative",
+        "match": [
+          "IsCarried"
+        ]
+      },
+      {
+        "bucket": "other",
+        "match": [],
+        "_note": "implicit catch-all"
+      }
+    ]
+  },
   "byBucket": {
     "walls": {
       "ItmSealTemp01": {
@@ -32,6 +102,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 79.0,
         "mass": 4.0,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallAero1x2SlantB": {
@@ -43,6 +115,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1000.0,
         "mass": 4.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmWallAero1x2SlantLoose": {
@@ -54,6 +128,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1000.0,
         "mass": 4.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmWallAero1x2Slant": {
@@ -65,6 +141,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1000.0,
         "mass": 4.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmWallAero1x3SlantB": {
@@ -76,6 +154,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2000.0,
         "mass": 6.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmWallAero1x3SlantBLoose": {
@@ -87,6 +167,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2000.0,
         "mass": 6.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmWallAero1x3SlantLoose": {
@@ -98,6 +180,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2000.0,
         "mass": 6.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmWallAero1x3Slant": {
@@ -109,6 +193,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2000.0,
         "mass": 6.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmWallAero1x1": {
@@ -120,6 +206,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 500.0,
         "mass": 4.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallAero1x1Loose": {
@@ -131,6 +219,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 500.0,
         "mass": 4.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallAero1x1Sq": {
@@ -142,6 +232,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 500.0,
         "mass": 4.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallAero1x1SqLoose": {
@@ -153,6 +245,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 500.0,
         "mass": 4.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallRock051x1": {
@@ -161,6 +255,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 30.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallRock061x1": {
@@ -169,6 +265,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 45.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallRock051x1Dmg": {
@@ -177,6 +275,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 21.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallRock061x1Dmg": {
@@ -185,6 +285,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 29.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallIce011x1": {
@@ -192,6 +294,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 24.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallIce011x1Dmg": {
@@ -200,10 +304,14 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 15.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmNormalsTest": {
         "friendly": "ItmNormalsTest",
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmWall1x1Loose": {
@@ -215,6 +323,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 21.0,
         "mass": 24.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallAero1x2SlantBLoose": {
@@ -226,6 +336,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1000.0,
         "mass": 4.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmWallRock031x1": {
@@ -234,6 +346,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 88.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallRock041x1": {
@@ -242,6 +356,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 110.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallRock031x1Dmg": {
@@ -250,6 +366,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 53.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallRock041x1Dmg": {
@@ -258,6 +376,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 65.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallRock011x1": {
@@ -266,6 +386,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 52.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallRock021x1": {
@@ -274,6 +396,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 79.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallRock011x1Dmg": {
@@ -282,6 +406,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 24.0,
         "durability": 29.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallRock021x1Dmg": {
@@ -290,6 +416,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 45.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWall1x1": {
@@ -300,6 +428,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 21.0,
         "mass": 24.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWall1x1Dmg": {
@@ -311,6 +441,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 13.0,
         "mass": 18.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallCAYL05Dmg": {
@@ -362,6 +494,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 210.0,
         "mass": 12.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallLDPH01Dmg": {
@@ -563,6 +697,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 210.0,
         "mass": 14.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallLDPH01Loose": {
@@ -724,6 +860,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 14.0,
         "mass": 19.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallCAYL04Patch": {
@@ -775,6 +913,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 210.0,
         "mass": 12.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallLDPH01Patch": {
@@ -936,6 +1076,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 83.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0OffLoose": {
@@ -947,6 +1089,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 83.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0Off": {
@@ -958,6 +1102,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 83.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0Custom": {
@@ -969,6 +1115,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 383.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0OffLooseCustom": {
@@ -980,6 +1128,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 383.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0OffCustom": {
@@ -1002,6 +1152,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 108.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0VibrantGreenOffLoose": {
@@ -1024,6 +1176,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 108.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0VibrantGreenCustom": {
@@ -1035,6 +1189,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 383.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0VibrantGreenOffLooseCustom": {
@@ -1068,6 +1224,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 92.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0OrangeOffLoose": {
@@ -1090,6 +1248,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 92.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0OrangeCustom": {
@@ -1101,6 +1261,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 383.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0OrangeOffLooseCustom": {
@@ -1134,6 +1296,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 151.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0VibrantPurpleOffLoose": {
@@ -1156,6 +1320,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 151.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0VibrantPurpleCustom": {
@@ -1167,6 +1333,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 383.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0VibrantPurpleOffLooseCustom": {
@@ -1200,6 +1368,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 111.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0VibrantRedOffLoose": {
@@ -1222,6 +1392,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 111.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0VibrantRedCustom": {
@@ -1233,6 +1405,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 383.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0VibrantRedOffLooseCustom": {
@@ -1266,6 +1440,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 83.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0WhiteOffLoose": {
@@ -1288,6 +1464,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 83.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitWall1x0WhiteCustom": {
@@ -1372,6 +1550,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 210.0,
         "mass": 14.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallLDPH01": {
@@ -1633,6 +1813,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 88.0,
         "mass": 5.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallThin1x1Loose": {
@@ -1644,6 +1826,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 88.0,
         "mass": 5.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallThin1x103": {
@@ -1675,6 +1859,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 330.0,
         "mass": 10.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallWindow1x1Loose": {
@@ -1686,6 +1872,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 330.0,
         "mass": 10.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallWindow1x1Sq": {
@@ -1697,6 +1885,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 330.0,
         "mass": 10.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallWindow1x1Dmg": {
@@ -1708,6 +1898,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 66.0,
         "mass": 10.0,
         "durability": 14.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallWindow1x1SqDmg": {
@@ -1730,6 +1922,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 330.0,
         "mass": 10.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallWindow1x1Patch": {
@@ -1741,6 +1935,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 66.0,
         "mass": 10.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWallWindow1x1SqPatch": {
@@ -1761,6 +1957,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "short": "Dark Core",
         "mass": 37.0,
         "durability": 37.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFloorRock02CDmg": {
@@ -1768,6 +1966,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "short": "Dark Core",
         "mass": 148.0,
         "durability": 296.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorRock02C": {
@@ -1775,6 +1975,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "short": "Dark Core",
         "mass": 296.0,
         "durability": 29.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorRock02CDepositDmg": {
@@ -1782,6 +1984,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "short": "Dark Deposit",
         "mass": 148.0,
         "durability": 74.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorLabelBloom": {
@@ -1791,6 +1995,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
           "Media"
         ],
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorLabelDynastyCoin": {
@@ -1800,6 +2006,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
           "Media"
         ],
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorLabelEagle": {
@@ -1809,6 +2017,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
           "Media"
         ],
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorLabelStarsAndStripes": {
@@ -1818,6 +2028,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
           "Media"
         ],
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorGrate01": {
@@ -1828,6 +2040,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15.0,
         "mass": 6.5,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFloorGrate01Dmg": {
@@ -1839,6 +2053,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5.0,
         "mass": 3.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFloorWood01Dmg": {
@@ -2282,6 +2498,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15.0,
         "mass": 6.5,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFloorWood01Loose": {
@@ -2725,6 +2943,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 7.0,
         "mass": 4.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFloorWood01Patch": {
@@ -7267,6 +7487,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "friendly": "Ice Core",
         "mass": 18.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFloorIce02": {
@@ -7274,6 +7496,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "short": "Ice Core",
         "mass": 18.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorGrate02": {
@@ -7285,6 +7509,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 21.0,
         "mass": 6.5,
         "durability": 55.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorRock021x1M": {
@@ -7292,6 +7518,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "short": "Shiny Core",
         "mass": 144.0,
         "durability": 144.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFloorRock02MDmg": {
@@ -7299,6 +7527,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "short": "Shiny Core",
         "mass": 576.0,
         "durability": 1152.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorRock02M": {
@@ -7306,6 +7536,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "short": "Shiny Core",
         "mass": 1152.0,
         "durability": 115.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorRock02MDepositDmg": {
@@ -7313,6 +7545,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "short": "Shiny Deposit",
         "mass": 576.0,
         "durability": 288.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorLabelAirlock01": {
@@ -7322,6 +7556,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
           "Media"
         ],
         "durability": 5.0,
+        "nCols": 5,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFloorLabelDormInstall": {
@@ -7330,6 +7566,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
           "Media"
         ],
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmFloorLabelLoading": {
@@ -7339,6 +7577,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
           "Media"
         ],
         "durability": 5.0,
+        "nCols": 5,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorLabelArrow01": {
@@ -7348,6 +7588,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
           "Media"
         ],
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFloorRock021x1": {
@@ -7355,6 +7597,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "short": "Stony Core",
         "mass": 73.0,
         "durability": 73.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFloorRock02Dmg": {
@@ -7362,6 +7606,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "short": "Stony Core",
         "mass": 292.0,
         "durability": 584.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorRock02": {
@@ -7369,6 +7615,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "short": "Stony Core",
         "mass": 584.0,
         "durability": 58.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFloorRock02DepositDmg": {
@@ -7376,6 +7624,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "short": "Stony Deposit",
         "mass": 292.0,
         "durability": 146.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRackUnder01": {
@@ -7387,6 +7637,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4740.0,
         "mass": 40.0,
         "durability": 20.0,
+        "nCols": 4,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmRackUnder01Dmg": {
@@ -7398,6 +7650,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 871.0,
         "mass": 40.0,
         "durability": 45.0,
+        "nCols": 4,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmStorageBinFloor1x101b": {
@@ -7459,6 +7713,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1300.0,
         "mass": 28.0,
         "durability": 20.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStorageBinFloor1x101bDmg": {
@@ -7520,6 +7776,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 351.0,
         "mass": 13.0,
         "durability": 40.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStorageBinFloor1x101bPatch": {
@@ -7581,6 +7839,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1300.0,
         "mass": 17.23,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFloorGrate03": {
@@ -7592,6 +7852,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 35.0,
         "mass": 40.0,
         "durability": 30.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       }
     },
@@ -7725,6 +7987,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2670.0,
         "mass": 181.0,
         "durability": 20.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDoor04ClosedDmg": {
@@ -7746,6 +8010,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 540.0,
         "mass": 181.0,
         "durability": 60.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDoor04ClosedOnLocked": {
@@ -7767,6 +8033,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2670.0,
         "mass": 181.0,
         "durability": 20.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDoor04ClosedLoose": {
@@ -7788,6 +8056,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2670.0,
         "mass": 181.0,
         "durability": 20.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDoor04Closed": {
@@ -7809,6 +8079,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2670.0,
         "mass": 181.0,
         "durability": 20.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDoor04ClosedLocked": {
@@ -7851,6 +8123,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 540.0,
         "mass": 181.0,
         "durability": 60.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDoor04OpenOn": {
@@ -7872,6 +8146,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2670.0,
         "mass": 181.0,
         "durability": 20.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDoor04OpenOnLocked": {
@@ -7893,6 +8169,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2670.0,
         "mass": 181.0,
         "durability": 20.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDoor04OpenLocked": {
@@ -7935,6 +8213,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2670.0,
         "mass": 181.0,
         "durability": 20.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "MooringPort": {
@@ -7950,6 +8230,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 78944.0,
         "mass": 254.0,
         "durability": 25.0,
+        "nCols": 7,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmDockSys02Open": {
@@ -7961,6 +8243,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 78944.0,
         "mass": 254.0,
         "durability": 25.0,
+        "nCols": 7,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmDockSys03Closed": {
@@ -7972,6 +8256,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 39472.0,
         "mass": 254.0,
         "durability": 25.0,
+        "nCols": 7,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmDockSys03ClosedDmg": {
@@ -7983,6 +8269,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 7894.0,
         "mass": 254.0,
         "durability": 40.0,
+        "nCols": 7,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmDockSys03ClosedDmgLoose": {
@@ -7994,6 +8282,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 7894.0,
         "mass": 254.0,
         "durability": 40.0,
+        "nCols": 5,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmDockSys03ClosedLoose": {
@@ -8005,6 +8295,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 39472.0,
         "mass": 254.0,
         "durability": 25.0,
+        "nCols": 5,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmDockSys03Open": {
@@ -8016,6 +8308,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 39472.0,
         "mass": 254.0,
         "durability": 25.0,
+        "nCols": 7,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmDoor03Transit": {
@@ -8049,6 +8343,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 80.0,
         "mass": 0.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmConduit00Dmg": {
@@ -8060,6 +8356,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8.0,
         "mass": 0.5,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmConduit01Dmg": {
@@ -8091,6 +8389,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 80.0,
         "mass": 0.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmConduit01Loose": {
@@ -8132,6 +8432,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8.0,
         "mass": 0.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmConduit01DmgLoose": {
@@ -8208,6 +8510,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 254.0,
         "mass": 1.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBackpack01": {
@@ -8219,6 +8523,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 254.0,
         "mass": 2.0,
         "durability": 4.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "PocketEVABatt01": {
@@ -8245,6 +8551,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 18600.0,
         "mass": 230.0,
         "durability": 20.0,
+        "nCols": 4,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmShipWeaponMissileLauncher02Loose": {
@@ -8256,6 +8564,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 93000.0,
         "mass": 230.0,
         "durability": 14.0,
+        "nCols": 4,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmDrinkBottle01": {
@@ -8300,6 +8610,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8000.0,
         "mass": 40.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmShipWeaponPDC02Loose": {
@@ -8311,6 +8623,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 40000.0,
         "mass": 40.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "PocketBreast01": {
@@ -8357,6 +8671,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 774.0,
         "mass": 7.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStorageBin1x102DmgLoose": {
@@ -8398,6 +8714,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 121.0,
         "mass": 7.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStorageBin2x102Loose": {
@@ -8429,6 +8747,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1482.0,
         "mass": 18.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStorageBin2x101Loose": {
@@ -8440,6 +8760,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 882.0,
         "mass": 14.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStorageBin2x102DmgLoose": {
@@ -8471,6 +8793,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 267.0,
         "mass": 18.0,
         "durability": 25.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStorageBin2x101DmgLoose": {
@@ -8482,6 +8806,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 197.0,
         "mass": 14.0,
         "durability": 20.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStorageBin3x102Loose": {
@@ -8503,6 +8829,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1012.0,
         "mass": 21.0,
         "durability": 15.0,
+        "nCols": 3,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStorageBin3x102DmgLoose": {
@@ -8524,6 +8852,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 274.0,
         "mass": 21.0,
         "durability": 30.0,
+        "nCols": 3,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStorageBin2x2C02Loose": {
@@ -8555,6 +8885,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1824.0,
         "mass": 27.0,
         "durability": 20.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStorageBin2x2C01Loose": {
@@ -8566,6 +8898,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1024.0,
         "mass": 21.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStorageBin2x2C02DmgLoose": {
@@ -8597,6 +8931,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 392.0,
         "mass": 27.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStorageBin2x2C01DmgLoose": {
@@ -8608,6 +8944,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 292.0,
         "mass": 21.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "PocketCargo01": {
@@ -8623,6 +8961,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2250.0,
         "mass": 1.0546,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWeaponShotgun01": {
@@ -8634,6 +8974,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1885.0,
         "mass": 3.175,
         "durability": 9.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "PocketClipPoint01": {
@@ -8649,6 +8991,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 14326.0,
         "mass": 46.5,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmAtmoScrubber01DmgLoose": {
@@ -8660,6 +9004,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1845.0,
         "mass": 46.5,
         "durability": 15.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "PocketCoat01": {
@@ -8676,6 +9022,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 685.0,
         "mass": 1.1,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCigDamaskRoseBox01": {
@@ -8687,6 +9035,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1.0,
         "mass": 0.025,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWeaponPistol01": {
@@ -8698,6 +9048,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1985.0,
         "mass": 1.1,
         "durability": 12.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWeaponPistol02": {
@@ -8709,6 +9061,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1245.0,
         "mass": 0.625,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDrinkPouch01": {
@@ -8731,6 +9085,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 32.5,
         "mass": 1.0,
         "durability": 2.5,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDrinkFlask02": {
@@ -8742,6 +9098,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 82.5,
         "mass": 2.0,
         "durability": 2.5,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFridge01Loose": {
@@ -8753,6 +9111,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 774.0,
         "mass": 31.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFridge01DmgLoose": {
@@ -8764,6 +9124,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 121.0,
         "mass": 31.0,
         "durability": 45.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmToolBox01": {
@@ -8775,6 +9137,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 338.0,
         "mass": 10.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 1,
         "source": "condowner"
       },
       "PocketHip01": {
@@ -8795,6 +9159,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 147.0,
         "mass": 10.0,
         "durability": 3.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWeaponCrossbow02": {
@@ -8806,6 +9172,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1066.0,
         "mass": 1.1,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmPillBottle01": {
@@ -8850,6 +9218,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 17200.0,
         "mass": 320.0,
         "durability": 25.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmShipWeaponDecoyLauncher01Loose": {
@@ -8861,6 +9231,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 86000.0,
         "mass": 320.0,
         "durability": 20.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmRack1x101Loose": {
@@ -8872,6 +9244,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 774.0,
         "mass": 7.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmRack1x101DormLoose": {
@@ -8893,6 +9267,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 121.0,
         "mass": 7.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmRack1x101DormDmgLoose": {
@@ -8914,6 +9290,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 882.0,
         "mass": 14.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRack1x201DmgLoose": {
@@ -8925,6 +9303,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 197.0,
         "mass": 14.0,
         "durability": 20.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRack1x301Loose": {
@@ -8936,6 +9316,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1012.0,
         "mass": 21.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmRack1x301DmgLoose": {
@@ -8947,6 +9329,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 274.0,
         "mass": 21.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmRack1x401Loose": {
@@ -8958,6 +9342,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1300.0,
         "mass": 28.0,
         "durability": 20.0,
+        "nCols": 1,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmRack1x401DmgLoose": {
@@ -8969,6 +9355,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 351.0,
         "mass": 28.0,
         "durability": 45.0,
+        "nCols": 1,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmRack2x2C01Loose": {
@@ -8980,6 +9368,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1024.0,
         "mass": 21.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRack2x2C01DmgLoose": {
@@ -8991,6 +9381,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 292.0,
         "mass": 21.0,
         "durability": 30.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmCrate01": {
@@ -9002,6 +9394,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 338.0,
         "mass": 10.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmCrate01Lock": {
@@ -9013,6 +9407,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 338.0,
         "mass": 10.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "PocketPDACarts01": {
@@ -9029,6 +9425,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 75.0,
         "mass": 0.43,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWeaponShockProd01": {
@@ -9039,6 +9437,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 145.0,
         "mass": 0.298,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmSink01Loose": {
@@ -9050,6 +9450,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 234.0,
         "mass": 15.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "PocketPouchSmall01": {
@@ -9066,6 +9468,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 6450.0,
         "mass": 3.59,
         "durability": 9.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWeaponShotgun02": {
@@ -9077,6 +9481,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4875.0,
         "mass": 3.875,
         "durability": 7.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWeaponPistolEnergy01": {
@@ -9088,6 +9494,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2745.0,
         "mass": 0.825,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmShipWeaponPDC01DmgLoose": {
@@ -9099,6 +9507,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5000.0,
         "mass": 60.0,
         "durability": 13.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmShipWeaponPDC01Loose": {
@@ -9110,6 +9520,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 25000.0,
         "mass": 60.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmShipWeaponMissileLauncher01DmgLoose": {
@@ -9121,6 +9533,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 17200.0,
         "mass": 320.0,
         "durability": 25.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmShipWeaponMissileLauncher01Loose": {
@@ -9132,6 +9546,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 86000.0,
         "mass": 320.0,
         "durability": 20.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmShipWeaponPDC03DmgLoose": {
@@ -9143,6 +9559,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3600.0,
         "mass": 75.0,
         "durability": 15.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmShipWeaponPDC03Loose": {
@@ -9154,6 +9572,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 18000.0,
         "mass": 75.0,
         "durability": 3.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmShipWeaponMissileLauncher03DmgLoose": {
@@ -9165,6 +9585,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8000.0,
         "mass": 250.0,
         "durability": 12.0,
+        "nCols": 4,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmShipWeaponMissileLauncher03Loose": {
@@ -9176,6 +9598,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 40000.0,
         "mass": 250.0,
         "durability": 8.0,
+        "nCols": 4,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmRackUnder01Loose": {
@@ -9187,6 +9611,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4740.0,
         "mass": 40.0,
         "durability": 20.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmRackUnder01DmgLoose": {
@@ -9198,6 +9624,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 871.0,
         "mass": 40.0,
         "durability": 45.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "PocketSmall01": {
@@ -9213,6 +9641,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 745.0,
         "mass": 0.625,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStorageBinFloor1x101bLoose": {
@@ -9274,6 +9704,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1300.0,
         "mass": 28.0,
         "durability": 20.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDolly02": {
@@ -9333,6 +9765,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 623.0,
         "mass": 125.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmBackpack03": {
@@ -9344,6 +9778,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 71.0,
         "mass": 0.8,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCigUnicornDreamBox01": {
@@ -9355,6 +9791,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1.0,
         "mass": 0.025,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCigViceroyBox01": {
@@ -9366,6 +9804,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1.0,
         "mass": 0.025,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCigViceroyBox02": {
@@ -9377,6 +9817,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1.0,
         "mass": 0.025,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWeaponRifle01": {
@@ -9388,6 +9830,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2335.0,
         "mass": 2.89,
         "durability": 12.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       }
     },
@@ -9401,6 +9845,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1314.0,
         "mass": 7.5,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmSignNeon01Off": {
@@ -9412,6 +9858,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1314.0,
         "mass": 7.5,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmElectricalBox01Dmg": {
@@ -9423,6 +9871,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 13.3,
         "mass": 12.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmElectricalBox01Off": {
@@ -9434,6 +9884,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 66.5,
         "mass": 12.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmElectricalBox01": {
@@ -9445,6 +9897,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 66.5,
         "mass": 12.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmHatch01Closed": {
@@ -9455,6 +9909,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 535.0,
         "mass": 88.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmHatch01Open": {
@@ -9465,6 +9921,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 535.0,
         "mass": 88.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStabilizerActive01On": {
@@ -9487,6 +9945,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 37914.0,
         "mass": 35.0,
         "durability": 13.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmStabilizerActive01Off": {
@@ -9498,6 +9958,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 156774.0,
         "mass": 40.0,
         "durability": 30.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmKioskAerostatScrap01": {
@@ -9518,6 +9980,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 10504.0,
         "mass": 21.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmAICargo01": {
@@ -9528,6 +9992,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 44100.0,
         "mass": 61.0,
         "durability": 4.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAICargo01Dmg02": {
@@ -9539,6 +10005,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5610.0,
         "mass": 61.0,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAICargo01Off": {
@@ -9550,6 +10018,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 11200.0,
         "mass": 61.0,
         "durability": 4.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAirPump02OnG": {
@@ -9582,6 +10052,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 510.0,
         "mass": 11.0,
         "durability": 11.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAirPump03Off": {
@@ -9603,6 +10075,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2050.0,
         "mass": 11.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAirPump03OnG": {
@@ -9624,6 +10098,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 335.0,
         "mass": 8.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmVent01Open": {
@@ -9635,6 +10111,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 335.0,
         "mass": 8.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmArcadeGame01": {
@@ -9646,6 +10124,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 9450.0,
         "mass": 44.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmArcadeGame01Dmg": {
@@ -9657,6 +10137,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1890.0,
         "mass": 40.0,
         "durability": 12.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmArcadeGame01Off": {
@@ -9668,6 +10150,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 9450.0,
         "mass": 44.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSignalBeacon01": {
@@ -9679,6 +10163,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2634.0,
         "mass": 31.0,
         "durability": 5.0,
+        "nCols": 8,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmSignalBeacon01Dmg": {
@@ -9690,6 +10176,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 290.0,
         "mass": 1.35,
         "durability": 13.0,
+        "nCols": 8,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmVent02Closed": {
@@ -9701,6 +10189,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2335.0,
         "mass": 10.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmVent02Off": {
@@ -9712,6 +10202,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2335.0,
         "mass": 10.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmVent02Open": {
@@ -9723,6 +10215,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2335.0,
         "mass": 10.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmTable01": {
@@ -9734,6 +10228,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 213.0,
         "mass": 20.0,
         "durability": 10.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmTable01Reserved": {
@@ -9765,6 +10261,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 25.99,
         "mass": 0.55,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChargerBattDrill01Dmg": {
@@ -9776,6 +10274,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 6.5,
         "mass": 0.55,
         "durability": 19.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChargerBattDrill01Off": {
@@ -9787,6 +10287,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 25.99,
         "mass": 0.55,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChargerBattWelder01": {
@@ -9798,6 +10300,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 24.49,
         "mass": 0.62,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChargerBattWelder01Dmg": {
@@ -9809,6 +10313,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4.49,
         "mass": 0.62,
         "durability": 19.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChargerBattWelder01Off": {
@@ -9820,6 +10326,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 24.49,
         "mass": 0.62,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChargerBattEVA": {
@@ -9831,6 +10339,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 786.0,
         "mass": 25.0,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmChargerBattEVAOff": {
@@ -9842,6 +10352,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 786.0,
         "mass": 25.0,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmChargerBattEVADmg": {
@@ -9853,6 +10365,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 157.0,
         "mass": 25.0,
         "durability": 19.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmChargerBattery04": {
@@ -9864,6 +10378,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 786.0,
         "mass": 25.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChargerBattery04Dmg": {
@@ -9875,6 +10391,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 157.0,
         "mass": 25.0,
         "durability": 16.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChargerBattery04Off": {
@@ -9886,6 +10404,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 786.0,
         "mass": 25.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBed02": {
@@ -9896,6 +10416,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 457.0,
         "mass": 19.0,
         "durability": 18.0,
+        "nCols": 2,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmJukebox01": {
@@ -9907,6 +10429,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 553.0,
         "mass": 0.5,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmJukebox01Off": {
@@ -9918,6 +10442,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 553.0,
         "mass": 0.5,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmJukebox01None": {
@@ -9962,6 +10488,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 93000.0,
         "mass": 230.0,
         "durability": 14.0,
+        "nCols": 4,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmShipWeaponMissileLauncher02Dmg": {
@@ -9973,6 +10501,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 18600.0,
         "mass": 230.0,
         "durability": 20.0,
+        "nCols": 4,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmShipWeaponMissileLauncher02Off": {
@@ -9984,6 +10514,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 93000.0,
         "mass": 230.0,
         "durability": 14.0,
+        "nCols": 4,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmPlanter2x101": {
@@ -9995,6 +10527,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5252.0,
         "mass": 13.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmShipWeaponPDC02": {
@@ -10006,6 +10540,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 40000.0,
         "mass": 40.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmShipWeaponPDC02Dmg": {
@@ -10017,6 +10553,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8000.0,
         "mass": 40.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmShipWeaponPDC02Off": {
@@ -10028,6 +10566,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 40000.0,
         "mass": 40.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmStorageBin1x102": {
@@ -10069,6 +10609,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 774.0,
         "mass": 7.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStorageBin1x102Dmg": {
@@ -10110,6 +10652,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 121.0,
         "mass": 7.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStorageBin2x102": {
@@ -10141,6 +10685,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1482.0,
         "mass": 18.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStorageBin2x101": {
@@ -10152,6 +10698,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 882.0,
         "mass": 14.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStorageBin2x102Dmg": {
@@ -10183,6 +10731,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 267.0,
         "mass": 18.0,
         "durability": 25.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStorageBin2x101Dmg": {
@@ -10194,6 +10744,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 197.0,
         "mass": 14.0,
         "durability": 20.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStorageBin3x102": {
@@ -10215,6 +10767,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1012.0,
         "mass": 21.0,
         "durability": 15.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStorageBin3x102Dmg": {
@@ -10236,6 +10790,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 274.0,
         "mass": 21.0,
         "durability": 30.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStorageBin2x2C02": {
@@ -10267,6 +10823,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1824.0,
         "mass": 27.0,
         "durability": 20.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStorageBin2x2C01": {
@@ -10278,6 +10836,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1024.0,
         "mass": 21.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStorageBin2x2C02Dmg": {
@@ -10309,6 +10869,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 392.0,
         "mass": 27.0,
         "durability": 30.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStorageBin2x2C01Dmg": {
@@ -10320,6 +10882,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 292.0,
         "mass": 21.0,
         "durability": 30.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmKioskJobs01": {
@@ -10330,6 +10894,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 15.0,
         "durability": 70.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmKioskCargo01BCER": {
@@ -10530,6 +11096,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 55752.0,
         "mass": 3100.0,
         "durability": 250.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmCargoPod01": {
@@ -10540,6 +11108,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5000.0,
         "mass": 50.0,
         "durability": 50.0,
+        "nCols": 3,
+        "nRows": 6,
         "source": "condowner"
       },
       "ItmCargoPod01Dmg": {
@@ -10551,6 +11121,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1000.0,
         "mass": 50.0,
         "durability": 50.0,
+        "nCols": 3,
+        "nRows": 6,
         "source": "condowner"
       },
       "ItmCargoPodClimate01Dmg": {
@@ -10562,6 +11134,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2400.0,
         "mass": 50.0,
         "durability": 70.0,
+        "nCols": 3,
+        "nRows": 6,
         "source": "condowner"
       },
       "ItmCargoPodClimate01": {
@@ -10573,6 +11147,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12000.0,
         "mass": 50.0,
         "durability": 70.0,
+        "nCols": 3,
+        "nRows": 6,
         "source": "condowner"
       },
       "ItmCargoPodRad01": {
@@ -10584,6 +11160,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12000.0,
         "mass": 50.0,
         "durability": 70.0,
+        "nCols": 3,
+        "nRows": 6,
         "source": "condowner"
       },
       "ItmCargoPodRad01Dmg": {
@@ -10595,6 +11173,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2400.0,
         "mass": 50.0,
         "durability": 70.0,
+        "nCols": 3,
+        "nRows": 6,
         "source": "condowner"
       },
       "ItmCargoPodSpec01": {
@@ -10606,6 +11186,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 20000.0,
         "mass": 50.0,
         "durability": 80.0,
+        "nCols": 3,
+        "nRows": 6,
         "source": "condowner"
       },
       "ItmCargoPodSpec01Dmg": {
@@ -10617,6 +11199,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4000.0,
         "mass": 50.0,
         "durability": 80.0,
+        "nCols": 3,
+        "nRows": 6,
         "source": "condowner"
       },
       "ItmKioskCargo01": {
@@ -10627,6 +11211,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmCargoWeb01": {
@@ -10637,6 +11223,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 174.0,
         "mass": 2.5,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCargoWeb01Dmg": {
@@ -10648,6 +11236,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 121.0,
         "mass": 2.5,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChair02": {
@@ -10658,6 +11248,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 85.0,
         "mass": 11.0,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmChair02Dmg": {
@@ -10669,6 +11261,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 17.0,
         "mass": 9.0,
         "durability": 4.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmBartop01": {
@@ -10680,6 +11274,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 13149.0,
         "mass": 244.0,
         "durability": 15.0,
+        "nCols": 4,
+        "nRows": 10,
         "source": "condowner"
       },
       "ItmBartop02": {
@@ -10691,6 +11287,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 13149.0,
         "mass": 47.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmBartop03": {
@@ -10702,6 +11300,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 16849.0,
         "mass": 47.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmAtmoScrubber01": {
@@ -10713,6 +11313,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 14326.0,
         "mass": 46.5,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmAtmoScrubber01Dmg": {
@@ -10724,6 +11326,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1845.0,
         "mass": 46.5,
         "durability": 15.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmAtmoScrubber01Off": {
@@ -10735,6 +11339,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 14326.0,
         "mass": 46.5,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRTACO2": {
@@ -10768,6 +11374,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 634.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmCO2OnR": {
@@ -10779,6 +11387,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 634.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmCO2Dmg": {
@@ -10790,6 +11400,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 121.0,
         "mass": 0.5,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmCO2Off": {
@@ -10801,6 +11413,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 634.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmCO2OnY": {
@@ -10812,6 +11426,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 634.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmVendingMachineCoffee": {
@@ -10822,6 +11438,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2485.0,
         "mass": 31.0,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmShipWeaponMassThrower01Off": {
@@ -10829,6 +11447,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 25000.0,
         "mass": 200.0,
         "durability": 18.0,
+        "nCols": 2,
+        "nRows": 6,
         "source": "condowner"
       },
       "ItmShipWeaponMassThrower01": {
@@ -10836,6 +11456,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 25000.0,
         "mass": 200.0,
         "durability": 18.0,
+        "nCols": 2,
+        "nRows": 6,
         "source": "condowner"
       },
       "ItmShipWeaponMassThrower01Dmg": {
@@ -10844,6 +11466,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5000.0,
         "mass": 200.0,
         "durability": 23.0,
+        "nCols": 2,
+        "nRows": 6,
         "source": "condowner"
       },
       "ItmBattery02b": {
@@ -10855,6 +11479,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1575.0,
         "mass": 27.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmBattery02bDmg": {
@@ -10866,6 +11492,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 390.0,
         "mass": 27.0,
         "durability": 18.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmTable03": {
@@ -10887,6 +11515,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4226.0,
         "mass": 10.5,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAtmoScrubber02Dmg": {
@@ -10898,6 +11528,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 845.0,
         "mass": 10.5,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAtmoScrubber02Off": {
@@ -10909,6 +11541,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4226.0,
         "mass": 10.5,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmContaminantsOnG": {
@@ -10920,6 +11554,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 634.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmContaminantsOnR": {
@@ -10931,6 +11567,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 634.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmContaminantsDmg": {
@@ -10942,6 +11580,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 121.0,
         "mass": 0.5,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmContaminantsOff": {
@@ -10953,6 +11593,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 634.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCooler01On": {
@@ -10963,6 +11605,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 7360.0,
         "mass": 130.0,
         "durability": 3.0,
+        "nCols": 4,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCooler01Dmg": {
@@ -10974,6 +11618,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1340.0,
         "mass": 130.0,
         "durability": 7.0,
+        "nCols": 4,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCooler01Off": {
@@ -10985,6 +11631,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 7360.0,
         "mass": 130.0,
         "durability": 3.0,
+        "nCols": 4,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCouch01": {
@@ -10995,6 +11643,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 889.0,
         "mass": 70.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFusionCryoPump01": {
@@ -11006,6 +11656,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1692.0,
         "mass": 28.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionCryoPump01Dmg": {
@@ -11017,6 +11669,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 355.0,
         "mass": 28.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionCryoPump01Off": {
@@ -11028,6 +11682,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1692.0,
         "mass": 28.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCanisterLHe01": {
@@ -11039,6 +11695,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2542.0,
         "mass": 300.0,
         "durability": 40.0,
+        "nCols": 7,
+        "nRows": 7,
         "source": "condowner"
       },
       "ItmCanisterLH02": {
@@ -11050,6 +11708,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 6542.0,
         "mass": 1500.0,
         "durability": 40.0,
+        "nCols": 7,
+        "nRows": 7,
         "source": "condowner"
       },
       "ItmTable02": {
@@ -11061,6 +11721,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 64.0,
         "mass": 20.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmSwitch02Off": {
@@ -11082,6 +11744,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmKioskEmbassy01BCRS": {
@@ -11172,6 +11836,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmKioskFerry01": {
@@ -11182,6 +11848,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmKioskFlotillaScrap01": {
@@ -11201,6 +11869,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 774.0,
         "mass": 31.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFridge01Dmg": {
@@ -11212,6 +11882,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 121.0,
         "mass": 31.0,
         "durability": 45.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStrengthTrainer01": {
@@ -11223,6 +11895,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12300.0,
         "mass": 310.0,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStrengthTrainer01Dmg": {
@@ -11234,6 +11908,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 400.0,
         "mass": 310.0,
         "durability": 12.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStrengthTrainer01Off": {
@@ -11245,6 +11921,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12300.0,
         "mass": 310.0,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStrengthTrainer01Active": {
@@ -11256,6 +11934,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12300.0,
         "mass": 310.0,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmKioskFurnishings01": {
@@ -11266,6 +11946,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "TraderFurnishingsKioskBCER": {
@@ -11297,6 +11979,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4740.0,
         "mass": 40.0,
         "durability": 20.0,
+        "nCols": 5,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmFusionFieldCoils01Dmg": {
@@ -11308,6 +11992,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 871.0,
         "mass": 40.0,
         "durability": 45.0,
+        "nCols": 5,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmFusionFieldCoils01Off": {
@@ -11319,6 +12005,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4740.0,
         "mass": 40.0,
         "durability": 20.0,
+        "nCols": 5,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmCapacitor01": {
@@ -11330,6 +12018,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12623.0,
         "mass": 45.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmCapacitor01Dmg": {
@@ -11341,6 +12031,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3156.0,
         "mass": 45.0,
         "durability": 8.0,
+        "nCols": 2,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmCanister01": {
@@ -11352,6 +12044,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 410.0,
         "mass": 70.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCanister01Dmg": {
@@ -11363,6 +12057,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 53.0,
         "mass": 70.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmKioskJobs02": {
@@ -11373,6 +12069,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmKioskJobs03": {
@@ -11383,6 +12081,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 313.0,
         "durability": 70.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMeat01Altar": {
@@ -11394,6 +12094,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 13960.0,
         "mass": 66.6,
         "durability": 16.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRCSCluster01": {
@@ -11405,6 +12107,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5520.0,
         "mass": 28.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmRCSCluster01Dmg": {
@@ -11416,6 +12120,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1112.0,
         "mass": 28.0,
         "durability": 19.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmRCSCluster01Off": {
@@ -11427,6 +12133,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5520.0,
         "mass": 28.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmHeater01": {
@@ -11437,6 +12145,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2634.0,
         "mass": 31.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmHeater01Dmg": {
@@ -11448,6 +12158,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 514.0,
         "mass": 31.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmHeater01Off": {
@@ -11459,6 +12171,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2634.0,
         "mass": 31.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmHeater02": {
@@ -11500,6 +12214,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12914.0,
         "mass": 35.0,
         "durability": 30.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmHeavyLiftRotor01Off": {
@@ -11511,6 +12227,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 56774.0,
         "mass": 40.0,
         "durability": 30.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmHeavyLiftRotor01On": {
@@ -11522,6 +12240,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 56774.0,
         "mass": 40.0,
         "durability": 30.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmPlanter3x101": {
@@ -11533,6 +12253,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 7878.0,
         "mass": 17.0,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAeroParts3x301": {
@@ -11544,6 +12266,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1300.0,
         "mass": 40.0,
         "durability": 30.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAeroParts3x302": {
@@ -11555,6 +12279,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1300.0,
         "mass": 40.0,
         "durability": 30.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmReactorIC03Dmg": {
@@ -11566,6 +12292,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 29000.0,
         "mass": 417.0,
         "durability": 75.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmReactorIC03Off": {
@@ -11577,6 +12305,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 141000.0,
         "mass": 417.0,
         "durability": 25.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmReactorIC03Ignition": {
@@ -11599,6 +12329,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8200.0,
         "mass": 417.0,
         "durability": 75.0,
+        "nCols": 5,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmFusionReactorCore01Off": {
@@ -11610,6 +12342,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 41000.0,
         "mass": 417.0,
         "durability": 25.0,
+        "nCols": 5,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmFusionReactorCore01Ignition": {
@@ -11643,6 +12377,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 141000.0,
         "mass": 417.0,
         "durability": 120.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCargoPod02": {
@@ -12453,6 +13189,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 15.0,
         "durability": 70.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmKioskTestudo01": {
@@ -12462,6 +13200,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "item"
       },
       "ItmPanelToggle4x": {
@@ -12473,6 +13213,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 290.0,
         "mass": 0.25,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStrut1x1": {
@@ -12483,6 +13225,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 3.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDoor02Closed": {
@@ -12493,6 +13237,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 73990.0,
         "mass": 2000.0,
         "durability": 80.0,
+        "nCols": 8,
+        "nRows": 8,
         "source": "condowner"
       },
       "ItmCanisterLHe02": {
@@ -12504,6 +13250,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 6542.0,
         "mass": 1500.0,
         "durability": 40.0,
+        "nCols": 7,
+        "nRows": 7,
         "source": "condowner"
       },
       "ItmPlanterMeat01": {
@@ -12515,6 +13263,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15760.0,
         "mass": 305.0,
         "durability": 35.0,
+        "nCols": 2,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmPlanter01": {
@@ -12526,6 +13276,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15760.0,
         "mass": 305.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmFusionMHDGenerator01": {
@@ -12537,6 +13289,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12623.0,
         "mass": 45.0,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionMHDGenerator01Dmg": {
@@ -12548,6 +13302,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3156.0,
         "mass": 45.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionMHDGenerator01Off": {
@@ -12559,6 +13315,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12623.0,
         "mass": 45.0,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmKioskOKLGFoodCart02": {
@@ -12569,6 +13327,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 4,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmShipWeaponMassThrower03": {
@@ -12579,6 +13339,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15000.0,
         "mass": 300.0,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 7,
         "source": "condowner"
       },
       "ItmShipWeaponMassThrower03Dmg": {
@@ -12590,6 +13352,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3000.0,
         "mass": 300.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 7,
         "source": "condowner"
       },
       "ItmShipWeaponMassThrower03Off": {
@@ -12601,6 +13365,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15000.0,
         "mass": 300.0,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 7,
         "source": "condowner"
       },
       "ItmKioskBCRSMed01": {
@@ -12632,6 +13398,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 944.0,
         "mass": 16.2,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBattery02cDmg": {
@@ -12643,6 +13411,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 234.0,
         "mass": 16.2,
         "durability": 11.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmSensorEOIR01": {
@@ -12654,6 +13424,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 43000.0,
         "mass": 10.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorEOIR01Dmg": {
@@ -12665,6 +13437,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8600.0,
         "mass": 10.0,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorEOIR01Off": {
@@ -12676,6 +13450,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 43000.0,
         "mass": 10.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmPlanter2x202": {
@@ -12687,6 +13463,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 10504.0,
         "mass": 21.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRTAN2": {
@@ -12720,6 +13498,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 541.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmN2OnR": {
@@ -12731,6 +13511,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 541.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmN2Dmg": {
@@ -12742,6 +13524,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 105.0,
         "mass": 0.5,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmN2Off": {
@@ -12753,6 +13537,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 541.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmSensorEM01": {
@@ -12764,6 +13550,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3200.0,
         "mass": 5.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorEM01Dmg": {
@@ -12775,6 +13563,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 640.0,
         "mass": 5.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorEM01Off": {
@@ -12786,6 +13576,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3200.0,
         "mass": 5.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorIR01": {
@@ -12797,6 +13589,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12000.0,
         "mass": 5.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorIR01Dmg": {
@@ -12808,6 +13602,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2400.0,
         "mass": 5.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorIR01Off": {
@@ -12819,6 +13615,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12000.0,
         "mass": 5.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorRadar01": {
@@ -12830,6 +13628,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 30000.0,
         "mass": 130.0,
         "durability": 7.0,
+        "nCols": 3,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmSensorRadar01Dmg": {
@@ -12841,6 +13641,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 600.0,
         "mass": 130.0,
         "durability": 10.0,
+        "nCols": 3,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmSensorRadar01Off": {
@@ -12852,6 +13654,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 30000.0,
         "mass": 130.0,
         "durability": 7.0,
+        "nCols": 3,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmRTAO2": {
@@ -12885,6 +13689,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 659.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmO2OnR": {
@@ -12896,6 +13702,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 659.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmO2Dmg": {
@@ -12907,6 +13715,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 134.0,
         "mass": 0.5,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmO2Off": {
@@ -12918,6 +13728,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 659.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmKioskSupplies03": {
@@ -12928,6 +13740,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmKioskSupplies02": {
@@ -12938,6 +13752,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1": {
@@ -12949,6 +13765,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 583.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1Off": {
@@ -12960,6 +13778,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 583.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1Custom": {
@@ -12971,6 +13791,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2681.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1OffCustom": {
@@ -12993,6 +13815,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 583.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1VibrantGreenOff": {
@@ -13004,6 +13828,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 583.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1VibrantGreenCustom": {
@@ -13015,6 +13841,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2681.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1VibrantGreenOffCustom": {
@@ -13037,6 +13865,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 583.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1OrangeOff": {
@@ -13048,6 +13878,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 583.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1OrangeCustom": {
@@ -13059,6 +13891,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2681.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1OrangeOffCustom": {
@@ -13081,6 +13915,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1779.79,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1VibrantPurpleOff": {
@@ -13092,6 +13928,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1779.79,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1VibrantPurpleCustom": {
@@ -13103,6 +13941,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2681.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1VibrantPurpleOffCustom": {
@@ -13125,6 +13965,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 583.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1VibrantRedOff": {
@@ -13136,6 +13978,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 583.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1VibrantRedCustom": {
@@ -13147,6 +13991,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2681.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1VibrantRedOffCustom": {
@@ -13169,6 +14015,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 583.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1WhiteOff": {
@@ -13180,6 +14028,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 583.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1WhiteCustom": {
@@ -13191,6 +14041,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2681.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1WhiteOffCustom": {
@@ -13213,6 +14065,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 410.0,
         "mass": 23.0,
         "durability": 8.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmChairStrap01Dmg": {
@@ -13224,6 +14078,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 82.0,
         "mass": 21.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmChairStrap01Off": {
@@ -13235,6 +14091,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 410.0,
         "mass": 23.0,
         "durability": 8.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStationNavDmg": {
@@ -13246,6 +14104,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3500.0,
         "mass": 500.0,
         "durability": 19.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmStationNavOff": {
@@ -13257,6 +14117,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 16880.0,
         "mass": 500.0,
         "durability": 6.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmStationNav": {
@@ -13268,6 +14130,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 16880.0,
         "mass": 500.0,
         "durability": 6.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmShipWeaponDecoyLauncher01": {
@@ -13279,6 +14143,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 86000.0,
         "mass": 320.0,
         "durability": 20.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmShipWeaponDecoyLauncher01Dmg": {
@@ -13290,6 +14156,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 17200.0,
         "mass": 320.0,
         "durability": 25.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmShipWeaponDecoyLauncher01Off": {
@@ -13301,6 +14169,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 86000.0,
         "mass": 320.0,
         "durability": 20.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmSensorOptical01": {
@@ -13312,6 +14182,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5000.0,
         "mass": 7.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorOptical01Dmg": {
@@ -13323,6 +14195,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1000.0,
         "mass": 7.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorOptical01Off": {
@@ -13334,6 +14208,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5000.0,
         "mass": 7.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmDecorPoster11": {
@@ -13385,6 +14261,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 40.0,
         "mass": 0.005,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDecorPoster05": {
@@ -13416,6 +14294,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 400.0,
         "mass": 0.005,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDecorPoster03": {
@@ -13468,6 +14348,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 14.0,
         "mass": 12.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmSwitch01Off": {
@@ -13479,6 +14361,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 66.5,
         "mass": 12.0,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmSwitch01On": {
@@ -13490,6 +14374,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 66.5,
         "mass": 12.0,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmSwitch01OffTutorial": {
@@ -13522,6 +14408,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8000.0,
         "mass": 20.0,
         "durability": 30.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmShipCladding01Dmg": {
@@ -13533,6 +14421,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 300.0,
         "mass": 20.0,
         "durability": 30.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmKioskRacingVenus": {
@@ -13554,6 +14444,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 774.0,
         "mass": 7.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmRack1x101Dorm": {
@@ -13575,6 +14467,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 121.0,
         "mass": 7.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmRack1x101DormDmg": {
@@ -13596,6 +14490,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 882.0,
         "mass": 14.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRack1x201Dmg": {
@@ -13607,6 +14503,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 197.0,
         "mass": 14.0,
         "durability": 20.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRack1x301": {
@@ -13618,6 +14516,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1012.0,
         "mass": 21.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmRack1x301Dmg": {
@@ -13629,6 +14529,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 274.0,
         "mass": 21.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmRack1x401": {
@@ -13640,6 +14542,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1300.0,
         "mass": 28.0,
         "durability": 20.0,
+        "nCols": 1,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmRack1x401Dmg": {
@@ -13651,6 +14555,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 351.0,
         "mass": 29.0,
         "durability": 45.0,
+        "nCols": 1,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmRack2x2C01": {
@@ -13662,6 +14568,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1024.0,
         "mass": 21.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRack2x2C01Dmg": {
@@ -13673,6 +14581,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 292.0,
         "mass": 21.0,
         "durability": 30.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmShipWeaponMassThrower02": {
@@ -13683,6 +14593,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 45000.0,
         "mass": 210.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 7,
         "source": "condowner"
       },
       "ItmShipWeaponMassThrower02Dmg": {
@@ -13694,6 +14606,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 9000.0,
         "mass": 210.0,
         "durability": 18.0,
+        "nCols": 2,
+        "nRows": 7,
         "source": "condowner"
       },
       "ItmShipWeaponMassThrower02Off": {
@@ -13705,6 +14619,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 45000.0,
         "mass": 210.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 7,
         "source": "condowner"
       },
       "ItmRCSDistro02": {
@@ -13716,6 +14632,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1692.0,
         "mass": 28.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRCSDistro02Dmg": {
@@ -13727,6 +14645,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 355.0,
         "mass": 28.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRCSDistro02Off": {
@@ -13738,6 +14658,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1692.0,
         "mass": 28.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRCSDistro01": {
@@ -13749,6 +14671,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 32266.0,
         "mass": 28.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmRCSDistro01Dmg": {
@@ -13760,6 +14684,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 7330.0,
         "mass": 28.0,
         "durability": 22.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmRCSDistro01Off": {
@@ -13771,6 +14697,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 32266.0,
         "mass": 28.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionFuelRegulator01": {
@@ -13782,6 +14710,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 13134.0,
         "mass": 28.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmFusionFuelRegulator01Dmg": {
@@ -13793,6 +14723,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3283.0,
         "mass": 28.0,
         "durability": 22.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmFusionFuelRegulator01Off": {
@@ -13804,6 +14736,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 13134.0,
         "mass": 28.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmKioskResBroker01BCER": {
@@ -13865,6 +14799,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 366.0,
         "mass": 13.0,
         "durability": 4.0,
+        "nCols": 3,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmTV01Off": {
@@ -13876,6 +14812,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 366.0,
         "mass": 13.0,
         "durability": 4.0,
+        "nCols": 3,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmTV01Drama": {
@@ -13925,6 +14863,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 23944.0,
         "mass": 180.0,
         "durability": 40.0,
+        "nCols": 7,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmTowingBrace01Dmg": {
@@ -13936,6 +14876,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4788.0,
         "mass": 180.0,
         "durability": 15.0,
+        "nCols": 7,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmTowingBrace01DmgSecured": {
@@ -13958,6 +14900,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 23944.0,
         "mass": 180.0,
         "durability": 40.0,
+        "nCols": 7,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmTowingBrace01OffSecured": {
@@ -13980,6 +14924,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 23944.0,
         "mass": 180.0,
         "durability": 40.0,
+        "nCols": 7,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmChair04Dmg": {
@@ -14141,6 +15087,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 335.0,
         "mass": 14.0,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmChairCube01bDmg": {
@@ -14152,6 +15100,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 67.0,
         "mass": 12.0,
         "durability": 4.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmChairCube01c": {
@@ -14272,6 +15222,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 743.0,
         "mass": 6.5,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmKioskHealth01": {
@@ -14282,6 +15234,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBattery02": {
@@ -14293,6 +15247,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2623.0,
         "mass": 45.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmBattery02Dmg": {
@@ -14304,6 +15260,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 524.0,
         "mass": 45.0,
         "durability": 30.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmKioskOKLGShipBroker01": {
@@ -14314,6 +15272,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 5,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmKioskBCERShipBroker01": {
@@ -14374,6 +15334,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 234.0,
         "mass": 15.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmSink01Starter": {
@@ -14396,6 +15358,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2280.0,
         "mass": 30.0,
         "durability": 12.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmBed01Dmg": {
@@ -14407,6 +15371,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 294.0,
         "mass": 30.0,
         "durability": 25.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmBed01Off": {
@@ -14418,6 +15384,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2280.0,
         "mass": 30.0,
         "durability": 12.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmShipWeaponPDC01": {
@@ -14429,6 +15397,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 25000.0,
         "mass": 60.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmShipWeaponPDC01Dmg": {
@@ -14440,6 +15410,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5000.0,
         "mass": 60.0,
         "durability": 13.0,
+        "nCols": 3,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmShipWeaponPDC01Firing": {
@@ -14461,6 +15433,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 25000.0,
         "mass": 60.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmShipWeaponMissileLauncher01": {
@@ -14472,6 +15446,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 86000.0,
         "mass": 320.0,
         "durability": 20.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmShipWeaponMissileLauncher01Dmg": {
@@ -14483,6 +15459,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 17200.0,
         "mass": 320.0,
         "durability": 25.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmShipWeaponMissileLauncher01Off": {
@@ -14494,6 +15472,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 86000.0,
         "mass": 320.0,
         "durability": 20.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmAlarmSmokeOnG": {
@@ -14504,6 +15484,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 256.0,
         "mass": 0.5,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmSmokeOnR": {
@@ -14515,6 +15497,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 256.0,
         "mass": 0.5,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmSmokeDmg": {
@@ -14526,6 +15510,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 51.0,
         "mass": 0.5,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmSmokeOff": {
@@ -14537,6 +15523,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 256.0,
         "mass": 0.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmShipWeaponPDC03": {
@@ -14548,6 +15536,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 18000.0,
         "mass": 75.0,
         "durability": 3.0,
+        "nCols": 3,
+        "nRows": 6,
         "source": "condowner"
       },
       "ItmShipWeaponPDC03Dmg": {
@@ -14559,6 +15549,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3600.0,
         "mass": 75.0,
         "durability": 15.0,
+        "nCols": 3,
+        "nRows": 6,
         "source": "condowner"
       },
       "ItmShipWeaponPDC03Firing": {
@@ -14580,6 +15572,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 18000.0,
         "mass": 75.0,
         "durability": 3.0,
+        "nCols": 3,
+        "nRows": 6,
         "source": "condowner"
       },
       "ItmShipWeaponMissileLauncher03": {
@@ -14591,6 +15585,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 40000.0,
         "mass": 250.0,
         "durability": 8.0,
+        "nCols": 4,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmShipWeaponMissileLauncher03Dmg": {
@@ -14602,6 +15598,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8000.0,
         "mass": 250.0,
         "durability": 12.0,
+        "nCols": 4,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmShipWeaponMissileLauncher03Off": {
@@ -14613,6 +15611,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 40000.0,
         "mass": 250.0,
         "durability": 8.0,
+        "nCols": 4,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmChair01": {
@@ -14624,6 +15624,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 27.0,
         "mass": 2.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChair01Dmg": {
@@ -14635,6 +15637,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5.4,
         "mass": 2.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBattery02LowPower": {
@@ -14686,6 +15690,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2626.0,
         "mass": 7.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFusionCorePump01": {
@@ -14697,6 +15703,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5520.0,
         "mass": 28.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionCorePump01Dmg": {
@@ -14708,6 +15716,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1112.0,
         "mass": 28.0,
         "durability": 19.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionCorePump01Off": {
@@ -14719,6 +15729,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5520.0,
         "mass": 28.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionLaserArray01": {
@@ -14730,6 +15742,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5520.0,
         "mass": 28.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionLaserArray01Dmg": {
@@ -14741,6 +15755,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1112.0,
         "mass": 28.0,
         "durability": 19.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionLaserArray01Off": {
@@ -14752,6 +15768,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5520.0,
         "mass": 28.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionPelletFeeder01": {
@@ -14763,6 +15781,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5520.0,
         "mass": 28.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionPelletFeeder01Dmg": {
@@ -14774,6 +15794,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1112.0,
         "mass": 28.0,
         "durability": 19.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionPelletFeeder01Off": {
@@ -14785,6 +15807,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5520.0,
         "mass": 28.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmKioskSupplies01": {
@@ -14795,6 +15819,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmKioskSupplies01BCER": {
@@ -14825,6 +15851,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 488.0,
         "mass": 20.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ReservedTerminalSanDiegoBingham": {
@@ -14935,6 +15963,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 488.0,
         "mass": 20.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ReservedTerminalSanDiegoPolaris": {
@@ -15019,6 +16049,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 116.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmTempDmg": {
@@ -15030,6 +16062,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 23.0,
         "mass": 0.5,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmTempOff": {
@@ -15041,6 +16075,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 116.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmTempOnB": {
@@ -15052,6 +16088,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 116.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmTempOnR": {
@@ -15063,6 +16101,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 116.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToilet01": {
@@ -15073,6 +16113,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 623.0,
         "mass": 125.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmKioskTransit01": {
@@ -15083,6 +16125,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 58.0,
         "durability": 70.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmKioskTransit02": {
@@ -15093,6 +16137,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 58.0,
         "durability": 70.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmKioskTransit03": {
@@ -15114,6 +16160,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2670.0,
         "mass": 581.0,
         "durability": 80.0,
+        "nCols": 4,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmDoor03TransitExpressDmg": {
@@ -15125,6 +16173,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2670.0,
         "mass": 581.0,
         "durability": 80.0,
+        "nCols": 4,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmKioskTransit03b": {
@@ -15146,6 +16196,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 290.0,
         "mass": 1.35,
         "durability": 13.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmTransponder01Off": {
@@ -15157,6 +16209,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 29000.0,
         "mass": 1.35,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmTransponder01OnR": {
@@ -15168,6 +16222,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 29000.0,
         "mass": 1.35,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmTreadmill01": {
@@ -15178,6 +16234,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 10850.0,
         "mass": 310.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmTreadmill01Dmg": {
@@ -15189,6 +16247,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 400.0,
         "mass": 310.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmTreadmill01Off": {
@@ -15200,6 +16260,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 10850.0,
         "mass": 310.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmTreadmill01Active": {
@@ -15211,6 +16273,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 10850.0,
         "mass": 310.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFloorGrate4x401": {
@@ -15222,6 +16286,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3100.0,
         "mass": 65.0,
         "durability": 30.0,
+        "nCols": 4,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmAirPump01Dmg": {
@@ -15263,6 +16329,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 18570.0,
         "mass": 88.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmBedMedical01Dmg": {
@@ -15274,6 +16342,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 18570.0,
         "mass": 88.0,
         "durability": 23.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmBedMedical01Off": {
@@ -15285,6 +16355,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 18570.0,
         "mass": 88.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmKioskVORBScrap01": {
@@ -15295,6 +16367,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 5,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmSensorLidar01": {
@@ -15306,6 +16380,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 23000.0,
         "mass": 30.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorLidar01Dmg": {
@@ -15317,6 +16393,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4600.0,
         "mass": 30.0,
         "durability": 7.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorLidar01Off": {
@@ -15328,6 +16406,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 23000.0,
         "mass": 30.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmWorkbench01": {
@@ -15338,6 +16418,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1446.0,
         "mass": 20.0,
         "durability": 20.0,
+        "nCols": 3,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmKioskOKLGFoodCart01": {
@@ -15348,6 +16430,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         ],
         "mass": 31.0,
         "durability": 70.0,
+        "nCols": 4,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAntenna01OnG": {
@@ -15359,6 +16443,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3000.0,
         "mass": 3.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmAntenna01Dmg": {
@@ -15370,6 +16456,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 600.0,
         "mass": 2.0,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmAntenna01Off": {
@@ -15381,6 +16469,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3000.0,
         "mass": 3.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmAntenna02OnG": {
@@ -15392,6 +16482,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 9020.0,
         "mass": 12.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmAntenna02Dmg": {
@@ -15403,6 +16495,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1804.0,
         "mass": 10.0,
         "durability": 18.0,
+        "nCols": 2,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmAntenna02Off": {
@@ -15414,6 +16508,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 9020.0,
         "mass": 12.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmSensorEM02": {
@@ -15425,6 +16521,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 6400.0,
         "mass": 3.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorEM02Dmg": {
@@ -15436,6 +16534,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1280.0,
         "mass": 3.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorEM02Off": {
@@ -15447,6 +16547,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 6400.0,
         "mass": 3.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorIR02": {
@@ -15458,6 +16560,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12000.0,
         "mass": 5.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorIR02Dmg": {
@@ -15469,6 +16573,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2400.0,
         "mass": 5.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorIR02Off": {
@@ -15480,6 +16586,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12000.0,
         "mass": 5.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorLidar02": {
@@ -15491,6 +16599,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 29000.0,
         "mass": 21.0,
         "durability": 3.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorLidar02Dmg": {
@@ -15502,6 +16612,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5800.0,
         "mass": 21.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorLidar02Off": {
@@ -15513,6 +16625,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 29000.0,
         "mass": 21.0,
         "durability": 3.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorRadar02": {
@@ -15524,6 +16638,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 42000.0,
         "mass": 90.0,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorRadar02Dmg": {
@@ -15535,6 +16651,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8400.0,
         "mass": 90.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorRadar02Off": {
@@ -15546,6 +16664,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 42000.0,
         "mass": 130.0,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       }
     },
@@ -15564,6 +16684,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1314.0,
         "mass": 7.5,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmSealTemp01Loose": {
@@ -15575,6 +16697,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 79.0,
         "mass": 4.0,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDroneDecoy01": {
@@ -15586,6 +16710,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 450.0,
         "mass": 1.8,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDroneDecoy01On": {
@@ -15597,6 +16723,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 450.0,
         "mass": 1.8,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmElectricalBox01DmgLoose": {
@@ -15608,6 +16736,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 13.3,
         "mass": 12.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmElectricalBox01Loose": {
@@ -15619,6 +16749,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 66.5,
         "mass": 12.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCanister01DmgLoose": {
@@ -15630,6 +16762,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 53.0,
         "mass": 70.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCanister01Loose": {
@@ -15641,6 +16775,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 410.0,
         "mass": 70.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataIMGThreeWolfMoons": {
@@ -15653,6 +16789,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
       },
       "[us]": {
         "friendly": "[us]",
+        "nCols": 1,
+        "nRows": 0,
         "source": "condowner"
       },
       "AABarTechnoLowPass": {
@@ -15674,6 +16812,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 7979.0,
         "mass": 28.0,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmHatch01Loose": {
@@ -15684,6 +16824,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 535.0,
         "mass": 88.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStabilizerActive01DmgLoose": {
@@ -15695,6 +16837,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 37914.0,
         "mass": 35.0,
         "durability": 13.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmStabilizerActive01Loose": {
@@ -15706,6 +16850,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 156774.0,
         "mass": 40.0,
         "durability": 30.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAICargo01Loose": {
@@ -15717,6 +16863,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 44100.0,
         "mass": 61.0,
         "durability": 4.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAICargo01LooseDmg": {
@@ -15728,6 +16876,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5610.0,
         "mass": 61.0,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAICargo01OffLoose": {
@@ -15739,6 +16889,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 11200.0,
         "mass": 61.0,
         "durability": 4.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAirPump03DmgLoose": {
@@ -15760,6 +16912,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 510.0,
         "mass": 11.0,
         "durability": 11.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAirPump03OffLoose": {
@@ -15781,6 +16935,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2050.0,
         "mass": 11.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmVent01Loose": {
@@ -15792,6 +16948,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 335.0,
         "mass": 8.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmAmmoCasings01": {
@@ -15802,6 +16960,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1.0,
         "mass": 0.004,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmo38": {
@@ -15813,6 +16973,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 35.0,
         "mass": 0.0164,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmo45": {
@@ -15824,6 +16986,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 50.0,
         "mass": 0.015,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmo12Gauge": {
@@ -15835,6 +16999,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5.0,
         "mass": 0.0319,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmo12GaugeHG": {
@@ -15846,6 +17012,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1115.0,
         "mass": 0.0319,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmo150mm": {
@@ -15856,6 +17024,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 100.0,
         "mass": 2.0,
         "durability": 20.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmo20mm": {
@@ -15866,6 +17036,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5.0,
         "mass": 0.0319,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmo556": {
@@ -15876,6 +17048,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5.0,
         "mass": 0.01231,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmo58": {
@@ -15886,6 +17060,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5.0,
         "mass": 0.01231,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmo9mm": {
@@ -15897,6 +17073,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 25.0,
         "mass": 0.01,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmoHullsafe": {
@@ -15907,6 +17085,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5.0,
         "mass": 0.01,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmoBolt": {
@@ -15918,6 +17098,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5.0,
         "mass": 0.01,
         "durability": 3.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmo556HG": {
@@ -15928,6 +17110,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5.0,
         "mass": 0.01231,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmoPowerCell01": {
@@ -15938,6 +17122,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 101.99,
         "mass": 1.4,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmo55602": {
@@ -15949,6 +17135,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5.0,
         "mass": 0.01231,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmOssifexPen01": {
@@ -15960,6 +17148,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 7000.0,
         "mass": 0.4,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAntiGravPen01": {
@@ -15971,6 +17161,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1000.0,
         "mass": 0.4,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAntiHypoVPen01": {
@@ -15982,6 +17174,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 10000.0,
         "mass": 0.4,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAntiRadPen01": {
@@ -15993,6 +17187,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 10000.0,
         "mass": 0.4,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataSNDSavedApology": {
@@ -16012,6 +17208,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1890.0,
         "mass": 40.0,
         "durability": 12.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmArcadeGame01Loose": {
@@ -16023,6 +17221,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 9450.0,
         "mass": 44.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "BodyarmLowerLB": {
@@ -16134,6 +17334,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 290.0,
         "mass": 1.35,
         "durability": 13.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmSignalBeacon01Loose": {
@@ -16145,6 +17347,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15.0,
         "mass": 6.5,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmVent02Loose": {
@@ -16156,6 +17360,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2335.0,
         "mass": 10.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "DataBINRobotCracker": {
@@ -16175,6 +17381,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 213.0,
         "mass": 20.0,
         "durability": 10.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmWeaponBaseballBat01": {
@@ -16185,6 +17393,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 25.0,
         "mass": 0.907,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChargerBattDrill01OffLoose": {
@@ -16196,6 +17406,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 25.99,
         "mass": 0.55,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChargerBattDrill01DmgLoose": {
@@ -16207,6 +17419,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 6.5,
         "mass": 0.55,
         "durability": 19.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChargerBattWelder01OffLoose": {
@@ -16218,6 +17432,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 24.49,
         "mass": 0.62,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChargerBattWelder01DmgLoose": {
@@ -16229,6 +17445,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4.49,
         "mass": 0.62,
         "durability": 19.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChargerBattEVAOffLoose": {
@@ -16240,6 +17458,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 786.0,
         "mass": 25.0,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmChargerBattEVADmgLoose": {
@@ -16251,6 +17471,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 157.0,
         "mass": 25.0,
         "durability": 19.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmChargerBattery04OffLoose": {
@@ -16262,6 +17484,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 786.0,
         "mass": 25.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChargerBattery04DmgLoose": {
@@ -16273,6 +17497,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 157.0,
         "mass": 25.0,
         "durability": 16.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBatteryDisp01": {
@@ -16284,6 +17510,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15.0,
         "mass": 0.13,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBattery03": {
@@ -16295,6 +17523,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 300.0,
         "mass": 11.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBattery03Dmg": {
@@ -16306,6 +17536,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 55.0,
         "mass": 11.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBatteryDrill01": {
@@ -16317,6 +17549,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 57.8,
         "mass": 1.04,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBatteryDrill01Dmg": {
@@ -16328,6 +17562,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 14.8,
         "mass": 1.04,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBatteryWelder01": {
@@ -16339,6 +17575,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 48.6,
         "mass": 1.04,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBatteryWelder01Dmg": {
@@ -16350,6 +17588,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8.6,
         "mass": 1.04,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBattery04": {
@@ -16361,6 +17601,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8640.0,
         "mass": 11.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBattery04Dmg": {
@@ -16372,6 +17614,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1640.0,
         "mass": 11.5,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataSNDPercussion": {
@@ -16386,6 +17630,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 457.0,
         "mass": 19.0,
         "durability": 18.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataTXTMergaLongFingerSerialKiller": {
@@ -16407,6 +17653,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 553.0,
         "mass": 0.5,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "Robot01": {
@@ -16424,6 +17672,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2500.0,
         "mass": 2.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "OutfitHelmet03Dmg": {
@@ -16435,6 +17685,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 503.0,
         "mass": 2.0,
         "durability": 30.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "OutfitEVA01": {
@@ -16446,6 +17698,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 7000.0,
         "mass": 50.0,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "OutfitEVA01Dmg": {
@@ -16457,6 +17711,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1400.0,
         "mass": 50.0,
         "durability": 14.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "OutfitEVA01Off": {
@@ -16793,6 +18049,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
       },
       "Blank": {
         "friendly": "Blank",
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "LiquidBlood": {
@@ -16827,6 +18085,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 9000.0,
         "mass": 80.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "DataSNDAttack03": {
@@ -16846,6 +18106,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.3,
         "mass": 0.32,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "OutfitSuit01": {
@@ -16857,10 +18119,14 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 225.0,
         "mass": 1.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "Cancel": {
         "friendly": "Cancel",
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataSNDAttack": {
@@ -16906,6 +18172,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 73.0,
         "mass": 0.25,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "OutfitCargoPants02": {
@@ -16927,6 +18195,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1000.0,
         "mass": 50.0,
         "durability": 50.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCargoPod01Loose": {
@@ -16938,6 +18208,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5000.0,
         "mass": 50.0,
         "durability": 50.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCargoPodClimate01DmgLoose": {
@@ -16949,6 +18221,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2400.0,
         "mass": 50.0,
         "durability": 70.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCargoPodClimate01Loose": {
@@ -16960,6 +18234,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12000.0,
         "mass": 50.0,
         "durability": 70.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCargoPodRad01DmgLoose": {
@@ -16971,6 +18247,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2400.0,
         "mass": 50.0,
         "durability": 70.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCargoPodRad01Loose": {
@@ -16982,6 +18260,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12000.0,
         "mass": 50.0,
         "durability": 70.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCargoPodSpec01DmgLoose": {
@@ -16993,6 +18273,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4000.0,
         "mass": 50.0,
         "durability": 80.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCargoPodSpec01Loose": {
@@ -17004,6 +18286,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 20000.0,
         "mass": 50.0,
         "durability": 80.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCargoWeb01Loose": {
@@ -17015,6 +18299,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 174.0,
         "mass": 2.5,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCargoWeb01DmgLoose": {
@@ -17026,6 +18312,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 121.0,
         "mass": 2.5,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDocumentWhodunnit01": {
@@ -17037,6 +18325,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.15,
         "mass": 0.005,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChair02DmgLoose": {
@@ -17048,6 +18338,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 17.0,
         "mass": 9.0,
         "durability": 4.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmChair02Loose": {
@@ -17059,6 +18351,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 85.0,
         "mass": 11.0,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmBartop02Loose": {
@@ -17070,6 +18364,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 13149.0,
         "mass": 47.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmBartop03Loose": {
@@ -17081,6 +18377,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 16849.0,
         "mass": 47.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "LiquidBloodMeat": {
@@ -17105,6 +18403,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 0.0002,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmRTACO2DmgLoose": {
@@ -17138,6 +18438,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 235.0,
         "mass": 2.5,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFilterCO202Dmg": {
@@ -17149,6 +18451,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 235.0,
         "mass": 2.5,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmCO2DmgLoose": {
@@ -17160,6 +18464,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 121.0,
         "mass": 0.5,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmCO2OffLoose": {
@@ -17171,6 +18477,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 634.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFilterCO201": {
@@ -17182,6 +18490,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 235.0,
         "mass": 2.5,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFilterCO201Dmg": {
@@ -17193,6 +18503,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 235.0,
         "mass": 2.5,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmShipWeaponMassThrower01DmgLoose": {
@@ -17201,6 +18513,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5000.0,
         "mass": 200.0,
         "durability": 23.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmShipWeaponMassThrower01Loose": {
@@ -17209,6 +18523,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 25000.0,
         "mass": 200.0,
         "durability": 18.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmBattery02bLoose": {
@@ -17220,6 +18536,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1575.0,
         "mass": 27.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmBattery02bDmgLoose": {
@@ -17231,6 +18549,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 390.0,
         "mass": 27.0,
         "durability": 18.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "Compartment": {
@@ -17246,6 +18566,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 27.5,
         "mass": 1.5,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmComponentMobo01": {
@@ -17257,6 +18579,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 17.5,
         "mass": 0.5,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmComponentMotor01": {
@@ -17268,6 +18592,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 37.5,
         "mass": 2.5,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "OutfitLeggings01f": {
@@ -17379,6 +18705,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 101.0,
         "mass": 0.125,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmTerminal01Loose": {
@@ -17390,6 +18718,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 488.0,
         "mass": 20.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmTable03Loose": {
@@ -17443,6 +18773,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4226.0,
         "mass": 10.5,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAtmoScrubber02DmgLoose": {
@@ -17454,6 +18786,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 845.0,
         "mass": 10.5,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmContaminantsDmgLoose": {
@@ -17465,6 +18799,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 121.0,
         "mass": 0.5,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmContaminantsOffLoose": {
@@ -17476,16 +18812,22 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 634.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "SysExplosionMissile02": {
         "friendly": "Conventional Missile Explosion",
         "short": "Explosion",
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "SysExplosionMissile03": {
         "friendly": "Conventional Missile Explosion (Small)",
         "short": "Explosion",
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCooler01DmgLoose": {
@@ -17497,6 +18839,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1340.0,
         "mass": 130.0,
         "durability": 7.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCooler01OffLoose": {
@@ -17508,6 +18852,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 7360.0,
         "mass": 130.0,
         "durability": 3.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "DataSNDNeverland": {
@@ -17533,6 +18879,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1692.0,
         "mass": 28.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFusionCryoPump01DmgLoose": {
@@ -17544,6 +18892,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 355.0,
         "mass": 28.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmCanisterLHe01Loose": {
@@ -17555,6 +18905,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2542.0,
         "mass": 300.0,
         "durability": 40.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "DataBINCryptoSmall": {
@@ -17577,6 +18929,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 362.0,
         "mass": 0.68,
         "durability": 12.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCanisterLH02Loose": {
@@ -17588,6 +18942,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 6542.0,
         "mass": 1500.0,
         "durability": 40.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCargoD2O01": {
@@ -17613,6 +18969,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15.0,
         "mass": 0.005,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCigDamaskRose01Lit": {
@@ -17624,6 +18982,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 0.001,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "SOCDarkJoke": {
@@ -17663,6 +19023,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 64.0,
         "mass": 20.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "DataVIDMundane03": {
@@ -17710,6 +19072,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 13960.0,
         "mass": 8.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataVIDFilm06": {
@@ -17718,6 +19082,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
       },
       "SysFire": {
         "friendly": "Fire",
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataSNDGhostStory02": {
@@ -17748,6 +19114,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 60.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmTrencherChipotlePorkCheeseSpread": {
@@ -17759,6 +19127,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 60.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmTrencherKungPaoChicken": {
@@ -17770,6 +19140,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 73.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmTrencherMysteryMeatInSurpriseSauce": {
@@ -17781,6 +19153,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 65.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmTrencherNachoFiesta": {
@@ -17792,6 +19166,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 69.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmTrencherPizzaPouch": {
@@ -17803,6 +19179,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 69.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmTrencherSpicyBuffaloWings": {
@@ -17814,6 +19192,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 83.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmTrencherSweetPotatoCakeGardenSalad": {
@@ -17825,6 +19205,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 83.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "BodyfootLB": {
@@ -17890,6 +19272,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 400.0,
         "mass": 310.0,
         "durability": 12.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmStrengthTrainer01Loose": {
@@ -17901,6 +19285,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2000.0,
         "mass": 310.0,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFusionFieldCoils01Loose": {
@@ -17912,6 +19298,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4740.0,
         "mass": 40.0,
         "durability": 20.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionFieldCoils01DmgLoose": {
@@ -17923,11 +19311,15 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 871.0,
         "mass": 40.0,
         "durability": 45.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "SysExplosionMissile01": {
         "friendly": "Fusion Missile Explosion",
         "short": "Explosion",
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCapacitor01Loose": {
@@ -17939,6 +19331,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12623.0,
         "mass": 45.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmCapacitor01DmgLoose": {
@@ -17950,6 +19344,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3156.0,
         "mass": 45.0,
         "durability": 8.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "DataTXTFusionManual01": {
@@ -17991,6 +19387,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 120.0,
         "mass": 2.0,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolGrinder02Dmg": {
@@ -18002,6 +19400,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 25.0,
         "mass": 2.0,
         "durability": 18.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolDrillMining01": {
@@ -18013,6 +19413,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2500.0,
         "mass": 8.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolDrillMining01Dmg": {
@@ -18024,6 +19426,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 500.0,
         "mass": 7.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolDrill01": {
@@ -18035,6 +19439,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 150.0,
         "mass": 2.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolDrill01Dmg": {
@@ -18046,6 +19452,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 30.0,
         "mass": 2.0,
         "durability": 18.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolSolderingIron01": {
@@ -18057,6 +19465,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 90.0,
         "mass": 2.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolSolderingIron01Dmg": {
@@ -18068,6 +19478,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 20.0,
         "mass": 2.0,
         "durability": 18.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataVIDMundane01": {
@@ -18083,6 +19495,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 172.0,
         "mass": 1.0,
         "durability": 6.5,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmHackingDataCard01": {
@@ -18094,6 +19508,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 31.0,
         "mass": 0.01,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolFireEx01": {
@@ -18105,6 +19521,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 130.0,
         "mass": 2.5,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmToolFireEx01Dmg": {
@@ -18116,6 +19534,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 67.0,
         "mass": 2.5,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmToolWelder01": {
@@ -18127,6 +19547,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 165.0,
         "mass": 2.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolWelder01Dmg": {
@@ -18138,6 +19560,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 35.0,
         "mass": 2.0,
         "durability": 18.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolDrillMining02Dmg": {
@@ -18149,6 +19573,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2650.0,
         "mass": 15.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolDrillMining02": {
@@ -18160,6 +19586,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 13250.0,
         "mass": 17.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmRCSCluster01DmgLoose": {
@@ -18171,6 +19599,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1112.0,
         "mass": 28.0,
         "durability": 19.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRCSCluster01Loose": {
@@ -18182,6 +19612,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5520.0,
         "mass": 28.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "BodyhandLB": {
@@ -18287,6 +19719,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 230.0,
         "mass": 0.25,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataIMGSuperHarrison": {
@@ -18316,6 +19750,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2634.0,
         "mass": 31.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmHeater01DmgLoose": {
@@ -18327,6 +19763,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 514.0,
         "mass": 31.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmHeater02OffLoose": {
@@ -18358,6 +19796,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12914.0,
         "mass": 1.35,
         "durability": 50.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmHeavyLiftRotor01Loose": {
@@ -18369,6 +19809,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 56774.0,
         "mass": 40.0,
         "durability": 30.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmMeat01HoofLoose": {
@@ -18380,6 +19822,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4560.0,
         "mass": 10.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolScrewDriver01": {
@@ -18391,6 +19835,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15.0,
         "mass": 2.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolHacksaw01": {
@@ -18402,6 +19848,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 40.0,
         "mass": 3.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMeat01HornLoose": {
@@ -18413,6 +19861,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8560.0,
         "mass": 10.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAeroParts3x301Loose": {
@@ -18424,6 +19874,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1300.0,
         "mass": 40.0,
         "durability": 30.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAeroParts3x302Loose": {
@@ -18435,6 +19887,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1300.0,
         "mass": 40.0,
         "durability": 30.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmMineral11": {
@@ -18446,6 +19900,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 150.0,
         "mass": 10.0,
         "durability": 101.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmHygieneWipes01": {
@@ -18456,6 +19912,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 80.0,
         "mass": 0.01,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataIMGCryptid02": {
@@ -18471,6 +19929,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 141000.0,
         "mass": 417.0,
         "durability": 25.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmReactorIC03DmgLoose": {
@@ -18482,6 +19942,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 29000.0,
         "mass": 417.0,
         "durability": 75.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionReactorCore01Loose": {
@@ -18493,6 +19955,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 10250.0,
         "mass": 417.0,
         "durability": 25.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFusionReactorCore01DmgLoose": {
@@ -18504,6 +19968,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2050.0,
         "mass": 417.0,
         "durability": 75.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmReactorIC02OffLoose": {
@@ -18515,6 +19981,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 141000.0,
         "mass": 417.0,
         "durability": 120.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmIceTrash01": {
@@ -18523,6 +19991,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 2.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataIMGMeat02": {
@@ -19361,6 +20831,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4096.0,
         "mass": 0.06,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "item"
       },
       "ItmPDACart02": {
@@ -19371,6 +20843,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4096.0,
         "mass": 0.06,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "item"
       },
       "ItmPDACart03": {
@@ -19381,6 +20855,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4096.0,
         "mass": 0.06,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "item"
       },
       "ItmPDACart04": {
@@ -19391,6 +20867,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4096.0,
         "mass": 0.06,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "item"
       },
       "ItmPDACart05": {
@@ -19401,6 +20879,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4096.0,
         "mass": 0.06,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "item"
       },
       "DataSNDJTSmoovPutItIn": {
@@ -19415,6 +20895,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12362.0,
         "mass": 1.3,
         "durability": 6.0,
+        "nCols": 3,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWeaponKnuckles01": {
@@ -19425,6 +20907,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 46.0,
         "mass": 0.198,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "LiquidRiceWine": {
@@ -19636,6 +21120,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 101.0,
         "mass": 0.125,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "OutfitLeggings02d": {
@@ -19741,6 +21227,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 6542.0,
         "mass": 1500.0,
         "durability": 40.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmPlanterMeat01Loose": {
@@ -19752,6 +21240,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15760.0,
         "mass": 305.0,
         "durability": 35.0,
+        "nCols": 2,
+        "nRows": 4,
         "source": "condowner"
       },
       "DataTXTFanfic02": {
@@ -19898,6 +21388,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 362.0,
         "mass": 0.51,
         "durability": 12.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFusionMHDGenerator01Loose": {
@@ -19909,6 +21401,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12623.0,
         "mass": 45.0,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFusionMHDGenerator01DmgLoose": {
@@ -19920,6 +21414,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3156.0,
         "mass": 45.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 2,
         "source": "condowner"
       },
       "DataSNDManifesto": {
@@ -19957,6 +21453,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3000.0,
         "mass": 300.0,
         "durability": 8.0,
+        "nCols": 2,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmShipWeaponMassThrower03Loose": {
@@ -19968,6 +21466,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15000.0,
         "mass": 300.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 4,
         "source": "condowner"
       },
       "DataSNDAttack02": {
@@ -19979,6 +21479,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3510.0,
         "mass": 5.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMeat01Eye": {
@@ -19989,6 +21491,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 13960.0,
         "mass": 9.0,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMeat01Hoof": {
@@ -19999,6 +21503,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4560.0,
         "mass": 15.0,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMeat01Horn": {
@@ -20009,6 +21515,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8560.0,
         "mass": 15.0,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMeat01Loose": {
@@ -20020,6 +21528,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 810.0,
         "mass": 0.2,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmIce02": {
@@ -20028,6 +21538,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 20.0,
         "mass": 24.84,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBattery02cLoose": {
@@ -20039,6 +21551,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 944.0,
         "mass": 16.2,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBattery02cDmgLoose": {
@@ -20050,11 +21564,15 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 234.0,
         "mass": 16.2,
         "durability": 11.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "SysExplosionMiningSmall": {
         "friendly": "Mining Charge Explosion (Small)",
         "short": "Explosion",
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmSensorEOIR01Loose": {
@@ -20066,6 +21584,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 43000.0,
         "mass": 10.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorEOIR01DmgLoose": {
@@ -20077,6 +21597,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8600.0,
         "mass": 10.0,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "LiquidCoffee": {
@@ -20120,6 +21642,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 105.0,
         "mass": 0.5,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmN2OffLoose": {
@@ -20131,6 +21655,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 541.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "SOCNameDropManager": {
@@ -20154,6 +21680,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3200.0,
         "mass": 5.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorEM01DmgLoose": {
@@ -20165,6 +21693,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 640.0,
         "mass": 5.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorIR01Loose": {
@@ -20176,6 +21706,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12000.0,
         "mass": 5.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorIR01DmgLoose": {
@@ -20187,6 +21719,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2400.0,
         "mass": 7.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorRadar01Loose": {
@@ -20198,6 +21732,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 30000.0,
         "mass": 130.0,
         "durability": 7.0,
+        "nCols": 3,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmSensorRadar01DmgLoose": {
@@ -20209,6 +21745,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 600.0,
         "mass": 130.0,
         "durability": 10.0,
+        "nCols": 3,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmNavMod": {
@@ -20219,6 +21757,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 767.0,
         "mass": 0.4,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmNavModMobo": {
@@ -20250,6 +21790,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 159.0,
         "mass": 0.4,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmNavModMoboDmg": {
@@ -20286,6 +21828,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 65.0,
         "mass": 0.68,
         "durability": 16.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCanisterO2Small": {
@@ -20296,6 +21840,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 48.0,
         "mass": 11.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCanisterO2SmallDmg": {
@@ -20307,6 +21853,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 9.0,
         "mass": 11.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCanisterO2SmallInject": {
@@ -20362,6 +21910,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 134.0,
         "mass": 0.5,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmO2OffLoose": {
@@ -20373,6 +21923,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 659.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "SOCOfferSmoke": {
@@ -20398,6 +21950,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 99.0,
         "mass": 10.0,
         "durability": 101.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMineral08": {
@@ -20408,6 +21962,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4000.0,
         "mass": 10.0,
         "durability": 101.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMineral09": {
@@ -20418,6 +21974,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 10000.0,
         "mass": 10.0,
         "durability": 101.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMineral06": {
@@ -20428,6 +21986,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12000.0,
         "mass": 10.0,
         "durability": 101.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMineral01": {
@@ -20439,6 +21999,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 450.0,
         "mass": 20.0,
         "durability": 101.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMineral02": {
@@ -20449,6 +22011,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 180.0,
         "mass": 10.0,
         "durability": 101.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMineral07": {
@@ -20459,6 +22023,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8000.0,
         "mass": 10.0,
         "durability": 101.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMineral05": {
@@ -20469,6 +22035,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15000.0,
         "mass": 10.0,
         "durability": 101.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMineral04": {
@@ -20479,6 +22047,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 200.0,
         "mass": 10.0,
         "durability": 101.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmMineral10": {
@@ -20489,6 +22059,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2000.0,
         "mass": 10.0,
         "durability": 101.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1OffLoose": {
@@ -20500,6 +22072,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 583.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1OffLooseCustom": {
@@ -20511,6 +22085,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2681.0,
         "mass": 1.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmLitCeiling1x1VibrantGreenOffLoose": {
@@ -20632,6 +22208,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 360.0,
         "mass": 1.8,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmOxygenCandle01On": {
@@ -20643,6 +22221,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 360.0,
         "mass": 1.8,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDocumentMeatPackaging": {
@@ -20676,6 +22256,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 501.0,
         "mass": 0.25,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChairStrap01Loose": {
@@ -20687,6 +22269,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 410.0,
         "mass": 23.0,
         "durability": 8.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmChairStrap01DmgLoose": {
@@ -20698,6 +22282,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 82.0,
         "mass": 21.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmDocumentPermitOKLG01eUsed": {
@@ -20814,6 +22400,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 68.0,
         "mass": 3.5,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolWorkLamp01": {
@@ -20825,6 +22413,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 68.0,
         "mass": 3.5,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmPillPainkillerMinor01": {
@@ -20887,6 +22477,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 57.0,
         "mass": 0.198,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmStationNavLoose": {
@@ -20898,6 +22490,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 16880.0,
         "mass": 500.0,
         "durability": 6.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmStationNavDmgLoose": {
@@ -20909,6 +22503,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3500.0,
         "mass": 500.0,
         "durability": 19.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAmmoDecoyMissile01": {
@@ -20920,6 +22516,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5000.0,
         "mass": 150.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAmmoDecoyMissile02": {
@@ -20931,6 +22529,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 25000.0,
         "mass": 150.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAmmoDecoyMissile03": {
@@ -20942,6 +22542,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 150000.0,
         "mass": 150.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmNavModMooringControl": {
@@ -21371,6 +22973,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5000.0,
         "mass": 7.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorOptical01DmgLoose": {
@@ -21382,6 +22986,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1000.0,
         "mass": 7.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "OutfitSuit09": {
@@ -21443,6 +23049,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 40.0,
         "mass": 0.005,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDecorPoster05Loose": {
@@ -21474,6 +23082,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 400.0,
         "mass": 0.005,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmDecorPoster03Loose": {
@@ -21526,6 +23136,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 66.5,
         "mass": 12.0,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmSwitch01DmgLoose": {
@@ -21537,6 +23149,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 14.0,
         "mass": 12.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmShipCladding01Loose": {
@@ -21548,6 +23162,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8000.0,
         "mass": 20.0,
         "durability": 30.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmShipCladding01DmgLoose": {
@@ -21559,6 +23175,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 300.0,
         "mass": 20.0,
         "durability": 30.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataIMGMeat01": {
@@ -21619,6 +23237,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 630.0,
         "mass": 4.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "OutfitPS02Dmg": {
@@ -21640,6 +23260,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 130.0,
         "mass": 4.0,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "OutfitHelmet02": {
@@ -21651,6 +23273,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 235.0,
         "mass": 1.5,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "OutfitHelmet02Dmg": {
@@ -21685,6 +23309,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 570000.0,
         "mass": 1.0,
         "durability": 600.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataBINPDACracker": {
@@ -21700,6 +23326,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 9000.0,
         "mass": 210.0,
         "durability": 18.0,
+        "nCols": 2,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmShipWeaponMassThrower02Loose": {
@@ -21711,6 +23339,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 45000.0,
         "mass": 210.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmRCSDistro02Loose": {
@@ -21722,6 +23352,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1692.0,
         "mass": 28.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmRCSDistro02DmgLoose": {
@@ -21733,6 +23365,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 355.0,
         "mass": 28.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmRCSDistro01Loose": {
@@ -21744,6 +23378,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 32266.0,
         "mass": 28.0,
         "durability": 8.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmRCSDistro01DmgLoose": {
@@ -21755,6 +23391,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 7330.0,
         "mass": 28.0,
         "durability": 22.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmFusionFuelRegulator01Loose": {
@@ -21766,6 +23404,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 13134.0,
         "mass": 28.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionFuelRegulator01DmgLoose": {
@@ -21777,6 +23417,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3283.0,
         "mass": 28.0,
         "durability": 22.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "SOCReassure": {
@@ -21792,6 +23434,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 225.0,
         "mass": 1.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "Regolith": {
@@ -21819,6 +23463,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 35.0,
         "mass": 20.0,
         "durability": 60.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "RegolithVoid": {
@@ -21852,6 +23498,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 270.0,
         "mass": 0.4,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWristPDA01Dmg": {
@@ -21863,6 +23511,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 22.0,
         "mass": 0.4,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWristPDA01Locked": {
@@ -21874,6 +23524,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 270.0,
         "mass": 0.4,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmTV01Loose": {
@@ -21885,6 +23537,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 366.0,
         "mass": 13.0,
         "durability": 4.0,
+        "nCols": 3,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmPDACart00": {
@@ -21896,6 +23550,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4096.0,
         "mass": 0.06,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "Braincase": {
@@ -21972,6 +23628,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 31.0,
         "mass": 0.01,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataTXTGame01": {
@@ -22033,6 +23691,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
       "ItmHeavyLiftRotor01OnWheel": {
         "friendly": "Rotor Blade",
         "short": "Heavy Lift Rotor Blade",
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmTowingBrace01DmgLoose": {
@@ -22044,6 +23704,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2394.0,
         "mass": 90.0,
         "durability": 15.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmTowingBrace01Loose": {
@@ -22055,6 +23717,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 11972.0,
         "mass": 90.0,
         "durability": 40.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "DataSNDSakuraNoir": {
@@ -22113,6 +23777,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2.4,
         "mass": 0.025,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmScrapClothDirty": {
@@ -22124,6 +23790,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.8,
         "mass": 0.025,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmScrapSteel": {
@@ -22146,6 +23814,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 360.0,
         "mass": 1.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChair04DmgLoose": {
@@ -22417,6 +24087,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 67.0,
         "mass": 12.0,
         "durability": 4.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmChairCube01bLoose": {
@@ -22428,6 +24100,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 335.0,
         "mass": 14.0,
         "durability": 6.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "SOCShareAnotherStory": {
@@ -22443,6 +24117,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2623.0,
         "mass": 45.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmBattery02DmgLoose": {
@@ -22454,6 +24130,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 524.0,
         "mass": 45.0,
         "durability": 30.0,
+        "nCols": 2,
+        "nRows": 2,
         "source": "condowner"
       },
       "ShipCO": {
@@ -22469,6 +24147,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 87.0,
         "mass": 0.125,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWeaponShiv01": {
@@ -22479,6 +24159,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3.0,
         "mass": 0.525,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmShoe01L": {
@@ -22490,6 +24172,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 126.0,
         "mass": 2.1,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmShoe01R": {
@@ -22576,6 +24260,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 55.0,
         "mass": 0.48,
         "durability": 14.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataBINAtlantisResearch": {
@@ -22603,6 +24289,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 294.0,
         "mass": 30.0,
         "durability": 25.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmBed01Loose": {
@@ -22614,6 +24302,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2280.0,
         "mass": 30.0,
         "durability": 12.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmWeaponBaseballBat02": {
@@ -22625,6 +24315,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 290.0,
         "mass": 1.1,
         "durability": 9.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmPartsElecSmall01": {
@@ -22636,6 +24328,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 14.5,
         "mass": 0.5,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmPartsMechSmall01": {
@@ -22647,6 +24341,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5.0,
         "mass": 0.5,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAmmoMissile01": {
@@ -22658,6 +24354,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 20000.0,
         "mass": 150.0,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmAlarmSmokeDmgLoose": {
@@ -22669,6 +24367,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 51.0,
         "mass": 0.5,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmSmokeOffLoose": {
@@ -22680,6 +24380,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 256.0,
         "mass": 0.5,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "Social Moves": {
@@ -22699,6 +24401,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3000.0,
         "mass": 20.0,
         "durability": 2.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "DataBINOstranauts": {
@@ -22714,6 +24418,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5.4,
         "mass": 2.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmChair01Loose": {
@@ -22725,6 +24431,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 27.0,
         "mass": 2.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataSNDMeat01": {
@@ -22740,6 +24448,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 245.0,
         "mass": 6.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWeaponSpear01": {
@@ -22750,6 +24460,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 62.0,
         "mass": 1.25,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmWeaponGoat01": {
@@ -22760,6 +24472,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 21362.0,
         "mass": 0.51,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmSplint01": {
@@ -22770,6 +24484,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 148.95,
         "mass": 1.11,
         "durability": 3.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmBattery02LowPowerLoose": {
@@ -22811,6 +24527,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 125.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFoodHot06": {
@@ -22822,6 +24540,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 135.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFoodHot05": {
@@ -22833,6 +24553,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 99.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFoodHot03": {
@@ -22844,6 +24566,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 150.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFoodHot04": {
@@ -22855,6 +24579,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 185.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFoodHot01": {
@@ -22866,6 +24592,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 205.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmFusionCorePump01Loose": {
@@ -22877,6 +24605,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5520.0,
         "mass": 28.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionCorePump01DmgLoose": {
@@ -22888,6 +24618,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1112.0,
         "mass": 28.0,
         "durability": 19.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionLaserArray01Loose": {
@@ -22899,6 +24631,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5520.0,
         "mass": 28.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionLaserArray01DmgLoose": {
@@ -22910,6 +24644,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1112.0,
         "mass": 28.0,
         "durability": 19.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionPelletFeeder01Loose": {
@@ -22921,6 +24657,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5520.0,
         "mass": 28.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFusionPelletFeeder01DmgLoose": {
@@ -22932,6 +24670,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1112.0,
         "mass": 28.0,
         "durability": 19.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmShirtHoodie01": {
@@ -22943,21 +24683,29 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 63.0,
         "mass": 0.25,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "SysExplosionFusion": {
         "friendly": "SysExplosionFusion",
         "short": "Explosion",
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "SysExplosionMining": {
         "friendly": "SysExplosionMining",
         "short": "Mining Charge Explosion",
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "SysLootSpawner": {
         "friendly": "SysLootSpawner",
         "short": "Spawner",
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "SysLootSpawnerLot": {
@@ -23469,6 +25217,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 30.0,
         "mass": 0.125,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmTablet01": {
@@ -23479,6 +25229,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 230.0,
         "mass": 0.5,
         "durability": 7.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmWeaponKnife01": {
@@ -23490,6 +25242,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 227.0,
         "mass": 0.305,
         "durability": 12.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "OutfitSuit05": {
@@ -23501,6 +25255,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 437.0,
         "mass": 1.0,
         "durability": 5.5,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataTXTFanfic03": {
@@ -23530,6 +25286,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 10.0,
         "mass": 0.01,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToothbrush06": {
@@ -23702,6 +25460,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15.0,
         "mass": 1.0,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataSNDPoetry": {
@@ -23729,6 +25489,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 23.0,
         "mass": 0.5,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmAlarmTempOffLoose": {
@@ -23740,6 +25502,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 116.0,
         "mass": 0.5,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataVIDFilm01": {
@@ -23753,6 +25517,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
       "TIL": {
         "friendly": "TIL",
         "short": "Tile",
+        "nCols": 1,
+        "nRows": 0,
         "source": "condowner"
       },
       "DataVIDFilm03": {
@@ -23768,6 +25534,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 65.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToyDinosaur02": {
@@ -23779,6 +25547,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 65.0,
         "mass": 0.2,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmTransponder01DmgLoose": {
@@ -23790,6 +25560,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 290.0,
         "mass": 1.35,
         "durability": 13.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmTransponder01Loose": {
@@ -23801,6 +25573,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 29000.0,
         "mass": 1.35,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmScrapTrash": {
@@ -23822,6 +25596,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2000.0,
         "mass": 310.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmTreadmill01Loose": {
@@ -23833,6 +25609,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 10850.0,
         "mass": 310.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmFloorGrate4x401Loose": {
@@ -23844,6 +25622,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3100.0,
         "mass": 65.0,
         "durability": 30.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmAirPump01DmgLoose": {
@@ -23875,6 +25655,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4999.0,
         "mass": 42.0,
         "durability": 12.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmUbiqWISPNode01Hacked": {
@@ -23886,6 +25668,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 19999.0,
         "mass": 42.0,
         "durability": 12.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "DataIMGCryptid01": {
@@ -23905,6 +25689,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 15.0,
         "mass": 0.005,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCigUnicornDream01Lit": {
@@ -23916,6 +25702,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 0.001,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "WoundAbdomenUpper": {
@@ -23975,6 +25763,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 18570.0,
         "mass": 88.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "ItmBedMedical01DmgLoose": {
@@ -23986,6 +25776,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2400.0,
         "mass": 88.0,
         "durability": 23.0,
+        "nCols": 3,
+        "nRows": 5,
         "source": "condowner"
       },
       "SOCVenusStory": {
@@ -24001,6 +25793,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5.0,
         "mass": 0.005,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCigViceroy01Lit": {
@@ -24012,6 +25806,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 0.001,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCigViceroy02": {
@@ -24023,6 +25819,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 7.0,
         "mass": 0.005,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmCigViceroy02Lit": {
@@ -24034,6 +25832,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 0.0,
         "mass": 0.001,
         "durability": 1.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "DataVIDVlog04": {
@@ -24115,6 +25915,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1200.0,
         "mass": 24.7,
         "durability": 10.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmExplosiveCharge01Armed": {
@@ -24123,6 +25925,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 350.0,
         "mass": 8.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmExplosiveCharge01": {
@@ -24134,6 +25938,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 350.0,
         "mass": 8.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmToolLaserTorch01": {
@@ -24145,6 +25951,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 7650.0,
         "mass": 15.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmToolLaserTorch01Dmg": {
@@ -24156,6 +25964,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1250.0,
         "mass": 15.0,
         "durability": 15.0,
+        "nCols": 1,
+        "nRows": 2,
         "source": "condowner"
       },
       "ItmToolCrowbar01": {
@@ -24167,6 +25977,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 20.0,
         "mass": 2.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmExplosiveCharge02": {
@@ -24178,6 +25990,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 60.0,
         "mass": 2.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmExplosiveCharge02Armed": {
@@ -24186,6 +26000,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 60.0,
         "mass": 2.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmSensorLidar01Loose": {
@@ -24197,6 +26013,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 23000.0,
         "mass": 30.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorLidar01DmgLoose": {
@@ -24208,6 +26026,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 4600.0,
         "mass": 30.0,
         "durability": 7.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "DataSNDRoar": {
@@ -24227,6 +26047,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 600.0,
         "mass": 2.0,
         "durability": 8.0,
+        "nCols": 1,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmAntenna01Loose": {
@@ -24238,6 +26060,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 3000.0,
         "mass": 3.0,
         "durability": 4.0,
+        "nCols": 1,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmAntenna02DmgLoose": {
@@ -24249,6 +26073,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1804.0,
         "mass": 10.0,
         "durability": 18.0,
+        "nCols": 2,
+        "nRows": 4,
         "source": "condowner"
       },
       "ItmAntenna02Loose": {
@@ -24260,6 +26086,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 9020.0,
         "mass": 12.0,
         "durability": 10.0,
+        "nCols": 2,
+        "nRows": 4,
         "source": "condowner"
       },
       "OutfitSuit02": {
@@ -24271,6 +26099,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 93.0,
         "mass": 1.0,
         "durability": 6.0,
+        "nCols": 1,
+        "nRows": 1,
         "source": "condowner"
       },
       "ItmSensorEM02Loose": {
@@ -24282,6 +26112,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 6400.0,
         "mass": 3.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorEM02DmgLoose": {
@@ -24293,6 +26125,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 1280.0,
         "mass": 3.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorIR02Loose": {
@@ -24304,6 +26138,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 12000.0,
         "mass": 5.0,
         "durability": 3.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorIR02DmgLoose": {
@@ -24315,6 +26151,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 2400.0,
         "mass": 5.0,
         "durability": 5.0,
+        "nCols": 1,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorLidar02Loose": {
@@ -24326,6 +26164,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 29000.0,
         "mass": 21.0,
         "durability": 3.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorLidar02DmgLoose": {
@@ -24337,6 +26177,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 5800.0,
         "mass": 21.0,
         "durability": 5.0,
+        "nCols": 2,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorRadar02Loose": {
@@ -24348,6 +26190,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 42000.0,
         "mass": 130.0,
         "durability": 5.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "ItmSensorRadar02DmgLoose": {
@@ -24359,6 +26203,8 @@ window.SHIP_COMPONENT_CATEGORIES = {
         "basePrice": 8400.0,
         "mass": 90.0,
         "durability": 8.0,
+        "nCols": 3,
+        "nRows": 3,
         "source": "condowner"
       },
       "DataIMGXinhua02": {

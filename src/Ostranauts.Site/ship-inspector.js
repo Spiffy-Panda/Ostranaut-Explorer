@@ -63,12 +63,10 @@
     shipDict: null,             // the parsed ship dict (the [0] of the array)
     manifest: [],               // canned-ships manifest array
     friendlyNames: {},          // strName → strNameFriendly
-    tintByStrName: {},          // strName → "#rrggbb" damage-tint hex
     pinnedSpecs: [],            // [room-spec-name]   (e.g. "Reactor")
     counts: {},                 // { strName: count-built }
     bucketFilters: {},          // { walls: true, ... }
     searchQuery: "",
-    useTints: true,             // visual-layout: colour tiles by damage tint
   };
 
   // ─── localStorage helpers ──────────────────────────────────────────────
@@ -416,30 +414,10 @@
   // ─── visual layout ─────────────────────────────────────────────────────
 
   function buildVisual(root) {
-    const tintToggle = el("input", {
-      type: "checkbox",
-      id: "tint-toggle",
-    });
-    tintToggle.checked = STATE.useTints;
-    tintToggle.addEventListener("change", () => {
-      STATE.useTints = tintToggle.checked;
-      lsSet("use-tints", STATE.useTints);
-      renderVisual();
-    });
-
     root.appendChild(el("section", { class: "section" }, [
       el("h2", { text: "Visual layout" }),
       el("p", { class: "muted small", text:
         "Coarse 2D plan: walls in accent, floors in dim. Components binned to integer tiles by their (fX, fY)." }),
-      el("div", { class: "visual-controls" }, [
-        el("label", { for: "tint-toggle" }, [
-          tintToggle,
-          " Use damage-tint colours where the data has them ",
-          el("span", { class: "muted",
-            title: "Each cooverlay's strDmgColor resolved against data/colors/colors.json. Falls back to the two-tone (wall/floor) palette for items without a damage tint.",
-            text: "(?)" }),
-        ]),
-      ]),
       el("canvas", { id: "ship-grid", class: "ship-grid" }),
     ]));
   }
@@ -474,15 +452,10 @@
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Two passes:
-    //   1) Paint floors (per-cell colour). 2) Paint walls on top.
+    // First pass: paint floors. Second pass: paint walls on top.
     // Game coords are +Y up; canvas pixel coords are +Y down — flip Y so
     // the ship doesn't render mirrored relative to its in-game silhouette.
-    // When STATE.useTints is on, look up the strName's damage-tint hex from
-    // window.SHIP_COMPONENT_CATEGORIES. Walls override floors regardless.
-    const grid = new Array(cols * rows);     // per-cell colour string
-    const isWall = new Array(cols * rows);   // per-cell wall-flag
-
+    const grid = new Array(cols * rows);
     for (const it of items) {
       const bk = itemBucket(it);
       if (bk !== "walls" && bk !== "floors") continue;
@@ -490,23 +463,15 @@
       const y = (rows - 1) - (Math.round(it.fY) - minY);
       if (x < 0 || x >= cols || y < 0 || y >= rows) continue;
       const idx = y * cols + x;
-
-      const tint = STATE.useTints ? STATE.tintByStrName[it.strName] : null;
-      const fallback = bk === "walls" ? GRID_COLOR.wall : GRID_COLOR.floor;
-      const colour = tint || fallback;
-
-      if (bk === "walls") {
-        grid[idx] = colour;
-        isWall[idx] = true;
-      } else if (!isWall[idx]) {
-        grid[idx] = colour;
-      }
+      // walls override floors
+      if (bk === "walls") grid[idx] = "wall";
+      else if (grid[idx] !== "wall") grid[idx] = "floor";
     }
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
-        const c = grid[y * cols + x];
-        if (!c) continue;
-        ctx.fillStyle = c;
+        const cell = grid[y * cols + x];
+        if (!cell) continue;
+        ctx.fillStyle = cell === "wall" ? GRID_COLOR.wall : GRID_COLOR.floor;
         ctx.fillRect(x * px, y * px, px, px);
       }
     }
@@ -890,25 +855,6 @@
     STATE.manifest.sort((a, b) =>
       (a.friendlyName || a.reg).localeCompare(b.friendlyName || b.reg));
     STATE.friendlyNames = window.SHIP_FRIENDLY_NAMES || {};
-
-    // Flatten the bucketed component-category JSON into a strName → tint
-    // hex lookup for the visual layout. Items without a damage tint are
-    // absent from the lookup; renderVisual falls back to the wall/floor
-    // palette in that case.
-    const cats = window.SHIP_COMPONENT_CATEGORIES;
-    if (cats && cats.byBucket) {
-      for (const bk in cats.byBucket) {
-        const slot = cats.byBucket[bk];
-        for (const sn in slot) {
-          const hex = slot[sn] && slot[sn].dmgTintHex;
-          if (hex) STATE.tintByStrName[sn] = hex;
-        }
-      }
-    }
-
-    // Persisted toggles (default both on).
-    const savedTints = lsGet("use-tints", null);
-    if (savedTints !== null) STATE.useTints = !!savedTints;
 
     // bucket filters: default all on, restore user's saved subset if any.
     const savedFilters = lsGet("bucket-filters", null);
