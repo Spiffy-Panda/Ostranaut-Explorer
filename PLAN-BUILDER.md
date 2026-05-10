@@ -4,7 +4,7 @@ The fourth plan axis after [EXPLORER](PLAN-EXPLORER.md), [AST](PLAN-AST.md), and
 
 If you're picking up work cold, read [PLAN.md](PLAN.md) for routing context, then this file end-to-end, then jump to the section matching your phase.
 
-Phase 1 shipped 2026-05-10. The Phase 2 agent handoff (rooms.js extraction) lives at [notes/agent-prompts/ship-inspector-builder-phase2.md](notes/agent-prompts/ship-inspector-builder-phase2.md). The original Phase 1 handoff at [notes/agent-prompts/ship-inspector-builder.md](notes/agent-prompts/ship-inspector-builder.md) is kept for reference.
+Phases 1 and 2 shipped 2026-05-10. The Phase 3 agent handoff (the inspector page itself) lives at [notes/agent-prompts/ship-inspector-builder-phase3.md](notes/agent-prompts/ship-inspector-builder-phase3.md). Earlier phase handoffs at [notes/agent-prompts/ship-inspector-builder.md](notes/agent-prompts/ship-inspector-builder.md) (Phase 1) and [notes/agent-prompts/ship-inspector-builder-phase2.md](notes/agent-prompts/ship-inspector-builder-phase2.md) (Phase 2) are kept for reference.
 
 ---
 
@@ -69,13 +69,13 @@ Outputs ARE checked in — but the canned-ships JSONs are **build artifacts**: r
 
 Result: 43 ships across `RandomDerelict{Small,Medium,Big}` (RandomShip is empty; RandomShipOld's ships were all already in RandomDerelictBig — dedup is correct). 60,471 total components, distributed roughly 56% floors / 17% conduits / 17% walls / 7% equipment / 3% other / negligible doors+containers. ~10 MB checked in for canned-ships/ (43 single-line files), 129 KB for the friendly-name map (well under the 500 KB target). Idempotent — re-running over the same source data produces an empty diff.
 
-### Phase 2 — rooms.js extraction · *next*
+### Phase 2 — rooms.js extraction · *shipped 2026-05-10*
 
-Lift the `window.ROOMS` data array and the per-room-card render function out of [src/Ostranauts.Site/rooms-reference.html](src/Ostranauts.Site/rooms-reference.html) into a new shared module `src/Ostranauts.Site/rooms.js`. Both `rooms-reference.html` and the new `ship-inspector.html` `<script src="rooms.js">`. CSS tokens stay in [style.css](src/Ostranauts.Site/style.css). The card render becomes a documented function `window.renderRoomCard(roomSpec, options)` that takes a `RoomSpec` and returns a DOM node — used identically by both pages.
+Lifted the `window.ROOMS` data array and the per-room-card render code out of [src/Ostranauts.Site/rooms-reference.html](src/Ostranauts.Site/rooms-reference.html) into a new shared module [src/Ostranauts.Site/rooms.js](src/Ostranauts.Site/rooms.js). Both `rooms-reference.html` and the future `ship-inspector.html` `<script src="rooms.js">`. CSS tokens stay in the page-local `<style>` block of `rooms-reference.html` for now (no overlap with [style.css](src/Ostranauts.Site/style.css), so consolidation would have been speculative — left as a follow-up). The card render is exposed as `window.renderRoomCard(spec, options)` returning a fresh `HTMLDetailsElement`. Options: `idPrefix` (default `"room-"`), `pinned` (adds an `is-pinned` class for downstream CSS hooks), `onPin` (optional callback — when set, appends a Pin/Unpin button to the summary), `openByDefault`. The function is pure data → DOM: reads no globals beyond `document`, writes none. Pin / deep-link / persistence behavior stays in the page-level scripts that call it — Phase 3 plumbs that.
 
-Acceptance: `rooms-reference.html` renders pixel-identically before and after the refactor (visual diff via Playwright screenshot pair, or manual confirmation if Playwright isn't connected).
+Acceptance verified: `rooms-reference.html` pre-refactor and post-refactor DOM dumps of every priority-row and every card's `summary` + `body` `outerHTML` are byte-identical (18 rows, 18 cards). Preview-screenshot side-by-side confirms identical render. Deep-link `#room-Reactor` opens the Reactor card; clicking a priority row highlights it and opens the matching card; Esc clears the highlight — all unchanged from before.
 
-### Phase 3 — the inspector page · *blocked on Phases 1+2*
+### Phase 3 — the inspector page · *next*
 
 `src/Ostranauts.Site/ship-inspector.html` + `ship-inspector.js`. Plain vanilla JS, no build framework, runs from `file://` (matches site convention). Layout:
 
