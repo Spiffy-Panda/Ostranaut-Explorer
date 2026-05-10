@@ -286,5 +286,17 @@
     "aSocketAdds": [],
     "aSocketForbids": [],
     "aSocketReqs": []
+  },
+  {
+    "strName": "ItmSacksKiosk01",
+    "strImg": "ItmKioskSupplies01",
+    "strImgNorm": "ItmKioskSupplies01n",
+    "strImgDamaged": "",
+    "strDmgColor": "DamageTintRust",
+    "fZScale": 0.02,
+    "nCols": 1,
+    "aSocketAdds": [],
+    "aSocketForbids": [],
+    "aSocketReqs": []
   }
 ]

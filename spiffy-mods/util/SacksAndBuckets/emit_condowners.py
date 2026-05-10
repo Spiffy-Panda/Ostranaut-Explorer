@@ -123,7 +123,11 @@ def kiosk_entry(cfg: dict) -> dict:
             "sacks for wear-and-carry, buckets for bulk floor storage. "
             "One container, one item type."
         )),
-        ("strItemDef", k["strItemDef"]),
+        # strItemDef = our own ItemDef (emit_items.py emits it with empty
+        # sockets so placement isn't restricted to wall+floor like vanilla
+        # ItmKioskSupplies01 demands). The visual still pulls from vanilla
+        # art via that ItemDef's strImg passthrough.
+        ("strItemDef", k["strName"]),
         ("strType", "Item"),
         ("strLoot", None),
         ("strContainerCT", "TIsFitContainerUnlimited"),
@@ -132,6 +136,13 @@ def kiosk_entry(cfg: dict) -> dict:
         ("aInteractions", ["ACTKioskUseNPC", "GUITradeSacksKiosk"]),
         ("aStartingConds", [
             "IsContainer=1.0x1.0",
+            "IsHiddenInv=1.0x1",            # restored: hides the kiosk's
+                                            # (unused) physical inventory
+                                            # panel when held -- not actually
+                                            # tied to IsInstalled.
+            "IsInfiniteContainer=1.0x1",    # restored: lets the trade UI
+                                            # transact unbounded volume,
+                                            # which is what kiosks need.
             "IsIndestructable=1.0x1",
             "IsKioskNPC=1.0x1",
             "IsOversized=1.0x1.0",
@@ -140,7 +151,9 @@ def kiosk_entry(cfg: dict) -> dict:
             "IsSalvageValueHigh=1.0x1.0",
             "IsSolid=1.0x1.0",
             "IsTraderNPC=1.0x1",
-            "StatMass=1.0x31.0",
+            "StatMass=1.0x10.0",            # was 31; matched ItmCrate01 to
+                                            # make the held kiosk easier to
+                                            # carry around for v1.
             "StatDamageMax=1.0x70",
             "IsMechanical=1.0x1",
             "IsCategoryIndustrialProducts=1.0x1",

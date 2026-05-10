@@ -15,10 +15,10 @@ mod:
 dimensions:
   sack:
     height: 8     # 8x8 = 64 slots, 4x the vanilla 16-slot backpack
-    width: 8
+    width: 4
   bucket:
     height: 16    # 16x16 = 256 slots, 16x the vanilla backpack
-    width: 16
+    width: 4
 
 # Stock-table parameters for the kiosk's aLoots.
 kiosk_stock:
@@ -43,10 +43,10 @@ sprite_gen:
   # Canvas size in pixels (square). 64 is a comfortable default --
   # readable label, recognisable shape. Drop to 32 for a chunkier
   # pixel-art feel.
-  sprite_size: 64
+  sprite_size: 16
 
   # Label point size. Should be ~1/3 of sprite_size for legibility.
-  label_size: 22
+  label_size: 5
 
 # The 12 item types. Each entry produces:
 #   * 1 sack CO + 1 bucket CO (in condowners.json)
@@ -148,8 +148,21 @@ items:
 # The kiosk CO. Modeled on ItmKioskSupplies01 but with crate-shape
 # spawnability (no IsInstalled, has IsOversized/IsRigid) so
 # `spawn ItmSacksKiosk01` actually drops it on the floor.
+#
+# strItemDef points at our OWN ItmSacksKiosk01 ItemDef (emitted by
+# emit_items.py with empty sockets), not vanilla ItmKioskSupplies01
+# whose aSocketReqs demands TILWall on the top row + TILFloor below
+# -- that's what blocked drop-anywhere placement when the kiosk's
+# strItemDef aliased the vanilla one.
+#
+# strImg is the sprite filename for the ItemDef we emit. Pointing at
+# "ItmKioskSupplies01" lets the runtime fall through to vanilla art
+# (LoadPNG iterates aModPaths and shares dictImages, so 'core'
+# loaded first will already have that PNG resolved). To ship custom
+# kiosk art instead, change strImg to ItmSacksKiosk01 and add a
+# kiosk row to emit_sprites.py.
 kiosk:
   strName: ItmSacksKiosk01
-  strItemDef: ItmKioskSupplies01    # Sprite alias; replace with generated sprite once art is wired.
+  strImg: ItmKioskSupplies01        # vanilla art passthrough via shared image dict
   guipropmap: TraderSacksKiosk
   stock_table: ItmSacksKioskInv

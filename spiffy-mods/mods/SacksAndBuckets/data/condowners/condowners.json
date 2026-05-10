@@ -9,7 +9,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerTrash",
     "nContainerHeight": 8,
-    "nContainerWidth": 8,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "EquipItem",
@@ -64,7 +64,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerTrash",
     "nContainerHeight": 16,
-    "nContainerWidth": 16,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "DropItem",
@@ -115,7 +115,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerPartsMechSmall",
     "nContainerHeight": 8,
-    "nContainerWidth": 8,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "EquipItem",
@@ -170,7 +170,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerPartsMechSmall",
     "nContainerHeight": 16,
-    "nContainerWidth": 16,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "DropItem",
@@ -221,7 +221,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerScrapSteel",
     "nContainerHeight": 8,
-    "nContainerWidth": 8,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "EquipItem",
@@ -276,7 +276,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerScrapSteel",
     "nContainerHeight": 16,
-    "nContainerWidth": 16,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "DropItem",
@@ -327,7 +327,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerPartsElecSmall",
     "nContainerHeight": 8,
-    "nContainerWidth": 8,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "EquipItem",
@@ -382,7 +382,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerPartsElecSmall",
     "nContainerHeight": 16,
-    "nContainerWidth": 16,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "DropItem",
@@ -433,7 +433,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerComponentMobo",
     "nContainerHeight": 8,
-    "nContainerWidth": 8,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "EquipItem",
@@ -488,7 +488,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerComponentMobo",
     "nContainerHeight": 16,
-    "nContainerWidth": 16,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "DropItem",
@@ -539,7 +539,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerScrapAluminum",
     "nContainerHeight": 8,
-    "nContainerWidth": 8,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "EquipItem",
@@ -594,7 +594,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerScrapAluminum",
     "nContainerHeight": 16,
-    "nContainerWidth": 16,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "DropItem",
@@ -645,7 +645,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerComponentMotor",
     "nContainerHeight": 8,
-    "nContainerWidth": 8,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "EquipItem",
@@ -700,7 +700,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerComponentMotor",
     "nContainerHeight": 16,
-    "nContainerWidth": 16,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "DropItem",
@@ -751,7 +751,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerHeatSink",
     "nContainerHeight": 8,
-    "nContainerWidth": 8,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "EquipItem",
@@ -806,7 +806,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerHeatSink",
     "nContainerHeight": 16,
-    "nContainerWidth": 16,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "DropItem",
@@ -857,7 +857,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerScrapCarbonFiber",
     "nContainerHeight": 8,
-    "nContainerWidth": 8,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "EquipItem",
@@ -912,7 +912,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerScrapCarbonFiber",
     "nContainerHeight": 16,
-    "nContainerWidth": 16,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "DropItem",
@@ -963,7 +963,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerPartsScreen",
     "nContainerHeight": 8,
-    "nContainerWidth": 8,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "EquipItem",
@@ -1018,7 +1018,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerPartsScreen",
     "nContainerHeight": 16,
-    "nContainerWidth": 16,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "DropItem",
@@ -1069,7 +1069,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerScrapPlastic",
     "nContainerHeight": 8,
-    "nContainerWidth": 8,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "EquipItem",
@@ -1124,7 +1124,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerScrapPlastic",
     "nContainerHeight": 16,
-    "nContainerWidth": 16,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "DropItem",
@@ -1175,7 +1175,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerScrapClothDirty",
     "nContainerHeight": 8,
-    "nContainerWidth": 8,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "EquipItem",
@@ -1230,7 +1230,7 @@
     "strLoot": null,
     "strContainerCT": "TIsFitContainerScrapClothDirty",
     "nContainerHeight": 16,
-    "nContainerWidth": 16,
+    "nContainerWidth": 4,
     "aInteractions": [
       "Inventory",
       "DropItem",
@@ -1276,7 +1276,7 @@
     "strNameShort": "Kiosk: Sacks & Buckets",
     "strNameFriendly": "Sacks & Buckets Kiosk",
     "strDesc": "A self-service kiosk stocked with single-type containers: sacks for wear-and-carry, buckets for bulk floor storage. One container, one item type.",
-    "strItemDef": "ItmKioskSupplies01",
+    "strItemDef": "ItmSacksKiosk01",
     "strType": "Item",
     "strLoot": null,
     "strContainerCT": "TIsFitContainerUnlimited",
@@ -1288,6 +1288,8 @@
     ],
     "aStartingConds": [
       "IsContainer=1.0x1.0",
+      "IsHiddenInv=1.0x1",
+      "IsInfiniteContainer=1.0x1",
       "IsIndestructable=1.0x1",
       "IsKioskNPC=1.0x1",
       "IsOversized=1.0x1.0",
@@ -1296,7 +1298,7 @@
       "IsSalvageValueHigh=1.0x1.0",
       "IsSolid=1.0x1.0",
       "IsTraderNPC=1.0x1",
-      "StatMass=1.0x31.0",
+      "StatMass=1.0x10.0",
       "StatDamageMax=1.0x70",
       "IsMechanical=1.0x1",
       "IsCategoryIndustrialProducts=1.0x1"
