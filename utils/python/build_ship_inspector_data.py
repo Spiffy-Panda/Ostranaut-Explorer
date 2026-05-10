@@ -63,6 +63,7 @@ SITE_DATA_ROOT  = REPO_ROOT / "src" / "Ostranauts.Site" / "data"
 CANNED_SHIP_DIR = SITE_DATA_ROOT / "canned-ships"
 MANIFEST_PATH   = SITE_DATA_ROOT / "canned-ships-manifest.json"
 NAMES_PATH      = SITE_DATA_ROOT / "id-friendly-names.json"
+CATEGORIES_PATH = SITE_DATA_ROOT / "id-component-categories.json"
 
 # A ship can appear in multiple loot tables; the manifest reports only the
 # first encountered, in the order below.
@@ -316,6 +317,155 @@ def manifest_entry(reg: str,
     }
 
 
+# ---------- component-category map -------------------------------------------
+
+def parse_stat_value(conds: list[str], stat_name: str) -> float | None:
+    """aStartingConds entries look like 'StatBasePrice=1.0x21.0'. Return the
+    'x'-suffix scalar as a float, or None if the stat isn't present."""
+    prefix = stat_name + "="
+    for c in conds:
+        if not c.startswith(prefix):
+            continue
+        # Format: <prefix>=<chance>x<value>
+        try:
+            tail = c[len(prefix):]
+            return float(tail.split("x", 1)[1])
+        except (IndexError, ValueError):
+            return None
+    return None
+
+
+def extract_categories(conds: list[str]) -> list[str]:
+    """Pull the 'Hull', 'Electronics', etc. from any IsCategory<X> conds."""
+    out = []
+    for c in conds:
+        n = c.split("=", 1)[0]
+        if n.startswith("IsCategory") and len(n) > len("IsCategory"):
+            out.append(n[len("IsCategory"):])
+    return out
+
+
+def load_color_map() -> dict[str, str]:
+    """data/colors/colors.json → { name: '#rrggbb' }. Alpha is preserved as
+    8-char #rrggbbaa when α<255 so a renderer can reflect transparency."""
+    out: dict[str, str] = {}
+    fp = DATA_ROOT / "colors" / "colors.json"
+    if not fp.exists():
+        return out
+    try:
+        d = load_json(fp)
+    except (OSError, json.JSONDecodeError):
+        return out
+    if not isinstance(d, list):
+        return out
+    for e in d:
+        if not isinstance(e, dict): continue
+        name = e.get("strName")
+        if not name: continue
+        r = max(0, min(255, int(e.get("nR", 0))))
+        g = max(0, min(255, int(e.get("nG", 0))))
+        b = max(0, min(255, int(e.get("nB", 0))))
+        a = max(0, min(255, int(e.get("nA", 255))))
+        if a == 255:
+            out[name] = f"#{r:02x}{g:02x}{b:02x}"
+        else:
+            out[name] = f"#{r:02x}{g:02x}{b:02x}{a:02x}"
+    return out
+
+
+def build_component_categories(
+    condowners: dict[str, dict],
+    items: dict[str, dict],
+    cooverlays: dict[str, dict],
+    resolver: CondResolver,
+) -> dict:
+    """Walk every entry that carries (or inherits) aStartingConds and emit
+    a bucketed map: { byBucket: { walls: { strName: {…meta…}, … }, … } }.
+
+    Entries with bucket == 'other' are kept — modders use this to confirm a
+    new ID lands where they expect, including the catch-all bin."""
+
+    color_map = load_color_map()
+
+    # Pool all candidate (strName, source) — preference order condowners >
+    # items > cooverlays so the most authoritative metadata wins.
+    pool: dict[str, tuple[str, dict]] = {}
+    for sn, e in cooverlays.items(): pool.setdefault(sn, ("cooverlay", e))
+    for sn, e in items.items():      pool[sn] = ("item", e)
+    for sn, e in condowners.items(): pool[sn] = ("condowner", e)
+
+    by_bucket: dict[str, dict[str, dict]] = {b: {} for b in (
+        "walls", "floors", "doors", "conduits",
+        "containers", "equipment", "decorative", "other"
+    )}
+
+    for sn, (src, entry) in pool.items():
+        conds = resolver.conds_for(sn)
+        if not conds:
+            continue  # no classification possible — skip the long tail
+        bucket = classify_bucket(conds)
+
+        # damage-tint reference, only present on cooverlay rows; resolve to
+        # an #rrggbb so the inspector / a modder can see it without
+        # having to cross-reference data/colors/colors.json by hand.
+        dmg_color_name = None
+        dmg_color_hex = None
+        ovl = cooverlays.get(sn)
+        if ovl and isinstance(ovl, dict):
+            dmg_color_name = ovl.get("strDmgColor")
+            if dmg_color_name:
+                dmg_color_hex = color_map.get(dmg_color_name)
+
+        meta: dict = {
+            "friendly": entry.get("strNameFriendly") or entry.get("strName"),
+        }
+        short = entry.get("strNameShort")
+        if short and short != meta["friendly"]:
+            meta["short"] = short
+
+        cats = extract_categories(conds)
+        if cats: meta["category"] = cats
+
+        price = parse_stat_value(conds, "StatBasePrice")
+        if price is not None: meta["basePrice"] = price
+        mass = parse_stat_value(conds, "StatMass")
+        if mass is not None: meta["mass"] = mass
+        dmg_max = parse_stat_value(conds, "StatDamageMax")
+        if dmg_max is not None: meta["durability"] = dmg_max
+
+        if dmg_color_name:
+            meta["dmgTint"] = dmg_color_name
+            if dmg_color_hex: meta["dmgTintHex"] = dmg_color_hex
+
+        meta["source"] = src
+        by_bucket[bucket][sn] = meta
+
+    # Sort each bucket's entries by friendly name for stable output.
+    for b in by_bucket:
+        by_bucket[b] = dict(sorted(
+            by_bucket[b].items(),
+            key=lambda kv: (kv[1].get("friendly") or kv[0]).lower(),
+        ))
+
+    counts = {b: len(by_bucket[b]) for b in by_bucket}
+    return {
+        "_generated_by": "utils/python/build_ship_inspector_data.py",
+        "_buckets": list(by_bucket.keys()),
+        "_counts": counts,
+        "_notes": (
+            "Per-strName bucket classification for every CondOwner / Item / "
+            "CooverLay in the base game whose aStartingConds resolves through "
+            "strCOBase. The bucket rule mirrors what the ship-inspector page "
+            "applies to ship components. dmgTint is the cooverlay's "
+            "strDmgColor name (resolved against data/colors/colors.json into "
+            "#rrggbb under dmgTintHex when available); it's the *damage* "
+            "tint, not the base sprite color, but useful as a coarse "
+            "color-family hint."
+        ),
+        "byBucket": by_bucket,
+    }
+
+
 # ---------- friendly-name map -------------------------------------------------
 
 def build_friendly_name_map() -> dict[str, str]:
@@ -422,7 +572,7 @@ def main() -> int:
     )
 
     # 5. Friendly-name map.
-    print(f"[5/5] writing friendly-name map → {NAMES_PATH.relative_to(REPO_ROOT)}")
+    print(f"[5/6] writing friendly-name map → {NAMES_PATH.relative_to(REPO_ROOT)}")
     name_map = build_friendly_name_map()
     write_json(NAMES_PATH, name_map)
     write_js_wrapper(
@@ -431,6 +581,20 @@ def main() -> int:
         assignment="window.SHIP_FRIENDLY_NAMES",
     )
     print(f"        {len(name_map)} strName → strNameFriendly entries")
+
+    # 6. Component-category map.
+    print(f"[6/6] writing component categories → {CATEGORIES_PATH.relative_to(REPO_ROOT)}")
+    categories = build_component_categories(condowners, items, cooverlays, resolver)
+    write_json(CATEGORIES_PATH, categories)
+    write_js_wrapper(
+        CATEGORIES_PATH.with_suffix(".js"),
+        categories,
+        assignment="window.SHIP_COMPONENT_CATEGORIES",
+    )
+    cat_total = sum(categories["_counts"].values())
+    print(f"        {cat_total} components classified across {len(categories['_buckets'])} buckets:")
+    for b, c in categories["_counts"].items():
+        print(f"          {b:11} {c:>6,}")
 
     # Summary report.
     if manifest:
