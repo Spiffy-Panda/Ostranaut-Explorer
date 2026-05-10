@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ostranauts handoffs — modder guides</title>
+<style>
+  :root {
+    --bg: #14171c;
+    --panel: #1c2026;
+    --panel-2: #232830;
+    --ink: #e6e9ef;
+    --ink-dim: #aab0bc;
+    --rule: #2c323b;
+    --accent: #7fb4ff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 4px;
+    line-height: 1.25;
+  }
+  .subtitle {
+    color: var(--ink-dim);
+    margin: 0 0 32px;
+    font-size: 15px;
+  }
+  .back {
+    display: inline-block;
+    margin-bottom: 24px;
+    color: var(--ink-dim);
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .back:hover { color: var(--accent); }
+  ul.handoff-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  ul.handoff-list li {
+    border: 1px solid var(--rule);
+    background: var(--panel);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin: 0 0 16px;
+  }
+  ul.handoff-list a {
+    color: var(--accent);
+    font-size: 18px;
+    font-weight: 600;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 6px;
+  }
+  ul.handoff-list a:hover { text-decoration: underline; }
+  ul.handoff-list .summary {
+    color: var(--ink-dim);
+    font-size: 14px;
+    margin: 4px 0 6px;
+  }
+  ul.handoff-list .meta {
+    color: var(--ink-dim);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  code {
+    font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--panel-2);
+    color: var(--ink);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .footer-note {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-dim);
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<main>
+
+<a class="back" href="../explorer.html">← back to the explorer</a>
+
+<h1>Handoffs</h1>
+<p class="subtitle">Standalone modder-facing guides. Each page is self-contained and covers one recipe end-to-end.</p>
+
+<ul class="handoff-list">
+
+  <li>
+    <a href="save-fix-public-enemy-doom-loop.html">Escaping the OKLG Public Enemy doom loop</a>
+    <div class="summary">Save-file recipe for crew that have spiraled into permanent hostility with a station faction. Covers both the binary <code>CrimeOKLGThreat</code> flag and the per-relationship <code>fAnimosity</code> rep accumulator, plus three options for stopping the spiral from re-triggering.</div>
+    <div class="meta">save edit · OKLG · faction standing</div>
+  </li>
+
+  <li>
+    <a href="needs-suppression-mod-guide.html">A player trait that suppresses needs</a>
+    <div class="summary">Mod guide for adding a player-only trait that flat-lines the survival-needs tickers. Walks the trait → cond-rule → loot chain end-to-end.</div>
+    <div class="meta">data mod · traits · needs</div>
+  </li>
+
+</ul>
+
+<p class="footer-note">Each handoff is generated independently and tagged with verified vs. inferred claims so a modder can spot which steps to double-check on their own data. Source markdown drafts live in <code>notes/handoff/</code>; the rendered HTML pages get copied into the public site at build time.</p>
+
+</main>
+</body>
+</html>

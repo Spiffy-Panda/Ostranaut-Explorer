@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ostranauts save fix — escaping the Public Enemy doom loop</title>
+<style>
+  :root {
+    --bg: #14171c;
+    --panel: #1c2026;
+    --panel-2: #232830;
+    --ink: #e6e9ef;
+    --ink-dim: #aab0bc;
+    --rule: #2c323b;
+    --accent: #7fb4ff;
+    --warn-bg: #3a2a14;
+    --warn-bd: #6b4a1c;
+    --warn-ink: #ffd89a;
+    --good-bg: #16301f;
+    --good-bd: #2c5b3c;
+    --good-ink: #b9e9c5;
+    --pit-bg: #2a1620;
+    --pit-bd: #5b2c40;
+    --pit-ink: #f3b9d0;
+    --code-bg: #0f1217;
+    --code-ink: #d8dde5;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 4px;
+    line-height: 1.25;
+  }
+  h1 + .subtitle {
+    color: var(--ink-dim);
+    margin: 0 0 32px;
+    font-size: 15px;
+  }
+  h2 {
+    font-size: 20px;
+    margin: 40px 0 12px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+  }
+  h3 {
+    font-size: 16px;
+    margin: 24px 0 8px;
+    color: var(--ink);
+  }
+  h4 {
+    font-size: 14px;
+    margin: 18px 0 6px;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  p { margin: 0 0 12px; }
+  a { color: var(--accent); }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 4px; }
+  code {
+    font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    background: var(--panel-2);
+    color: var(--code-ink);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 14px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    margin: 0 0 16px;
+  }
+  pre code { background: none; padding: 0; }
+  .callout {
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 16px 0 24px;
+    border: 1px solid var(--rule);
+  }
+  .callout.warn {
+    background: var(--warn-bg);
+    border-color: var(--warn-bd);
+    color: var(--warn-ink);
+  }
+  .callout.good {
+    background: var(--good-bg);
+    border-color: var(--good-bd);
+    color: var(--good-ink);
+  }
+  .callout.pit {
+    background: var(--pit-bg);
+    border-color: var(--pit-bd);
+    color: var(--pit-ink);
+  }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout strong { color: inherit; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8px 0 20px;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--rule);
+    padding: 7px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--panel-2);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  td code { background: var(--code-bg); }
+  .field-list dt {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 13.5px;
+    color: var(--ink);
+    margin-top: 10px;
+  }
+  .field-list dd {
+    margin: 0 0 6px 18px;
+    color: var(--ink-dim);
+    font-size: 14px;
+  }
+  .verified {
+    display: inline-block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .verified.ok {
+    background: #1e3a25;
+    color: #b9e9c5;
+    border: 1px solid #2c5b3c;
+  }
+  .verified.inferred {
+    background: #2a2218;
+    color: #ffd89a;
+    border: 1px solid #6b4a1c;
+  }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Escaping the OKLG Public Enemy doom loop</h1>
+<p class="subtitle">Save-file recipe for crew that have spiraled into permanent hostility with a station faction.</p>
+
+<h2>The scenario</h2>
+
+<p>You arrive at OKLG. Something happens — maybe an AyoSec officer reads one of your crew as committing trespass, maybe a brawl spills out of a bar — and one of your crew picks up <strong>OKLG Public Enemy</strong> status. From that moment on, every OKLG NPC that sees them is licensed to attack. Your crew defends themselves. Each defensive swing is itself an assault under OKLG law, which re-applies the Public Enemy condition and grinds their faction standing further into the ground. After half an hour of in-game time, their <em>My Standings</em> reads <code>-7346.30</code> and they get jumped on sight.</p>
+
+<p>This page is the surgical save-edit recipe to get a single crew member out of the spiral, plus the data-mod options for permanently breaking the loop.</p>
+
+<div class="callout pit">
+<p><strong>Two systems, not one.</strong> "OKLG Public Enemy" is a binary condition (you have it or you don't). The <code>-7346.30</code> standing number is a separate runtime accumulator stored per-relationship in the save. Fixing the spiral takes editing both: strip the condition, then zero the accumulated hostility on the relationships that drove the number down.</p>
+</div>
+
+<h2>How the doom loop is wired</h2>
+
+<p>Confirmed in the base game data:</p>
+
+<ul>
+  <li><code>data/conditions/conditions.json</code> defines <code>CrimeOKLGThreat</code> ("OKLG Public Enemy") with <code>fDuration: 0.0</code> (permanent, no decay) and <code>bRemoveAll: true</code> (a single counter-grant clears all stacks).</li>
+  <li><code>data/crime/crime.json</code> has the <code>OKLGAssault</code> row: <code>strLaw: OKLG</code> + <code>strCrime: assault</code> → <code>strLootCondsPerp: CrimeOKLGThreat</code>. Every OKLG-jurisdiction assault stamps the condition.</li>
+  <li><code>data/condtrigs/condtrigs.json</code> defines <code>TIsAIReportCrimeValidVictim</code> with <code>aReqs: [CrimeOKLGArrest, CrimeOKLGThreat, …]</code> and <code>bAND: false</code>. Any of those flags makes the holder a "valid victim" — which is what licenses OKLG NPCs to swing at them without it counting as fresh assault on the AI's part.</li>
+  <li>The accumulator value lives separately, in each crew member's <code>social.aRelationships2[]</code> array — specifically in the <code>fAnimosity</code> float on each per-target relationship record.</li>
+</ul>
+
+<p>So the loop: crime committed → <code>CrimeOKLGThreat</code> stamped → AI permitted to attack → defensive swing in OKLG zone is itself an OKLGAssault → re-stamp → fAnimosity ticks up on every swing of every OKLG NPC the crew member is fighting → standing display drops. There's no automatic decay path; only deliberate save edits or amnesty plot interactions clear it.</p>
+
+<h2>Save layout — what you're editing</h2>
+
+<p>Verified by walking an actual <code>saves/&lt;character&gt;_&lt;id&gt;/</code> folder against the <code>JsonCondOwnerSave</code> / <code>JsonSocial</code> / <code>JsonRelationship</code> shapes from the decompiled C#.</p>
+
+<h3>Folder shape</h3>
+
+<pre><code>%AppData%\..\LocalLow\Blue Bottle Games\Ostranauts\saves\
+└── &lt;Character Name&gt;_&lt;id&gt;\
+    ├── &lt;Character Name&gt;_&lt;id&gt;.zip      ← the save itself
+    ├── portrait.png                    ← sidecar metadata
+    ├── saveInfo.json                   ← sidecar metadata
+    └── screenshot.png                  ← sidecar metadata
+</code></pre>
+
+<h3>Inside the zip</h3>
+
+<pre><code>&lt;Character Name&gt;.json     ← player save: plots, objectives, market, etc. (no humanoid NPCs)
+saveInfo.json              ← duplicate of the sidecar
+portrait.png               ← duplicate
+screenshot.png             ← duplicate
+ships/
+  &lt;ship-reg&gt;.json          ← one per ship/station instance the player has visited
+  OKLG.json                ← OKLG main station instance
+  OKLG_BIZ.json            ← OKLG bureaus (where most resident NPCs live)
+  OKLG_RES.json            ← OKLG residential
+  OKLG_SEC.json            ← OKLG security
+  OKLG_FLOT.json           ← OKLG flotilla annex
+  BCER.json, BCRS.json     ← other station instances
+  &lt;ship-reg&gt;/*.png         ← per-ship room previews (skip)
+</code></pre>
+
+<div class="callout warn">
+<p><strong>Crew migrate between ship files based on physical location.</strong> The crew member who needs editing is serialized in <em>whichever</em> ship/station file represents the place they're currently standing. If they were brawling in OKLG_BIZ when you saved, their CondOwner is in <code>ships/OKLG_BIZ.json</code> — not in the player file, not in the ship they came in on.</p>
+</div>
+
+<h3>What a humanoid CondOwner looks like inside a ship file</h3>
+
+<p>Each ship file is a single-element array wrapping a dict. The dict's <code>aCOs</code> array holds CondOwner-shaped objects. Most are inert props (no <code>social</code>). The humanoids — your crew, station residents, anyone with a name — have <code>social</code> populated. The fields that matter for this fix:</p>
+
+<dl class="field-list">
+  <dt>strID <span class="verified ok">verified</span></dt>
+  <dd>For humanoid NPCs, this equals the character's full name (e.g. <code>"Autumn Jocelyn Sellers"</code>). Inert props use GUIDs like <code>"82827c35-fb7d-4be3-aaf3-e56db75929d0"</code>. Search the file by name to find your crew.</dd>
+
+  <dt>strFriendlyName <span class="verified ok">verified</span></dt>
+  <dd>Same as <code>strID</code> for humanoids. Either field works for the search.</dd>
+
+  <dt>aConds <span class="verified ok">verified</span></dt>
+  <dd>Array of cond-strings, format <code>"Name=value x duration"</code>. The Public Enemy flag lives here as <code>"CrimeOKLGThreat=1.0x1"</code>.</dd>
+
+  <dt>aFactions <span class="verified ok">verified</span></dt>
+  <dd>Array of faction strings. A Galilean Confederacy crew member shows <code>["GalileanConfederacy", "&lt;their name&gt;"]</code> — the second entry is the character's own name, used as a self-faction marker.</dd>
+
+  <dt>social.aRelationships2 <span class="verified ok">verified</span></dt>
+  <dd>Array of per-target <code>JsonRelationship</code> objects. One entry per other person this crew has interacted with.</dd>
+
+  <dt>social.aRelationships2[].fAnimosity <span class="verified ok">verified</span></dt>
+  <dd>Per-target hostility accumulator (float). In a peaceful save, observed range was 0–94. In your spiraled save, expect three-digit values on every OKLG NPC the crew has been in combat with — these are what aggregate to <code>-7346.30</code>.</dd>
+
+  <dt>social.aRelationships2[].fKindness, fFamiliarity <span class="verified ok">verified</span></dt>
+  <dd>Companion accumulators — positive interactions and total interaction count. <strong>Don't touch these.</strong> They're history you want to keep.</dd>
+
+  <dt>social.aRelationships2[].strPSpec <span class="verified ok">verified</span></dt>
+  <dd>Identifies who the relationship is with (the other person's name).</dd>
+</dl>
+
+<h2>The surgical fix</h2>
+
+<h3>Step 0 — back the save up</h3>
+
+<p>Copy the entire <code>&lt;Character Name&gt;_&lt;id&gt;\</code> folder somewhere safe. There is no in-game undo for a botched save edit.</p>
+
+<h3>Step 1 — open the zip in 7-Zip without extracting</h3>
+
+<p>7-Zip lets you edit a file inside an archive in place. Right-click the <code>.zip</code> → 7-Zip → <em>Open archive</em>. Don't fully extract and rezip — easy to break the archive structure or get the path separators wrong.</p>
+
+<h3>Step 2 — find the right ship file</h3>
+
+<p>Your crew is in whichever ship/station instance file matches where they were standing when you saved. If you don't know which one, search each candidate <code>ships/OKLG*.json</code> for the crew member's full name. The one that contains a hit (in a <code>"strID"</code> or <code>"strFriendlyName"</code> field, not just a casual mention in a log) is the right file.</p>
+
+<p>Edit that file in the archive (7-Zip lets you open it in your editor of choice; on save, it asks whether to update the archive — say yes).</p>
+
+<h3>Step 3 — strip the wanted conditions</h3>
+
+<p>Find your crew's <code>aConds</code> array. Delete every entry whose name matches one of:</p>
+
+<table>
+  <thead><tr><th>Condition</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>CrimeOKLGThreat</code></td><td>The Public Enemy flag — OKLG AI is licensed to attack. <strong>The critical one.</strong></td></tr>
+    <tr><td><code>CrimeOKLGArrest</code></td><td>Active OKLG warrant. AyoSec will try to subdue rather than kill, but it's still hostile.</td></tr>
+    <tr><td><code>CrimeOKLGNoUndock</code></td><td>Prevents ship undock while the warrant is active.</td></tr>
+    <tr><td><code>CrimeOKLGStolenShip</code></td><td>Marks the ship as flagged stolen by OKLG.</td></tr>
+  </tbody>
+</table>
+
+<p>The full set is what <code>TIsWantedOKLG</code> in <code>data/condtrigs/condtrigs.json</code> tests against. Removing all four flips the crew member back to the friendly-default <code>TIsNotWantedOKLG</code> branch.</p>
+
+<p>If the crew is also wanted under another faction (<code>CrimeCCREThreat</code>, <code>CrimeVenusThreat</code>, <code>CrimeGalConThreat</code>), strip those too — same naming pattern, same rationale.</p>
+
+<h3>Step 4 — zero out the accumulated hostility</h3>
+
+<p>Inside the same crew member's <code>social.aRelationships2</code> array, find every relationship whose <code>strPSpec</code> resolves to an OKLG-faction NPC. The personspec name will look like <code>"AF_OKLGCiv"</code>, <code>"AF_OKLGLEO"</code>, <code>"AF_OKLGCorp"</code>, etc. — these are the auto-faction selectors from <code>data/personspecs/personspecs_autofactions.json</code>. Or it'll be a specific NPC's full name (in which case you can look that NPC up in the same ship file to confirm their <code>aFactions</code>).</p>
+
+<p>For each such relationship, set <code>"fAnimosity": 0.0</code>. Leave <code>fKindness</code> and <code>fFamiliarity</code> alone — you don't want to wipe the crew's interaction history, just the hostility tally.</p>
+
+<p>Example before / after on one relationship:</p>
+
+<pre><code>{
+  "strPSpec": "AF_OKLGLEO",
+  "fAnimosity": 187.0,    ← change to 0.0
+  "fFamiliarity": 245.5,
+  "fKindness": 12.0,
+  "aRelationships": [...],
+  "aEvents": [...],
+  "dictConds": { ... },
+  "dictCondsRELOnly": { ... }
+}
+</code></pre>
+
+<div class="callout good">
+<p><strong>Lazy shortcut.</strong> If editing every OKLG-faction relationship is too much surgery, you can <em>delete the entire <code>aRelationships2</code> array</em> on this crew member. The <code>Social</code> component re-initializes on load with an empty relationship history. Your crew member loses all relationship memory across all NPCs (every stranger again), but that's a clean slate and the <code>fAnimosity</code> problem is gone with it.</p>
+</div>
+
+<h3>Step 5 — save inside 7-Zip and reload</h3>
+
+<p>7-Zip will prompt to update the archive. Confirm. Don't restart Steam between save and reload — the file timestamp is what the launcher checks.</p>
+
+<h2>Recurrence — and why you should plan for it</h2>
+
+<div class="callout warn">
+<p><strong>The save edit is a snapshot fix, not a permanent one.</strong> Reload at OKLG with the same crew, throw a single defensive punch, and the loop restarts. The base game data still maps OKLGAssault → CrimeOKLGThreat, and self-defense in an OKLG zone is itself an OKLGAssault.</p>
+</div>
+
+<p>Pick one of the three options below depending on how much disruption you want:</p>
+
+<h3>Option A — physical relocation (zero code changes)</h3>
+
+<p>The cheapest fix: undock from OKLG immediately on reload, fly somewhere else, and don't bring this crew member back to OKLG zones. Combat outside OKLG-law jurisdiction doesn't trigger the OKLG crime emitter. Your crew stays clean. If you want to revisit OKLG, leave the at-risk crew on your ship (or on a friendlier station) and go in solo.</p>
+
+<h3>Option B — small JSON mod, demotes assault to warrant</h3>
+
+<p>Edit <code>data/crime/crime.json</code> in your mod folder. Change the <code>OKLGAssault</code> row's <code>strLootCondsPerp</code> from <code>"CrimeOKLGThreat"</code> to <code>"CrimeOKLGArrest"</code>. After the edit:</p>
+
+<pre><code>{
+  "strName": "OKLGAssault",
+  "strLaw": "OKLG",
+  "strCrime": "assault",
+  "strLootCondsPerp": "CrimeOKLGArrest",         ← was "CrimeOKLGThreat"
+  "strPledge": "AIReportCrimeOKLGThreat"
+}
+</code></pre>
+
+<p>OKLG NPCs now respond to assault with arrest behavior (subdue, drag to jail) instead of shoot-on-sight. The <code>CrimeOKLGArrest</code> flag is still in <code>TIsAIReportCrimeValidVictim</code>'s OR list, so this softens the response without making OKLG a free-for-all crime zone. Globally affects the game, not just your crew.</p>
+
+<h3>Option C — small JSON mod, exempts crew from "valid victim"</h3>
+
+<p>Edit <code>data/condtrigs/condtrigs.json</code>. Find <code>TIsAIReportCrimeValidVictim</code> and add <code>"IsCrew"</code> (or whatever crew-flag your CondOwner template uses) to its <code>aForbids</code> list:</p>
+
+<pre><code>{ "strName": "TIsAIReportCrimeValidVictim",
+  "aReqs": ["CrimeOKLGArrest", "CrimeOKLGThreat",
+            "CrimeVenusArrest", "CrimeVenusThreat",
+            "CareerPirate", "IsMeatWall"],
+  "aForbids": ["IsCrew"],                        ← add this
+  "bAND": false }
+</code></pre>
+
+<p>OKLG (and Venus) AI no longer treat player crew as fair game even when flagged. The crime conditions still apply, the rep loss still happens, but the actual ambushing stops. Cleanest behavioral fix; doesn't change crime accounting or affect non-crew NPC behavior at all.</p>
+
+<h2>Confidence — what was verified vs. inferred</h2>
+
+<table>
+  <thead><tr><th>Claim</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>Save folder layout (folder + zip + sidecars)</td><td><span class="verified ok">verified</span> against an actual save</td></tr>
+    <tr><td>Player JSON has no humanoid NPCs; crew live in ship files</td><td><span class="verified ok">verified</span> (40,168 CondOwners in player file, 0 with social)</td></tr>
+    <tr><td>Humanoid <code>strID</code> equals full name</td><td><span class="verified ok">verified</span></td></tr>
+    <tr><td><code>JsonRelationship</code> field set incl. <code>fAnimosity</code> / <code>fKindness</code> / <code>fFamiliarity</code></td><td><span class="verified ok">verified</span> on a real save's social array</td></tr>
+    <tr><td><code>fAnimosity</code> carries non-trivial values that scale with hostile interactions</td><td><span class="verified ok">verified</span> (range 0–94 in a peaceful save)</td></tr>
+    <tr><td><code>CrimeOKLGThreat</code> definition + crime → cond mapping in <code>data/crime/crime.json</code></td><td><span class="verified ok">verified</span> against base game data</td></tr>
+    <tr><td><code>TIsAIReportCrimeValidVictim</code> as the doom-loop pivot CT</td><td><span class="verified ok">verified</span> against base game data</td></tr>
+    <tr><td>"My Standings: -7346.30" UI value is the sum of <code>fAnimosity</code> contributions across faction members</td><td><span class="verified inferred">inferred</span> — exact aggregation formula not traced; standing-display code wasn't read end-to-end. Zeroing <code>fAnimosity</code> per OKLG-faction relationship is the right surgical edit regardless.</td></tr>
+    <tr><td>Deleting <code>aRelationships2</code> wholesale is safe</td><td><span class="verified inferred">inferred</span> from the <code>Social.cs</code> init code being null/empty-tolerant; not tested on a live save.</td></tr>
+    <tr><td>Adding <code>IsCrew</code> to <code>TIsAIReportCrimeValidVictim.aForbids</code> works as described</td><td><span class="verified inferred">inferred</span> — confirm the actual flag your crew CondOwners carry by inspecting one of them; it may be <code>IsPlayerCrew</code> or similar.</td></tr>
+  </tbody>
+</table>
+
+<h2>Quick-reference card</h2>
+
+<div class="callout">
+<p><strong>Path:</strong> <code>%AppData%\..\LocalLow\Blue Bottle Games\Ostranauts\saves\&lt;char&gt;_&lt;id&gt;\&lt;char&gt;_&lt;id&gt;.zip → ships/OKLG*.json</code></p>
+<p><strong>Find:</strong> search the file for the crew member's full name (matches <code>strID</code> and <code>strFriendlyName</code>).</p>
+<p><strong>Strip from <code>aConds[]</code>:</strong> any <code>CrimeOKLGThreat=…</code>, <code>CrimeOKLGArrest=…</code>, <code>CrimeOKLGNoUndock=…</code>, <code>CrimeOKLGStolenShip=…</code>.</p>
+<p><strong>Zero in <code>social.aRelationships2[]</code>:</strong> <code>fAnimosity</code> on every entry whose <code>strPSpec</code> is an OKLG-faction NPC.</p>
+<p><strong>Move ship away from OKLG before any further play</strong>, or apply Option B / C as a permanent fix.</p>
+</div>
+
+</main>
+</body>
+</html>
