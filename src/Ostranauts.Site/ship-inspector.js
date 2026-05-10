@@ -449,12 +449,14 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // First pass: paint floors. Second pass: paint walls on top.
+    // Game coords are +Y up; canvas pixel coords are +Y down — flip Y so
+    // the ship doesn't render mirrored relative to its in-game silhouette.
     const grid = new Array(cols * rows);
     for (const it of items) {
       const bk = itemBucket(it);
       if (bk !== "walls" && bk !== "floors") continue;
       const x = Math.round(it.fX) - minX;
-      const y = Math.round(it.fY) - minY;
+      const y = (rows - 1) - (Math.round(it.fY) - minY);
       if (x < 0 || x >= cols || y < 0 || y >= rows) continue;
       const idx = y * cols + x;
       // walls override floors
