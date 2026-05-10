@@ -4,6 +4,73 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-10 — PLAN-BUILDER Phase 1: ship-inspector data extraction
+
+Shipped Phase 1 of the ship-inspector axis (PLAN-BUILDER.md). New utility
+[utils/python/build_ship_inspector_data.py](utils/python/build_ship_inspector_data.py)
+walks the five `Random*` ship loot tables in `data/loot/loot.json`, dedups
+the resulting registry list, strips each `data/ships/<reg>.json` to
+inspector-relevant fields, classifies every component into one of eight
+buckets, and emits four artifacts under `src/Ostranauts.Site/data/`:
+`canned-ships/<reg>.json` (43 files), `canned-ships-manifest.json` (the
+dropdown driver), and `id-friendly-names.json` (a 2,243-entry base-game
+`strName → strNameFriendly` map). Idempotent — re-running yields an empty
+diff. Wired as a `ship-inspector-data` Makefile target with `site` /
+`site-mods` depending on it; outputs are checked in (~10 MB across
+canned-ships/, ~129 KB for the friendly-name map). The original Phase 1
+prompt called for pretty-printed (indent=2) ship JSONs; reversed during
+implementation after the first dry-run produced a 722,788-line commit.
+Ships are pure build artifacts consumed by JS at runtime, never read by
+humans, and a regenerated diff is "everything changed" anyway — so each
+ship file is now a single-line compact JSON. Manifest + friendly-name
+map kept pretty-printed because modders are encouraged to read them.
+
+The plan's Phase 1 spec needed two reconciliations once the actual data
+shape was inspected, both now documented in PLAN-BUILDER.md's Phase 1
+section: (a) ship items live in `aItems` with reference-only entries
+(`strName, fX, fY, fRotation, strID`), not in `aCOs` with inline
+`aStartingConds` — so the script preserves the source key and adds
+`_bucket` per item; (b) the `aStartingConds` flags reach an `aItems`
+entry only via a `strCOBase` chain through `data/items/` and
+`data/cooverlays/` into `data/condowners/`, so the classifier resolves
+that chain (max depth 8) before bucket-matching. The flag the game uses
+on installed equipment is `IsInstalled` (not the spec's `IsInstallable`,
+which doesn't exist anywhere in the data); `IsCarried` likewise doesn't
+appear, so the `decorative` bucket lands at zero on canned ships, as
+expected for ship templates (carried/loose items aren't installed).
+
+Resulting bucket distribution across all 43 ships and 60,471 components:
+56% floors, 17% conduits, 17% walls, 7% equipment, 3% other,
+~0.5% doors, ~0.3% containers, 0% decorative. Sensible — small ships
+(Coffin: 314 components, 66 walls / 149 floors / 1 door) and large ones
+(02: 2,766 components, 417 walls / 1,761 floors / 9 doors) classify
+plausibly. `RandomShip` is empty in vanilla and `RandomShipOld`'s ships
+are all already in `RandomDerelictBig`, so the dedup is doing real work
+even though only three of the five tables actually contribute new regs.
+
+One stray observation worth noting: `condowners_navmods.json` ships with
+a UTF-8 BOM the other condowner files don't carry. Loader uses
+`utf-8-sig` to swallow it; might be a coverage-gap data point worth
+filing in [notes/coverage-gaps.md](notes/coverage-gaps.md) later.
+
+Phase 2 handoff written at
+[notes/agent-prompts/ship-inspector-builder-phase2.md](notes/agent-prompts/ship-inspector-builder-phase2.md)
+covering the `rooms.js` extraction (lift `window.ROOMS` + the per-card
+render function out of `rooms-reference.html` into a shared module
+consumable by both `rooms-reference.html` and the future
+`ship-inspector.html`).
+
+Pre-push fair-use: factor 1 transformative (modder-tooling data feed +
+schema-derived bucket classifier, our extraction code), factor 2 our
+shape + identifier names + base-game JSON values (no creative prose
+included — `description` fields are passed through but they're already
+on the public wiki / store page), factor 3 derived counts and IDs not
+creative content (the `aItems` arrays are positions + IDs, not
+narrative), factor 4 useless without owning the game (the data names
+nothing without the engine resolving them). All four clear.
+
+---
+
 ## 2026-05-10 — PLAN-BUILDER: ship-inspector axis opened + Phase 1 agent handoff
 
 Pulled from a community ask in the BlueBottleGames Discord modding channel: **El** asked whether someone could build a tool that takes a ship file and emits a component checklist (how many walls, floors, conduits, lights — to assemble a "kit" for building from scratch). **Ne** seconded. **Ro** proposed the rough shape — make a DTO of the ship + enumerate components by ID, then dump the list — and identified the load-bearing complication: friendly-name resolution would need the user's local game install path so the tool can read the base-game data tree. Talked through it with user; observation: that resolution **already lives on the explorer** (we ship `properties.js`/`graph.js` derived from `data/condowners/` + `data/cooverlays/`), so a static-site tool layered on the explorer's data avoids the install-path problem entirely. Picked option 1 of three (site-side tool inside the explorer) over a static handoff guide or a standalone CLI. No verbatim chat content quoted; pre-existing rule in CLAUDE.local.md against full-handles in tracked notes still applies, abbreviated initials used here for workflow brevity.

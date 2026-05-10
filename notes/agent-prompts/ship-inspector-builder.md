@@ -77,7 +77,7 @@ The script's job:
 
      Write the bucket name into a new field `_bucket` on the CO (the underscore prefix marks it as a runtime-derived field, not a JSON-schema key).
 
-   - Write the result to `src/Ostranauts.Site/data/canned-ships/<reg>.json`. Pretty-print with 2-space indent — file size matters less than diff readability.
+   - Write the result to `src/Ostranauts.Site/data/canned-ships/<reg>.json`. **Compact JSON, one line per file** (no indent, no spaces after delimiters). These are build artifacts consumed by JS at runtime; line-by-line diffs of a regeneration aren't useful, and pretty-printing a 5,000-item ship multiplied commit footprint by ~10× for no review value. *(Note: original Phase 1 prompt said "Pretty-print with 2-space indent — file size matters less than diff readability"; reversed during Phase 1 implementation after seeing the line-count blowup. The decision is documented in PLAN-BUILDER.md.)*
 
 3. **Emit the manifest.** Write `src/Ostranauts.Site/data/canned-ships-manifest.json` as a JSON array of objects, one per canned ship:
 

@@ -1,4 +1,4 @@
-.PHONY: all clean lib cli site site-public test build run
+.PHONY: all clean lib cli site site-public test build run ship-inspector-data
 
 BUILD_DIR        ?= build
 PUBLIC_BUILD_DIR ?= build-public
@@ -27,7 +27,7 @@ test:
 # so they deploy with the site (directly linkable; not navigable from the UI).
 # The Builder auto-detects ./data and ./comment_mod/data when no --root
 # flag is passed; override DATA_ROOT to point at a single specific root.
-site: cli user-stories
+site: cli user-stories ship-inspector-data
 	@mkdir -p $(BUILD_DIR)
 ifdef DATA_ROOT
 	dotnet run --project $(BUILDER_PROJ) -c $(CONFIG) --no-build -- --root $(DATA_ROOT) --out $(BUILD_DIR)/data
@@ -45,7 +45,7 @@ endif
 # Roots load in order, last-wins per strName -- so a mod can override a
 # vanilla entry by redefining it. Use this to preview a mod's effect on
 # the explorer; default `make site` stays vanilla-only.
-site-mods: cli user-stories
+site-mods: cli user-stories ship-inspector-data
 	@mkdir -p $(BUILD_DIR)
 	dotnet run --project $(BUILDER_PROJ) -c $(CONFIG) --no-build -- \
 		$(foreach r,data comment_mod/data $(wildcard spiffy-mods/mods/*/data),--root $(r)) \
@@ -56,6 +56,15 @@ site-mods: cli user-stories
 		cp -r $(HANDOFF_SRC)/. $(BUILD_DIR)/handoff/; \
 	fi
 .PHONY: site-mods
+
+# Regenerate the ship-inspector data feeds at src/Ostranauts.Site/data/
+# (canned-ships/, canned-ships-manifest.json, id-friendly-names.json) from
+# data/loot/loot.json + data/ships/ + data/{condowners,items,cooverlays}/.
+# Outputs are checked in — this target is for when source data shifts. The
+# site/site-mods cp -r SITE_SRC/. step picks the regenerated files up
+# automatically; nothing else to wire downstream.
+ship-inspector-data:
+	python utils/python/build_ship_inspector_data.py
 
 # Render notes/user-stories/*.md into $(SITE_SRC)/user-stories/ (gitignored)
 # so direct file:// preview of src/Ostranauts.Site/index.html resolves the
