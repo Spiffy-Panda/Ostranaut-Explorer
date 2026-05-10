@@ -20,6 +20,53 @@ main.inspector {
   margin: 0 auto;
   padding: 1.5rem 1.25rem 4rem;
 }
+/* Intro prose. Muted once a ship is loaded (it becomes ambient context);
+   foregrounded in the empty state so a first-time visitor reads it. */
+.intro-prose {
+  margin-top: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+main.inspector.is-empty .intro-prose {
+  color: var(--fg);
+  font-size: 1rem;
+  line-height: 1.5;
+  max-width: 42rem;
+  margin: 1rem auto 1.5rem;
+}
+/* Hide the progress / visual / rooms / components sections when no ship
+   is selected — collapses the page to picker + intro + empty hint. */
+main.inspector.is-empty .progress-wrap,
+main.inspector.is-empty > .section {
+  display: none !important;
+}
+.empty-hint {
+  display: none;
+  margin: 1.5rem auto;
+  max-width: 42rem;
+  padding: 1.5rem;
+  text-align: center;
+  background: var(--bg-elev);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+}
+main.inspector.is-empty .empty-hint { display: block; }
+.empty-hint strong { color: var(--fg); }
+.clear-ship-btn {
+  background: var(--bg-elev-2);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+.clear-ship-btn:hover { border-color: var(--accent-dim); }
+main.inspector.is-empty .clear-ship-btn { display: none; }
 .inspector h2 {
   font-size: 0.8125rem;
   letter-spacing: 0.06em;
@@ -280,18 +327,53 @@ details.bucket-foldout[open] > summary::before { transform: rotate(90deg); }
   padding: 0 5px;
   cursor: help;
 }
-.item-boxes {
+.item-counter {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.2rem;
-  justify-content: flex-end;
-  max-width: 100%;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
 }
-.item-cb {
-  width: 14px;
-  height: 14px;
+.item-count {
+  width: 4.5rem;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.2rem 0.4rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+.item-count::-webkit-outer-spin-button,
+.item-count::-webkit-inner-spin-button { margin: 0; }
+.item-count:focus { outline: 1px solid var(--accent-dim); outline-offset: -1px; }
+.item-required {
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.item-all-btn,
+.item-none-btn {
+  background: var(--bg-elev-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.7rem;
+  font-family: inherit;
   cursor: pointer;
-  margin: 0;
+}
+.item-all-btn:hover,
+.item-none-btn:hover { color: var(--fg); border-color: var(--accent-dim); }
+.item-line.is-complete .item-friendly { color: var(--good); }
+.item-line.is-complete .item-count { border-color: var(--good); }
+
+/* Room ×N badge */
+.room-count-badge {
+  color: var(--good) !important;
+  font-weight: 600;
 }
 
 /* ── rooms list ─────────────────────────────────────────────────────── */
@@ -318,11 +400,15 @@ details.room-card > summary {
   cursor: pointer;
   list-style: none;
   padding: 0.6rem 0.875rem;
-  display: grid;
-  grid-template-columns: auto auto 1fr auto auto auto auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.875rem;
   align-items: center;
   user-select: none;
+}
+details.room-card > summary > :nth-child(2) { /* friendly-name wrapper */
+  flex: 1 1 auto;
+  min-width: 0;
 }
 details.room-card > summary::-webkit-details-marker { display: none; }
 details.room-card > summary::before {
@@ -468,9 +554,9 @@ details.room-card.is-pinned { border-color: var(--good); }
   </nav>
 </header>
 
-<main class="inspector" id="inspector-root">
-  <p class="muted small" style="margin-top: 0;">
-    Pick a canned ship from the dropdown or upload your own ship JSON. The
+<main class="inspector is-empty" id="inspector-root">
+  <p id="inspector-intro" class="intro-prose">
+    Pick a vanilla ship from the dropdown or upload your own ship JSON. The
     inspector tallies components by bucket, lays out the floor plan from
     item coordinates, and shows the room-classification requirements that
     fire on this hull. Check off components as you build them — state

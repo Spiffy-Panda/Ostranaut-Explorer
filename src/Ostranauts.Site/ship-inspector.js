@@ -12,12 +12,18 @@
 //                                        for each per-ship .js are injected
 //   * window.ROOMS, window.renderRoomCard — from rooms.js
 //
-// localStorage keys (see PLAN-BUILDER.md):
+// localStorage keys:
 //   ship-inspector:active-ship           "<reg>" | "upload:<hash>"
-//   ship-inspector:checkboxes:<key>      { "<co-strID>": true, ... }
-//   ship-inspector:pinned-rooms:<key>    [ "<room-strID>", ... ]
+//   ship-inspector:counts:<key>          { "<strName>": <built-count>, ... }
+//   ship-inspector:pinned-specs:<key>    [ "<room-spec-name>", ... ]
 //   ship-inspector:upload-cache:<hash>   uploaded JSON text
 //   ship-inspector:upload-meta:<hash>    { name, dateUploaded, summary }
+//
+// The PLAN-BUILDER table originally proposed per-instance checkboxes keyed
+// by strID; replaced with per-strName count-of-built (modder feedback —
+// 790 checkboxes for "Floor: Ryokka F-01 ×790" was unworkable). Same
+// applies to room pinning: spec name, not room strID, so a ship with
+// three Blank rooms shows one Blank card with ×3 instead of three.
 //
 // v1 caveat: uploaded ships are stored uncompressed. The script refuses
 // uploads larger than UPLOAD_MAX_BYTES so localStorage doesn't fill up.
@@ -57,8 +63,8 @@
     shipDict: null,             // the parsed ship dict (the [0] of the array)
     manifest: [],               // canned-ships manifest array
     friendlyNames: {},          // strName → strNameFriendly
-    pinnedRooms: [],            // [room.strID]
-    checkboxes: {},             // { item.strID: true }
+    pinnedSpecs: [],            // [room-spec-name]   (e.g. "Reactor")
+    counts: {},                 // { strName: count-built }
     bucketFilters: {},          // { walls: true, ... }
     searchQuery: "",
   };
@@ -183,7 +189,7 @@
 
   function buildPicker(root) {
     const select = el("select", { id: "ship-select", class: "ship-select" });
-    select.appendChild(el("option", { value: "", text: "— choose a canned ship —" }));
+    select.appendChild(el("option", { value: "", text: "— choose a vanilla ship —" }));
     for (const m of STATE.manifest) {
       const label = m.friendlyName === m.reg ? m.reg : `${m.friendlyName} (${m.reg})`;
       select.appendChild(el("option", { value: m.reg, text: label }));
@@ -215,13 +221,52 @@
       el("a", { href: "data/id-friendly-names.json", text: "→ ID-to-friendly-name JSON" }),
     ]);
 
+    const clearBtn = el("button", {
+      type: "button", class: "clear-ship-btn", id: "clear-ship-btn",
+      text: "← Clear selection",
+      onclick: clearShip,
+    });
+
     root.appendChild(el("div", { class: "ship-picker" }, [
       select,
       uploadLabel,
       fileInput,
       privacy,
       links,
+      clearBtn,
     ]));
+
+    // Persistent empty-state hint, shown only when no ship is active.
+    root.appendChild(el("div", { class: "empty-hint", id: "empty-hint" }, [
+      el("p", { html:
+        "<strong>No ship selected.</strong> Pick a vanilla ship from the " +
+        "dropdown above to see its component checklist and floor plan, " +
+        "or upload a ship JSON file to inspect a build of your own." }),
+      el("p", { class: "small muted", text:
+        "Your checkboxes and pinned rooms are saved per-ship in this " +
+        "browser — switch between ships freely without losing state." }),
+    ]));
+  }
+
+  function clearShip() {
+    STATE.activeShipKey = null;
+    STATE.activeShipLabel = "";
+    STATE.shipDict = null;
+    STATE.counts = {};
+    STATE.pinnedSpecs = [];
+    lsDel("active-ship");
+    const sel = document.getElementById("ship-select");
+    if (sel) sel.value = "";
+    const fileInput = document.getElementById("ship-upload");
+    if (fileInput) fileInput.value = "";
+    if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+    setEmptyState(true);
+    renderProgress();
+  }
+
+  function setEmptyState(empty) {
+    const main = document.getElementById("inspector-root");
+    if (main) main.classList.toggle("is-empty", !!empty);
   }
 
   function onUploadChosen(input) {
@@ -317,10 +362,20 @@
   function onResetChecklist() {
     if (!STATE.activeShipKey) return;
     if (!confirm("Reset the build checklist for this ship?")) return;
-    STATE.checkboxes = {};
-    lsDel("checkboxes:" + STATE.activeShipKey);
+    STATE.counts = {};
+    lsDel("counts:" + STATE.activeShipKey);
     renderComponents();
     renderProgress();
+  }
+
+  // Count of items per strName across this ship.
+  function tallyByStrName(items) {
+    const out = {};
+    for (const it of items) {
+      const sn = it.strName || "(unnamed)";
+      out[sn] = (out[sn] || 0) + 1;
+    }
+    return out;
   }
 
   function renderProgress() {
@@ -338,11 +393,16 @@
 
     const items = STATE.shipDict.aItems || [];
     const total = items.length;
-    let checked = 0;
-    for (const it of items) if (STATE.checkboxes[it.strID]) checked++;
-    const pct = total ? (checked / total) * 100 : 0;
+    const totals = tallyByStrName(items);
+    let built = 0;
+    for (const sn in totals) {
+      const want = totals[sn];
+      const have = Math.max(0, Math.min(want, STATE.counts[sn] || 0));
+      built += have;
+    }
+    const pct = total ? (built / total) * 100 : 0;
 
-    label.textContent = `${STATE.activeShipLabel} — ${checked.toLocaleString()} of ${total.toLocaleString()} components built`;
+    label.textContent = `${STATE.activeShipLabel} — ${built.toLocaleString()} of ${total.toLocaleString()} components built`;
     fill.style.width = pct.toFixed(1) + "%";
     counts.textContent = `${pct.toFixed(1)}% complete`;
   }
@@ -457,54 +517,57 @@
     });
   }
 
+  function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+
   function renderComponents() {
     const list = document.getElementById("components-list");
     if (!list || !STATE.shipDict) return;
     clear(list);
 
     const items = STATE.shipDict.aItems || [];
+    // Group items by bucket → strName → required count.
     const groupedByBucket = {};
     for (const b of BUCKETS) groupedByBucket[b] = {};
     for (const it of items) {
       const bk = itemBucket(it);
       const slot = groupedByBucket[bk] || (groupedByBucket[bk] = {});
       const sn = it.strName || "(unnamed)";
-      (slot[sn] = slot[sn] || []).push(it);
+      slot[sn] = (slot[sn] || 0) + 1;
     }
 
     const q = STATE.searchQuery || "";
     for (const bucket of BUCKETS) {
       if (!STATE.bucketFilters[bucket]) continue;
       const byName = groupedByBucket[bucket] || {};
+      const allNames = Object.keys(byName);
+      if (allNames.length === 0) continue;
 
-      // Filter strNames by search query.
-      const matchedNames = Object.keys(byName).filter((sn) => {
+      // Filter by search.
+      const matchedNames = allNames.filter((sn) => {
         if (!q) return true;
         const fn = friendlyName(sn).toLowerCase();
         return fn.includes(q) || sn.toLowerCase().includes(q);
       });
       if (!matchedNames.length && q) continue;
 
-      const total = Object.values(byName).reduce((a, arr) => a + arr.length, 0);
-      let checked = 0;
-      for (const arr of Object.values(byName)) {
-        for (const it of arr) if (STATE.checkboxes[it.strID]) checked++;
+      const totalAll = allNames.reduce((a, sn) => a + byName[sn], 0);
+      let builtAll = 0;
+      for (const sn of allNames) {
+        builtAll += clamp(STATE.counts[sn] || 0, 0, byName[sn]);
       }
-      if (total === 0) continue;
 
       matchedNames.sort((a, b) => friendlyName(a).localeCompare(friendlyName(b)));
 
       const det = el("details", { class: "bucket-foldout" });
       const summary = el("summary", { class: "bucket-summary" }, [
         el("span", { class: "bucket-name", text: BUCKET_LABELS[bucket] }),
-        el("span", { class: "bucket-count", text: `${checked} of ${total}` }),
+        el("span", { class: "bucket-count", text: `${builtAll} of ${totalAll}` }),
       ]);
       det.appendChild(summary);
 
       const inner = el("div", { class: "bucket-body" });
       for (const sn of matchedNames) {
-        const instances = byName[sn];
-        inner.appendChild(buildItemLine(sn, instances));
+        inner.appendChild(buildItemLine(sn, byName[sn]));
       }
       det.appendChild(inner);
       list.appendChild(det);
@@ -516,7 +579,31 @@
     }
   }
 
-  function buildItemLine(strName, instances) {
+  // Refresh the per-bucket "X of Y" summary count without re-rendering.
+  function refreshBucketCount(bucket) {
+    const dets = document.querySelectorAll("details.bucket-foldout");
+    for (const det of dets) {
+      const name = det.querySelector(".bucket-name");
+      if (!name || name.textContent !== BUCKET_LABELS[bucket]) continue;
+      const items = (STATE.shipDict && STATE.shipDict.aItems) || [];
+      let total = 0, built = 0;
+      const byName = {};
+      for (const it of items) {
+        if (itemBucket(it) !== bucket) continue;
+        const sn = it.strName || "(unnamed)";
+        byName[sn] = (byName[sn] || 0) + 1;
+      }
+      for (const sn in byName) {
+        total += byName[sn];
+        built += clamp(STATE.counts[sn] || 0, 0, byName[sn]);
+      }
+      const sumCount = det.querySelector(".bucket-count");
+      if (sumCount) sumCount.textContent = `${built} of ${total}`;
+      break;
+    }
+  }
+
+  function buildItemLine(strName, required) {
     const fn = friendlyName(strName);
     const known = isFriendlyKnown(strName);
     const line = el("div", { class: "item-line" });
@@ -533,55 +620,74 @@
     } else if (fn !== strName) {
       labelChunks.push(el("code", { class: "item-strname", text: strName }));
     }
-    labelChunks.push(el("span", { class: "item-qty", text: "×" + instances.length }));
     line.appendChild(el("div", { class: "item-label" }, labelChunks));
 
-    const boxes = el("div", { class: "item-boxes" });
-    for (const it of instances) {
-      const id = it.strID;
-      const cb = el("input", {
-        type: "checkbox",
-        class: "item-cb",
-        title: id || "(no strID)",
-      });
-      cb.checked = !!STATE.checkboxes[id];
-      cb.addEventListener("change", () => {
-        if (cb.checked) STATE.checkboxes[id] = true;
-        else delete STATE.checkboxes[id];
-        lsSet("checkboxes:" + STATE.activeShipKey, STATE.checkboxes);
-        renderProgress();
-        // Update the bucket count in the closest <summary>.
-        const det = line.closest("details.bucket-foldout");
-        if (det) {
-          const sumCount = det.querySelector(".bucket-count");
-          if (sumCount) {
-            const allCBs = det.querySelectorAll(".item-cb");
-            let chk = 0;
-            allCBs.forEach((b) => { if (b.checked) chk++; });
-            sumCount.textContent = `${chk} of ${allCBs.length}`;
-          }
-        }
-      });
-      boxes.appendChild(cb);
-    }
-    line.appendChild(boxes);
+    const current = clamp(STATE.counts[strName] || 0, 0, required);
+
+    const input = el("input", {
+      type: "number",
+      class: "item-count",
+      min: "0",
+      max: String(required),
+      step: "1",
+      value: String(current),
+      "aria-label": `${fn} placed`,
+    });
+    const denom = el("span", { class: "item-required",
+      text: required === 1 ? "/ 1 needed" : `/ ${required} needed` });
+
+    const setCount = (n) => {
+      const next = clamp(Math.floor(n) || 0, 0, required);
+      input.value = String(next);
+      if (next === 0) delete STATE.counts[strName];
+      else STATE.counts[strName] = next;
+      lsSet("counts:" + STATE.activeShipKey, STATE.counts);
+      renderProgress();
+      const bucket = itemBucket({ strName, _bucket: STATE.shipDict.aItems.find((it) => it.strName === strName)?._bucket });
+      if (bucket) refreshBucketCount(bucket);
+      // Visual: complete row gets a tick.
+      line.classList.toggle("is-complete", next >= required);
+    };
+    input.addEventListener("input", () => setCount(parseInt(input.value, 10)));
+    input.addEventListener("blur", () => setCount(parseInt(input.value, 10)));
+
+    const allBtn = el("button", {
+      type: "button", class: "item-all-btn",
+      title: "Mark all as built",
+      text: "all",
+      onclick: () => setCount(required),
+    });
+    const noneBtn = el("button", {
+      type: "button", class: "item-none-btn",
+      title: "Clear",
+      text: "0",
+      onclick: () => setCount(0),
+    });
+
+    if (current >= required) line.classList.add("is-complete");
+
+    line.appendChild(el("div", { class: "item-counter" }, [
+      noneBtn, input, denom, allBtn,
+    ]));
     return line;
   }
 
   // ─── rooms (pinned + unpinned) ─────────────────────────────────────────
 
-  function buildRooms(root) {
+  function buildPinnedRooms(root) {
     root.appendChild(el("section", { class: "section", id: "pinned-section" }, [
       el("h2", { text: "Pinned rooms" }),
       el("div", { id: "pinned-list", class: "rooms-list" }),
       el("p", { id: "pinned-empty", class: "muted small",
-        text: "No pinned rooms. Pin one from the list below to keep its requirements at the top of the page." }),
+        text: "No pinned rooms. Pin one from the list below the component checklist to keep its requirements at the top of the page." }),
     ]));
+  }
 
+  function buildUnpinnedRooms(root) {
     root.appendChild(el("section", { class: "section", id: "rooms-section" }, [
       el("h2", { text: "Rooms" }),
       el("p", { class: "muted small", text:
-        "One card per room in the ship. Pin the cards relevant to your build to surface them at the top." }),
+        "One card per room spec in the ship (×N if it appears more than once). Pin the cards relevant to your build to surface them above the component checklist." }),
       el("div", { id: "rooms-list", class: "rooms-list" }),
     ]));
   }
@@ -590,6 +696,17 @@
     if (!name || !window.ROOMS) return null;
     for (const r of window.ROOMS) if (r.name === name) return r;
     return null;
+  }
+
+  // Deduplicate rooms by roomSpec name → { specName: count }.
+  function specCountsForShip(rooms) {
+    const out = {};
+    for (const r of rooms) {
+      const sn = r.roomSpec;
+      if (!sn) continue;
+      out[sn] = (out[sn] || 0) + 1;
+    }
+    return out;
   }
 
   function renderRooms() {
@@ -601,70 +718,74 @@
     clear(roomsList);
 
     const rooms = STATE.shipDict.aRooms || [];
-    const pinnedSet = new Set(STATE.pinnedRooms);
+    const counts = specCountsForShip(rooms);
+    const pinnedSet = new Set(STATE.pinnedSpecs);
 
     let pinnedRendered = 0;
-    let unpinnedRendered = 0;
 
-    // Stable ordering: pinned in the order saved, unpinned by spec priority.
-    const idToRoom = {};
-    for (const r of rooms) idToRoom[r.strID] = r;
-
-    // pinned section (in saved order)
-    for (const id of STATE.pinnedRooms) {
-      const room = idToRoom[id];
-      if (!room) continue;
-      const spec = findRoomSpec(room.roomSpec);
+    // Pinned: in saved order, one card per spec name.
+    for (const specName of STATE.pinnedSpecs) {
+      const spec = findRoomSpec(specName);
       if (!spec) continue;
-      const card = window.renderRoomCard(spec, {
-        idPrefix: "pinned-" + room.strID + "-",
-        pinned: true,
-        openByDefault: true,
-        onPin: () => unpinRoom(room.strID),
-      });
+      if (!counts[specName]) continue;  // ship doesn't have this spec
+      const card = renderSpecCard(spec, counts[specName], true);
       pinnedList.appendChild(card);
       pinnedRendered++;
     }
     pinnedEmpty.style.display = pinnedRendered ? "none" : "block";
 
-    // unpinned section, sorted by spec priority desc then by strID for stability
-    const unpinned = rooms.filter((r) => !pinnedSet.has(r.strID));
-    unpinned.sort((a, b) => {
-      const sa = findRoomSpec(a.roomSpec);
-      const sb = findRoomSpec(b.roomSpec);
+    // Unpinned: dedup'd by spec, sorted by priority desc.
+    const unpinnedSpecs = Object.keys(counts).filter((sn) => !pinnedSet.has(sn));
+    unpinnedSpecs.sort((a, b) => {
+      const sa = findRoomSpec(a);
+      const sb = findRoomSpec(b);
       const pa = sa ? sa.priority : -1;
       const pb = sb ? sb.priority : -1;
       if (pa !== pb) return pb - pa;
-      return (a.strID || "").localeCompare(b.strID || "");
+      return a.localeCompare(b);
     });
-    for (const room of unpinned) {
-      const spec = findRoomSpec(room.roomSpec);
+
+    let unpinnedRendered = 0;
+    for (const specName of unpinnedSpecs) {
+      const spec = findRoomSpec(specName);
       if (!spec) continue;
-      const card = window.renderRoomCard(spec, {
-        idPrefix: "room-" + room.strID + "-",
-        onPin: () => pinRoom(room.strID),
-      });
+      const card = renderSpecCard(spec, counts[specName], false);
       roomsList.appendChild(card);
       unpinnedRendered++;
     }
     if (!unpinnedRendered) {
       roomsList.appendChild(el("p", { class: "muted small", text:
-        "No classified rooms on this ship — every enclosed area falls back to Blank, " +
-        "or the ship has no flood-fill rooms." }));
+        pinnedRendered
+          ? "All room specs on this ship are pinned."
+          : "No classified rooms on this ship — every enclosed area falls back to Blank, " +
+            "or the ship has no flood-fill rooms." }));
     }
   }
 
-  function pinRoom(strID) {
-    if (STATE.pinnedRooms.indexOf(strID) !== -1) return;
-    STATE.pinnedRooms.push(strID);
-    lsSet("pinned-rooms:" + STATE.activeShipKey, STATE.pinnedRooms);
-    renderRooms();
+  function renderSpecCard(spec, count, pinned) {
+    const card = window.renderRoomCard(spec, {
+      idPrefix: pinned ? "pinned-" : "room-",
+      pinned: pinned,
+      openByDefault: pinned,
+      onPin: () => togglePin(spec.name),
+    });
+    // Add the "×N" badge into the summary so the modder sees how many of
+    // this spec the ship contains.
+    if (count > 1) {
+      const summary = card.querySelector("summary");
+      const pinBtn = summary.querySelector(".room-pin-btn");
+      const badge = el("span", { class: "summary-meta room-count-badge", text: "×" + count });
+      if (pinBtn) summary.insertBefore(badge, pinBtn);
+      else summary.appendChild(badge);
+    }
+    return card;
   }
-  function unpinRoom(strID) {
-    const i = STATE.pinnedRooms.indexOf(strID);
-    if (i === -1) return;
-    STATE.pinnedRooms.splice(i, 1);
-    lsSet("pinned-rooms:" + STATE.activeShipKey, STATE.pinnedRooms);
+
+  function togglePin(specName) {
+    const i = STATE.pinnedSpecs.indexOf(specName);
+    if (i === -1) STATE.pinnedSpecs.push(specName);
+    else STATE.pinnedSpecs.splice(i, 1);
+    lsSet("pinned-specs:" + STATE.activeShipKey, STATE.pinnedSpecs);
     renderRooms();
   }
 
@@ -677,8 +798,8 @@
     }
     STATE.activeShipKey = key;
     STATE.shipDict = payload[0];
-    STATE.checkboxes = lsGet("checkboxes:" + key, {}) || {};
-    STATE.pinnedRooms = lsGet("pinned-rooms:" + key, []) || [];
+    STATE.counts = lsGet("counts:" + key, {}) || {};
+    STATE.pinnedSpecs = lsGet("pinned-specs:" + key, []) || [];
 
     if (key.startsWith("upload:")) {
       const meta = lsGet("upload-meta:" + key.slice("upload:".length), null);
@@ -695,6 +816,7 @@
     const sel = document.getElementById("ship-select");
     if (sel) sel.value = key.startsWith("upload:") ? "" : key;
 
+    setEmptyState(false);
     renderProgress();
     renderVisual();
     renderRooms();
@@ -741,8 +863,9 @@
     buildPicker(main);
     buildProgress(main);
     buildVisual(main);
-    buildRooms(main);
+    buildPinnedRooms(main);
     buildComponents(main);
+    buildUnpinnedRooms(main);
     renderFilterPills();
 
     // Decide what to load:
