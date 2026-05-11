@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ostranauts fire system — deep dive</title>
+<style>
+  :root {
+    --bg: #14171c;
+    --panel: #1c2026;
+    --panel-2: #232830;
+    --ink: #e6e9ef;
+    --ink-dim: #aab0bc;
+    --rule: #2c323b;
+    --accent: #7fb4ff;
+    --warn-bg: #3a2a14;
+    --warn-bd: #6b4a1c;
+    --warn-ink: #ffd89a;
+    --good-bg: #16301f;
+    --good-bd: #2c5b3c;
+    --good-ink: #b9e9c5;
+    --pit-bg: #2a1620;
+    --pit-bd: #5b2c40;
+    --pit-ink: #f3b9d0;
+    --code-bg: #0f1217;
+    --code-ink: #d8dde5;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 4px;
+    line-height: 1.25;
+  }
+  h1 + .subtitle {
+    color: var(--ink-dim);
+    margin: 0 0 32px;
+    font-size: 15px;
+  }
+  h2 {
+    font-size: 20px;
+    margin: 40px 0 12px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+  }
+  h3 {
+    font-size: 16px;
+    margin: 24px 0 8px;
+    color: var(--ink);
+  }
+  h4 {
+    font-size: 14px;
+    margin: 18px 0 6px;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  p { margin: 0 0 12px; }
+  a { color: var(--accent); }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 4px; }
+  code {
+    font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    background: var(--panel-2);
+    color: var(--code-ink);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 14px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    margin: 0 0 16px;
+  }
+  pre code { background: none; padding: 0; }
+  .callout {
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 16px 0 24px;
+    border: 1px solid var(--rule);
+  }
+  .callout.warn {
+    background: var(--warn-bg);
+    border-color: var(--warn-bd);
+    color: var(--warn-ink);
+  }
+  .callout.good {
+    background: var(--good-bg);
+    border-color: var(--good-bd);
+    color: var(--good-ink);
+  }
+  .callout.pit {
+    background: var(--pit-bg);
+    border-color: var(--pit-bd);
+    color: var(--pit-ink);
+  }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout strong { color: inherit; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8px 0 20px;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--rule);
+    padding: 7px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--panel-2);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  td code { background: var(--code-bg); }
+  .field-list dt {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 13.5px;
+    color: var(--ink);
+    margin-top: 10px;
+  }
+  .field-list dd {
+    margin: 0 0 6px 18px;
+    color: var(--ink-dim);
+    font-size: 14px;
+  }
+  .verified {
+    display: inline-block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .verified.ok {
+    background: #1e3a25;
+    color: #b9e9c5;
+    border: 1px solid #2c5b3c;
+  }
+  .verified.inferred {
+    background: #2a2218;
+    color: #ffd89a;
+    border: 1px solid #6b4a1c;
+  }
+  details {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    margin: 8px 0 16px;
+    padding: 0;
+  }
+  details > summary {
+    cursor: pointer;
+    padding: 10px 14px;
+    color: var(--accent);
+    font-size: 13.5px;
+    list-style: none;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before {
+    content: "▸ ";
+    color: var(--ink-dim);
+  }
+  details[open] > summary::before { content: "▾ "; }
+  details > div, details > pre { padding: 0 14px 12px; }
+  details > pre { margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<main>
+
+<a href="index.html" style="color:var(--ink-dim); font-size:13px; text-decoration:none;">← back to handoffs</a>
+
+<h1>The Ostranauts fire system — what burns, why, and how to make it stop</h1>
+<p class="subtitle">A modder-facing walkthrough of every JSON record and code path that makes fires happen on derelicts, stations, and your own ship.</p>
+
+<div class="callout good">
+<p><strong>What this page is.</strong> A reference for modders editing JSON who want to know which records control fire behaviour — what spawns fire, what carries it forward, what stops it, and what damage a fire does each tick. Every claim ends with either a <code>data/…json</code> path or a <code>decomp/Assembly-CSharp/…cs:line</code> citation so you can audit it on your own install.</p>
+<p>The <code>decomp/Assembly-CSharp/</code> snapshot this page cites is an ILSpy/dnSpy decompile of the <code>Assembly-CSharp.dll</code> from the build pinned in this repo (0.15.0.x). Field-name, condition-trigger and JSON-shape claims move slowly between builds and are durable. Specific constants (<code>MAX_FIRES = 170</code>, <code>DURATION = 5.0</code>, the <code>0.005</code> welding-spark coefficient) could change patch-to-patch — re-check against your local DLL if a number drives a decision you can't easily reverse.</p>
+</div>
+
+<h2>The one-paragraph summary</h2>
+
+<p>A fire in Ostranauts is a synthetic <code>SysFire</code> CondOwner that the engine spawns onto an existing object (its <em>host</em>) when an ignition event fires. Each tick, it consumes O<sub>2</sub> in the room, raises temperature, can damage nearby crew, applies <code>StatDamage</code> to its host, and rolls to spread onto an adjacent solid object. The roll uses the room's O<sub>2</sub> partial pressure, total pressure, and temperature, multiplied by the target's flammability tier (<code>IsFireproof</code> blocks; <code>IsFlammable</code> 6×; <code>IsBurnable</code> 2.5×; nothing 0.25×). Ignition events come from four code paths: ship-vs-ship combat hits on damaged interior items, damaged powered devices/conduits emitting sparks, crew welding sparks, and explosions. The <strong>only</strong> permanent stoppers are vacuum, lack of O<sub>2</sub>, fire extinguisher chem, or someone stamping on it — fires do not have a passive decay timer; what looks like "going out on its own" is the spread chance hitting zero in a depressurised or O<sub>2</sub>-starved room.</p>
+
+<h2>The data view: what serialises into your save</h2>
+
+<p>Look at any ship file in <code>&lt;save&gt;.zip → ships/&lt;regID&gt;.json</code>. The top-level dict has these fire-relevant fields:</p>
+
+<dl class="field-list">
+  <dt>aFires <span class="verified ok">verified</span></dt>
+  <dd>List of CondOwner IDs that were burning when the save was written. Empty <code>[]</code> or <code>null</code> on most files. On load, <code>Ship.cs:1104-1106</code> walks this list and re-queues each ID via <code>CrewSim.vfxFire.AddFireCO(strCOID)</code>, which puts them into the global "waiting to spawn a fire VFX" pool.</dd>
+
+  <dt>DMGStatus <span class="verified ok">verified</span></dt>
+  <dd>Integer enum: <code>0=New</code>, <code>1=Used</code>, <code>2=Damaged</code>, <code>3=Derelict</code> (<code>Ship.cs:9743-9753</code>). Drives what happens on first load (<code>Ship.cs:974-997</code>): <em>New</em> ships skip damage; <em>Used</em> applies <code>DamageAllCOs(0.33f)</code>; <em>Damaged</em> and <em>Derelict</em> run <code>BreakIn()</code>, which heavily damages systems and can leave them flagged sparkable.</dd>
+
+  <dt>bPrefill <span class="verified ok">verified</span></dt>
+  <dd>True until first board. Once a player visits with <code>LoadState ≥ Loaded.Edit</code>, <code>PreFillRooms()</code> + the DMGStatus-dependent damage pass runs, then this clears. In the saves under <code>test-data/save/whole-folders/</code>, 127 of 141 ships are still pending — derelicts only get rolled out properly when the player boards them.</dd>
+
+  <dt>fBreakInMultiplier <span class="verified ok">verified</span></dt>
+  <dd>Float in [0, 1]. Controls how aggressive <code>BreakIn()</code> is. Scaled down by 1 / (1 + <code>IsDueBonusDerelict</code>) if the player has the bonus-derelict flag (<code>Ship.cs:2261-2268</code>). Higher = more wrecking, more sparkable items, more potential for fire after first board.</dd>
+
+  <dt>aCOs &amp; aItems <span class="verified ok">verified</span></dt>
+  <dd>The CondOwners that live on this ship. After PreFill, fixtures with <code>IsFlammable</code>, <code>IsBurnable</code>, <code>IsFireproof</code>, <code>IsPowerConduit</code>, <code>IsPowered</code>, etc. are spread through these arrays. None of them are intrinsically "on fire" — the burning state is the <code>aFires</code> list, not a per-CO flag.</dd>
+</dl>
+
+<p>And on rooms (CondOwners with <code>IsRoom=1.0x1</code>) in <code>aCOs</code>, three conditions feed the spread roll:</p>
+
+<dl class="field-list">
+  <dt>StatGasPpO2 <span class="verified ok">verified</span></dt>
+  <dd>O<sub>2</sub> partial pressure in the room. 0 in vacuum, ~20.7 in a healthy Earth-mix.</dd>
+  <dt>StatGasPressure <span class="verified ok">verified</span></dt>
+  <dd>Total pressure. 0 in vacuum, ~101.3 standard.</dd>
+  <dt>StatGasTemp <span class="verified ok">verified</span></dt>
+  <dd>Gas temperature in Kelvin. 293 (≈20 °C) is the reference; fires push this up.</dd>
+</dl>
+
+<h2>What an ignition event actually does</h2>
+
+<p>An "ignition" is always a call to <code>VFXFire.AddFireCO(strCOID)</code>. That puts the target CO's ID into a waiting pool. Each frame, <code>VFXFire.Update()</code> pulls from the pool and calls <code>AddFireAt(coParent, fire)</code>, which:</p>
+
+<ol>
+  <li>Refuses if the host has <code>IsHuman</code>, <code>IsCarried</code>, or <code>objCOParent != null</code> — humans don't host fires; carried/contained items don't either (<code>VFXFire.cs:232-236</code>).</li>
+  <li>Refuses if the host's ship has <code>IsTutorialDerelictHidden</code> (<code>VFXFire.cs:237-241</code>).</li>
+  <li>Spawns a fresh <code>SysFire</code> CondOwner (via the <code>SysFire</code> record in <code>data/condowners/condowners.json</code>) parented to the host's tile, sets <code>fEpochExpire = StarSystem.fEpoch + 5.0</code> seconds, and starts the VFX/audio (<code>VFXFire.cs:242-258</code>).</li>
+  <li>Caps at <code>MAX_FIRES = 170</code> simultaneous active fires across the whole sim (<code>VFXFire.cs:485</code>). Past that, new ignitions queue but don't render until existing ones expire.</li>
+  <li>If the player owns the ship the fire is on, queues a <code>Firefight</code> Task that crew will auto-pick up (<code>VFXFire.cs:266-282</code>).</li>
+</ol>
+
+<details>
+  <summary>The <code>SysFire</code> CondOwner record — <code>data/condowners/condowners.json:34667</code></summary>
+<pre><code>{
+  "strName" : "SysFire",
+  "strNameFriendly" : "Fire",
+  "strItemDef" : "SysFire",
+  "strType"    : "Item",
+  "aInteractions" : [
+    "ACTFireExtinguish",
+    "ACTFireStamp"
+  ],
+  "aStartingConds" : [
+    "IsFire=1.0x1",
+    "IsNonHighlightable=1.0x1",
+    "IsHiddenInv=1.0x1",
+    "IsReadyHeat=1.0x1",
+    "StatHeatArea=1.0x2.0",
+    "StatHeatVol=1.0x0.5",
+    "StatSolidTemp=1.0x1073.0"
+  ],
+  "mapGUIPropMaps"  : [ "Panel A", "HeaterFire" ],
+  "aUpdateCommands" : [
+    "GasRespire2,Fire,null",
+    "Heater,TIsAirtightNoHuman"
+  ]
+}
+</code></pre>
+  <div>Two update commands wire the fire up to the gas + heat sims. <code>GasRespire2,Fire</code> attaches a <code>GasPump</code> running the <code>Fire</code> respire profile (consume O<sub>2</sub>, produce CO/CO<sub>2</sub>/H<sub>2</sub>SO<sub>4</sub>/NH<sub>3</sub>/Smoke). <code>Heater,TIsAirtightNoHuman</code> attaches the Stefan–Boltzmann <code>Heater</code> radiating from 1073 K (≈800 °C, <code>StatSolidTemp</code>) with area 2 and effective volume 0.5.</div>
+</details>
+
+<details>
+  <summary>The <code>Fire</code> respire profile — <code>data/gasrespires/gasrespires.json:360-413</code></summary>
+<pre><code>{
+  "strName": "Fire",
+  "strPtA": "GasInput",   "strPtB": "GasOutput",
+  "strCTA": "TIsAirtightNoHuman",  "strCTB": "TIsAirtightNoHuman",
+  "fVol": 0.1,  "fSignalCheckRate": 3.0,
+  "aGases" : [
+    { "strName": "FireCO2Data",    "strGasIn": "O2", "strGasOut": "CO2",   "fConvRate": 0.8,    ... },
+    { "strName": "FireCOData",     "strGasIn": "O2", "strGasOut": "CO",    "fConvRate": 0.12,   ... },
+    { "strName": "FireH2SO4Data",  "strGasIn": "O2", "strGasOut": "H2SO4", "fConvRate": 0.001,  ... },
+    { "strName": "FireNH3Data",    "strGasIn": "O2", "strGasOut": "NH3",   "fConvRate": 0.00125, ... },
+    { "strName": "FireSmokeData",  "strGasIn": "O2", "strGasOut": "Smoke", "fConvRate": 0.15,   ... }
+  ]
+}
+</code></pre>
+  <div>O<sub>2</sub> is consumed and converted into a cocktail of CO, CO<sub>2</sub>, H<sub>2</sub>SO<sub>4</sub>, NH<sub>3</sub>, and Smoke. All five are toxic to humans (see <code>CONDRespireHumanCO</code> / <code>HumanCO2</code> / <code>HumanH2SO4</code> / <code>HumanNH3</code> / <code>HumanSmoke</code> in <code>data/loot/loot.json</code>) — even if the fire doesn't reach your crew physically, the smoke and CO can kill them.</div>
+</details>
+
+<h2>The four ignition paths</h2>
+
+<p>Every <code>AddFireCO</code> call in the codebase belongs to one of these. If you mod data, only the second and third are easy to tune via JSON; the first and fourth are coefficient-driven from data but the trigger lives in code.</p>
+
+<h3>1. Ship-vs-ship combat hits — <code>fFireChanceCoeff</code> per attack mode</h3>
+
+<p><code>DamageSystem.ApplyDamageToCell</code> at <code>decomp/Assembly-CSharp/Ostranauts/Ships/DamageSystem.cs:405-427</code> rolls a fire chance every time a missile, mass-driver round, or PD round damages an interior CondOwner that's not crew-shaped:</p>
+
+<pre><code>double num3 = 0.25;
+if (dataCOWrapper.CO.HasCond("IsFireproof"))      num3 = 0.0;
+else if (dataCOWrapper.CO.HasCond("IsFlammable")) num3 = 0.9;
+else if (dataCOWrapper.CO.HasCond("IsBurnable"))  num3 = 0.5;
+num3 *= (double)jam.fFireChanceCoeff;
+if (MathUtils.Rand(0.0, 1.0, ...) &lt;= num3)
+    CrewSim.vfxFire.AddFireCO(dataCOWrapper.CO.strID);
+</code></pre>
+
+<p>The <code>jam</code> here is a <code>JsonShipAttack</code> (the ship-weapon record, not the per-CO attack mode). All seven ship-attack records in <code>data/attackmodes/shipAttacks/shipAttacks.json</code> have <code>fFireChanceCoeff</code> set explicitly:</p>
+
+<table>
+<thead><tr><th>Attack</th><th>fFireChanceCoeff</th></tr></thead>
+<tbody>
+<tr><td><code>MassDriverAttack</code></td><td>0.10</td></tr>
+<tr><td><code>MissileAttack01</code> / <code>02</code> / <code>03</code></td><td>0.25</td></tr>
+<tr><td><code>RailgunAttack</code></td><td>0.25</td></tr>
+<tr><td><code>PointDefenseImpact</code> / <code>ScuttleImpact</code></td><td>0.10</td></tr>
+</tbody>
+</table>
+
+<p>So a missile hit on a flammable interior item rolls <code>0.9 × 0.25 = 22.5 %</code> per damaged tile. On a burnable item, <code>12.5 %</code>. On unclassified solid scenery, <code>6.25 %</code>. On a fireproof item, never. <strong>This is the biggest source of fires you'll see in mid-combat.</strong></p>
+
+<div class="callout">
+<p><strong>Modder lever — Option F-1.</strong> To make combat less fire-heavy without disabling it, halve every <code>fFireChanceCoeff</code> in <code>data/attackmodes/shipAttacks/shipAttacks.json</code>. To kill ship-combat fires entirely, set them all to <code>0.0</code>. The damage stays; only the ignition stops.</p>
+</div>
+
+<h3>2. Sparking off damaged powered devices and conduits</h3>
+
+<p>Two distinct sparking systems exist. They run on different conditions and have different triggers, but they share the same end point: <code>VFXSparks.AddSparkAt(pos)</code> → <code>VFXFire.Spread(pos, ship, 0.5f)</code> (<code>VFXSparks.cs:82</code>).</p>
+
+<h4>2a. Continuous background sparking — <code>Ship.Sparks()</code></h4>
+
+<p><code>Ship.cs:2056-2101</code>. Called every frame from the ship update loop, but only the actively-walked ship sparks. Five gates and a single random draw decide whether any spark fires this frame; then one candidate is picked and tested, and at most one spark is emitted per call.</p>
+
+<h4>Gates before the random draw</h4>
+
+<ul>
+  <li><strong>Ship must be fully loaded</strong> — <code>nLoadState ≥ Ship.Loaded.Edit</code>. Sparks don't render in shallow-load (e.g. an unboarded ship in the system view).</li>
+  <li><strong>Sim not paused</strong> — <code>CrewSim.Paused</code> short-circuits.</li>
+  <li><strong>User has flicker enabled</strong> — <code>DataHandler.GetUserSettings().nFlickerAmount &lt; 0</code> short-circuits. This is a player-facing graphics setting exposed as a three-option dropdown (<code>GUIOptions.cs:71-85</code>): <strong>"Off"</strong> = -1, <strong>"Soft"</strong> = 1, <strong>"Full"</strong> = 2 (the default). Picking <em>Off</em> in the dropdown disables background sparking entirely, killing the spark-feeds-fire arm of Loop A. No Custom Parameters editing required.
+  <br><br>
+  <em>Where to find it:</em> the dropdown is part of the main options panel, not the Video sub-tab. If a player tells you they don't see it under Video, point them at the <strong>General</strong> tab. The screenshot a player will recognise has Resolution / Window Style / FPS Limit / Ambient Occlusion on the Video page; Flicker Amount lives elsewhere in the same dialog.
+  <br><br>
+  <em>Side-effects:</em> the same setting also kills electrical flicker on the <code>Powered</code> (<code>Powered.cs:107-112</code>) and <code>Visibility</code> (<code>Visibility.cs:71-84</code>) systems — i.e. lights stop flickering visually too. Most players who care about fire risk will accept that trade.</li>
+</ul>
+
+<h4>The per-frame chance</h4>
+
+<pre><code>float num = 0.02f;                       // 2% base
+num += num * CrewSim.TimeElapsedScaled(); // ×(1 + sim-speed factor)
+num *= mapICOs.Count / 1200f;             // ship-size scaling
+if (Rand(0,1) &gt; num) return;
+</code></pre>
+
+<ul>
+  <li><strong>Base 2%/frame</strong> at no sim compression on a "reference" 1200-installed-CO ship.</li>
+  <li><strong>Time-scaled.</strong> Compressing sim speed (e.g. ×8) roughly doubles the multiplier — fast-forwarding does increase fire risk.</li>
+  <li><strong>Ship-size scaled.</strong> A 300-CO tug gets 0.5 %/frame; a 6000-CO megastation gets 10 %/frame. Big rust buckets spark much more often per real-time second than small ones.</li>
+</ul>
+
+<h4>The shuffled candidate list</h4>
+
+<p>If the per-frame draw passes, Sparks() looks at a per-ship cached list <code>aSparkables</code>. If empty, <code>BuildSparkables()</code> rebuilds it: enumerate all COs currently passing <code>TIsSparkable</code>, then insert each into a new list at a random index (effectively a Fisher–Yates-ish shuffle). Each Sparks() call <em>pops the front of the shuffled list</em> until it drains, at which point the next call rebuilds it from fresh ship state. Removed/repaired items drop out automatically.</p>
+
+<h4>The per-candidate check (the while loop)</h4>
+
+<pre><code>while (aSparkables.Count &gt; 0)
+{
+    CondOwner co = aSparkables[0]; aSparkables.RemoveAt(0);
+    if (co != null && ctSparkable.Triggered(co, null, true))
+    {
+        Tile t = GetTileAtWorldCoords1(co.tf.position.x, co.tf.position.y, …);
+        if (t == null || t.aConnectedPowerCOs.Count == 0) break;   // (1)
+
+        double dmg = 1.0 - co.GetDamageState();
+        if (dmg &gt;= 0.5)                                            // (2)
+        {
+            vfxSparks.AddSparkAt(co.tf.position);                  // (3)
+            double self = Min(0.01, StatDamageMax / 800);          // (4)
+            co.AddCondAmount("StatDamage", self, 0, 0);
+            return;
+        }
+        break;
+    }
+}
+</code></pre>
+
+<ol>
+  <li><strong>Power-network gate.</strong> The candidate's tile must be wired into a power network — <code>aConnectedPowerCOs.Count &gt; 0</code> on the tile. <em>Cut power to a section and nothing in it sparks</em>, even if half its conduits are damaged. This is the cleanest in-game counter-play short of disabling the flicker setting: pull the breaker, walk the section, fix what's broken, then power it back up.</li>
+  <li><strong>≥50 % damage gate.</strong> <code>GetDamageState()</code> returns 1.0 (intact) → 0.0 (broken), so <code>1.0 - state ≥ 0.5</code> means the item is at least 50 % of the way to the broken threshold. An item at 20 % damage will pass <code>TIsSparkable</code> (which only checks <code>StatDamage &gt; 0</code>) and end up in the candidate list, but won't actually spark — it's queued waiting for damage to accumulate.</li>
+  <li><strong>One spark per call, max.</strong> The function <code>return</code>s after a successful spark. So even on a megastation where 50 items qualify, you get one spark per frame the per-frame draw passes, not fifty. The shuffle randomises <em>which</em> qualifying item that single spark lands on.</li>
+  <li><strong>Self-damage death spiral.</strong> Each spark adds <code>min(0.01, StatDamageMax / 800)</code> to the item's own <code>StatDamage</code>. For an item with <code>StatDamageMax = 10</code>, that's <code>10/800 = 0.0125</code> → clamped to <code>0.01</code> absolute. A damaged conduit that keeps sparking is accumulating its own damage at roughly 1 % of max per spark. Eventually it crosses the <code>IsDamaged</code> threshold and falls <em>out</em> of <code>TIsSparkableConduits</code> (the trigger <code>aForbids</code> <code>IsDamaged</code>) — at which point it stops sparking and is now fully broken. <strong>Sparks are a self-terminating death spiral for the item emitting them.</strong></li>
+</ol>
+
+<h4>The break-on-fail quirk</h4>
+
+<p>If the chosen candidate passes the <code>Triggered()</code> re-test but fails either the power-tile check or the damage-state check, the function <code>break</code>s out of the while loop instead of trying the next candidate. In a mixed powered/unpowered ship, the shuffle means a few "wasted" frames hitting unpowered candidates between actual sparks. Probably accidental from a code-review perspective but it does throttle the rate further.</p>
+
+<h4>Putting it together — back-of-envelope</h4>
+
+<p>A ~1000-installed-CO derelict just boarded, no sim compression, flicker setting at default:</p>
+
+<ul>
+  <li>Per-frame gate: <code>0.02 × ~1 × 1000/1200 ≈ 0.017</code> → ~1.7 % per frame.</li>
+  <li>At 60 FPS, ~1 Sparks() attempt every second.</li>
+  <li>Of those, maybe half pass the power-tile + ≥50 %-damage filter (depends on what got broken in <code>BreakIn()</code>).</li>
+  <li>So roughly <em>one actual spark every ~2 seconds</em> on this ship while you're walking around.</li>
+</ul>
+
+<p>Each spark calls <code>VFXFire.Spread(pos, ship, 0.5f)</code>. In a hot pressurised room with a flammable adjacent target, one spark has ~<code>0.21 × 0.5 × 6.0 ≈ 0.63</code> chance of starting a fire. About <strong>one fire per ~3 seconds of walkaround</strong> on a damaged-but-pressurised rust bucket if the room conditions are right — which matches the lived experience of derelicts seeming to burst into flame the moment you open the door.</p>
+
+<div class="callout">
+<p><strong>Modder lever — Option F-1b.</strong> If a player reports "I fireproofed everything and fires still start," the most likely culprit isn't your <code>IsFireproof</code> coverage — it's the <em>spread</em> roll picking some <em>other</em> nearby flammable cushion or wall fitting that you didn't tag. The spark itself is fire-tier-agnostic; the tier check happens in <code>VFXFire.Spread</code> on the <em>target</em>, not the sparkable source. Audit room contents, not just the sparkable.</p>
+</div>
+
+<details>
+<summary><code>TIsSparkable</code> and its sub-triggers — <code>data/condtrigs/condtrigs.json:2368-2370</code></summary>
+<pre><code>{ "strName" : "TIsSparkable",          "fChance" : 0.2, "aReqs" : [ ], "aTriggers" : [ "TIsSparkableConduits", "TIsSparkableDevices" ], "bAND" : false },
+{ "strName" : "TIsSparkableConduits",  "fChance" : 1.0, "aReqs" : [ "IsPowerConduit", "IsInstalled", "StatDamage" ], "aForbids" : [ "IsDamaged" ], "bAND" : true },
+{ "strName" : "TIsSparkableDevices",   "fChance" : 1.0, "aReqs" : [ "IsPowered",      "IsInstalled", "StatDamage" ], "aForbids" : [ "IsDamaged" ], "bAND" : true },
+</code></pre>
+<div><code>StatDamage</code> as an <code>aReqs</code> entry means "value &gt; 0", not "is the broken flag." So this fires on items that have <em>some</em> damage but aren't fully broken yet. The outer <code>TIsSparkable.fChance = 0.2</code> gates the per-frame draw.</div>
+</details>
+
+<h4>2b. Per-impact sparking — <code>DamageSystem</code></h4>
+
+<p>Same <code>ApplyDamageToCell</code> block as path 1, lines 423-426. Every ship-attack hit that damages a sparkable interior CO triggers a spark <em>in addition to</em> the fire roll. The condition trigger here is <code>TIsSparkableDmgSys</code> (no <code>StatDamage</code> requirement and no <code>IsDamaged</code> forbid — every hit on a powered/conduit item sparks).</p>
+
+<details>
+<summary><code>TIsSparkableDmgSys</code> — <code>data/condtrigs/condtrigs.json:2371-2373</code></summary>
+<pre><code>{ "strName" : "TIsSparkableDmgSys",         "fChance" : 1.0, "aReqs" : [ "IsInstalled" ], "aTriggers" : [ "TIsSparkableDmgSysConduits", "TIsSparkableDmgSysDevices" ], "bAND" : false },
+{ "strName" : "TIsSparkableDmgSysConduits", "fChance" : 1.0, "aReqs" : [ "IsPowerConduit" ], "bAND" : true },
+{ "strName" : "TIsSparkableDmgSysDevices",  "fChance" : 1.0, "aReqs" : [ "IsPowered" ],      "bAND" : true },
+</code></pre>
+</details>
+
+<h4>2c. BeatManager "part failure" tension event — <code>BeatManager.PartFailure</code></h4>
+
+<p><code>BeatManager.cs:737-779</code>. When the narrative tension manager rolls a <code>tension_part_failure</code> event, it picks the most-damaged sparkable on the player's current ship (per <code>TIsPartFailRandom</code>: <code>IsInstalled + StatDamage</code>, forbids <code>IsCarried</code> and vessel-tanks at <code>data/condtrigs/condtrigs.json:1830</code>), sets its <code>StatDamage</code> straight to <code>StatDamageMax</code> (fully breaks it), <em>then</em> rolls <code>TIsSparkable</code> on it and emits a spark if it passes.</p>
+
+<h3>3. Crew welding sparks</h3>
+
+<p><code>Crew.cs:780-794</code>. Every crew member has a <code>Sparks</code> boolean property; setting it true activates the welding-VFX and — if the crew member doesn't have <code>IsMaintenanceTechNPC</code> — calls <code>CrewSim.vfxFire.Spread(this.tf.position, CrewSim.shipCurrentLoaded, 0.005f)</code>. So every welding tick from your crew has a 0.5 % chance modifier on the spread roll. Maintenance-tech NPCs (e.g. station-employed welders) are exempt; their welding never starts fires.</p>
+
+<h3>4. Explosions</h3>
+
+<p><code>Explosion.cs:178-194</code>. Same flammability tier coefficients as path 1 (<code>0.9</code> / <code>0.5</code> / <code>0.25</code>), <em>but without</em> the <code>fFireChanceCoeff</code> multiplier — so an explosion hitting a flammable item lights it with 90 % probability per damaged CO. Explosion COs come from reactor blow-ups, mining charges, and ammo cooking off.</p>
+
+<h2>Fire spread — the room-chance formula</h2>
+
+<p>This is the single most important formula in the system. Both spark-to-fire conversion (the <code>0.5×</code> path) and fire-to-fire spread (the <code>1.0×</code> path, called from <code>VFXFireInstance.ProcessFireEffects</code>) go through <code>VFXFire.Spread()</code> at <code>VFXFire.cs:314-388</code>, which calls <code>VFXFire.GetRoomChance(coRoom)</code>:</p>
+
+<pre><code>// VFXFire.cs:472-482
+public static double GetRoomChance(CondOwner coRoom)
+{
+    double O2  = coRoom.GetCondAmount("StatGasPpO2");
+    double P   = coRoom.GetCondAmount("StatGasPressure");
+    double T   = coRoom.GetCondAmount("StatGasTemp");
+    return O2 / 20.0 * O2 / P * T / 293.0;
+}
+</code></pre>
+
+<p>Numerically that's <code>(PpO<sub>2</sub>² · Temp) / (20 · P · 293)</code>. The reference point — Earth-mix room (PpO<sub>2</sub> ≈ 20.7, P ≈ 101.3, T = 293) — gives about <code>20.7² / (20 × 101.3) × 1.0 ≈ 0.21</code>, i.e. ~21 % per draw on the base case. From there:</p>
+
+<ul>
+  <li><strong>Vacuum or near-vacuum</strong> (P ≈ 0): the formula divides by zero, but rooms with <code>DcGasPressure01</code> (the low-pressure discomfort threshold) are filtered out before <code>GetRoomChance</code> is even called (<code>VFXFire.cs:339-358</code>), so the divide-by-zero is never reached in practice — and the candidate is rejected.</li>
+  <li><strong>O<sub>2</sub>-starved but pressurised</strong> (e.g. pure CO<sub>2</sub> at 101 kPa): O<sub>2</sub> → 0 makes the chance 0.</li>
+  <li><strong>Hot, dense, oxygenated</strong>: chance grows as O<sub>2</sub>² × T. Worst case for the player.</li>
+</ul>
+
+<p><code>Spread()</code> then picks a random adjacent solid CO and multiplies the room chance by:</p>
+
+<table>
+<thead><tr><th>Target's flammability</th><th>Multiplier</th></tr></thead>
+<tbody>
+<tr><td><code>IsFireproof</code></td><td>× 0.00</td></tr>
+<tr><td><code>IsFlammable</code></td><td>× 6.00</td></tr>
+<tr><td><code>IsBurnable</code></td><td>× 2.50</td></tr>
+<tr><td>(none of the above)</td><td>× 0.25</td></tr>
+</tbody>
+</table>
+
+<p>Then a single uniform <code>Rand(0, 1)</code> draw decides. So a hot Earth-mix room with a flammable target sees <code>0.21 × 6.0 ≈ 1.0</code> — practically certain on the first spread tick of a single fire.</p>
+
+<p><code>VFXFireInstance.ProcessFireEffects</code> at <code>VFXFireInstance.cs:88-144</code> additionally multiplies the host's room chance by <strong>5.0</strong> for the per-fire "bContinue" roll — every fire essentially tries to spread itself with an amplified base chance. If that roll passes, it then calls <code>Spread()</code> which itself rolls a fresh per-target chance. The doubled gate is why fires propagate fast in good conditions.</p>
+
+<h2>What a single fire does each tick</h2>
+
+<p>The active fire's <code>fEpochExpire</code> is 5 simulated seconds from spawn. When it expires (<code>VFXFire.Update</code> → <code>CleanupFire</code> → <code>ProcessFireEffects</code> at <code>VFXFire.cs:42-48</code> and <code>VFXFireInstance.cs:88-144</code>), three things happen in order:</p>
+
+<ol>
+  <li><strong>Spread roll</strong> against the host's adjacent room (<code>chance = GetRoomChance(adjRoom) × 5.0</code>). If it passes, <code>bContinue = true</code>, <code>Spread()</code> picks an adjacent target and rolls again with the per-target tier. If <code>bContinue</code> still true at the end, the fire re-hosts onto itself for another 5-second cycle. If false, the fire is reaped.</li>
+  <li><strong>Crew damage.</strong> Every <code>IsHuman</code> or <code>IsRobot</code> within 1.5 tiles of the fire that isn't <code>IsFireproof</code> takes a <code>Wound.Damage</code> call using <code>AModeDefaultFire</code> (<code>fDmgBlunt=0, fDmgCut=3, fDmgEnv=0, fPenetration=0</code> per <code>data/attackmodes/coAttacks/attackmodes.json:93-103</code>). If a player-crew member is hit, the BeatManager tension timer resets — a heads-up that fire damage is now part of the narrative arc.</li>
+  <li><strong>Host damage.</strong> <code>StatDamage += Random.Range(1, 3) × damageModifier</code>, where the modifier is <code>1.0</code> if host is <code>IsFlammable</code>, <code>0.5</code> if <code>IsBurnable</code>, else <code>0.25</code> (<code>VFXFireInstance.cs:147-166</code>). A typical flammable cushion takes <code>1–3</code> damage per 5 s; a steel wall takes <code>0.25–0.75</code>.</li>
+</ol>
+
+<p>The fire also marks the underlying tile with <code>IsTileBurning</code> (<code>VFXFireInstance.cs:185</code>) — a short-duration condition (<code>fDuration: 0.0014</code> ≈ 2 minutes ingame, <code>bResetTimer: true</code>, <code>fClampMax: 1.0</code> per <code>data/conditions/conditions.json:1221</code>) that other systems can detect.</p>
+
+<h2>The doom loops</h2>
+
+<div class="callout pit">
+<p><strong>Loop A — sparks ↔ damage ↔ fire ↔ damage.</strong> A damaged power conduit sparks (path 2a, 0.2 base chance per draw, throttled by ship-size factor). The spark calls <code>Spread()</code> at <code>0.5×</code>. If it lands in a hot pressurised room next to a flammable target, that's <code>0.21 × 0.5 × 6.0 ≈ 0.63</code> per attempt — a coin-flip-and-then-some. A fire spawns. The fire damages adjacent items (path 5 below); some of those are also <code>IsPowerConduit</code> or <code>IsPowered</code>; once they hit ≥50 % damage they become sparkable too. Sparkings increase. More fires. Loop closes.</p>
+<p>This is the primary "spread my fire by breaking adjacent electrics" pattern the user asked about.</p>
+</div>
+
+<div class="callout pit">
+<p><strong>Loop B — fire heating its own room.</strong> The fire's <code>Heater</code> radiates with <code>StatSolidTemp = 1073 K</code> via the Stefan–Boltzmann update (<code>Heater.cs:148-202</code>). The room's <code>StatGasTemp</code> rises. <code>GetRoomChance ∝ T</code>, so the spread chance goes up linearly with room temperature. The new fires also radiate. The temperature climbs faster. Until O<sub>2</sub> runs out — at which point the loop self-arrests.</p>
+</div>
+
+<div class="callout pit">
+<p><strong>Loop C — auto-firefighting deferred-task pileup.</strong> When a fire spawns on a player-owned ship, <code>VFXFire.cs:266-282</code> queues a <code>Firefight</code> task into <code>workManager</code>. AI crew that satisfy the <code>AIFirefight</code> pledge (<code>data/pledges/pledges.json:78-89</code>) pick it up. If they're <code>IsCraven</code>, <code>IsAgliophobic</code>, or have <code>DcSecurity05</code> (Terrified) and lack <code>IsBrave</code> / <code>IsMasochist</code> / <code>IsLeader</code> traits, <code>TIsFireFlee</code> (<code>data/condtrigs/condtrigs.json:1219-1222</code>) gates the action toward <code>"Flee"</code> instead — they actively run away from the fire they were ordered to fight. While the player's crew runs in circles, the fire spreads. Not strictly a doom-loop, more a doom-stall.</p>
+</div>
+
+<h2>What's data vs. what's code</h2>
+
+<h3>Tunable from JSON (data)</h3>
+
+<table>
+<thead><tr><th>Knob</th><th>Where</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td>Per-attack fire chance</td><td><code>data/attackmodes/shipAttacks/shipAttacks.json</code> → <code>fFireChanceCoeff</code></td><td>Ship-weapon ignition probability (path 1).</td></tr>
+<tr><td>Sparkable item set</td><td><code>data/condtrigs/condtrigs.json</code> → <code>TIsSparkable*</code> / <code>TIsSparkableDmgSys*</code></td><td>Which item conditions count as sparkable. Edit the <code>aReqs</code> / <code>aForbids</code>.</td></tr>
+<tr><td>Spreadable target set</td><td><code>data/condtrigs/condtrigs.json</code> → <code>TIsFireSpreadable</code></td><td>What kinds of CO the spread loop is willing to consider as targets (currently <code>IsFlammable | IsBurnable | IsSolid | IsRoom</code>, forbids <code>IsFireproof</code>).</td></tr>
+<tr><td>Flammability tier per item</td><td><code>data/condowners/condowners*.json</code> → <code>aStartingConds</code></td><td>Add or remove <code>IsFlammable=1.0x1</code> / <code>IsBurnable=1.0x1</code> / <code>IsFireproof=1.0x1</code> on items to shift them between tiers.</td></tr>
+<tr><td>Fire's heat output</td><td><code>SysFire.aStartingConds</code> in <code>condowners.json</code> → <code>StatSolidTemp</code>, <code>StatHeatArea</code>, <code>StatHeatVol</code></td><td>Drops or raises how fast a fire heats its room.</td></tr>
+<tr><td>Fire's gas output</td><td><code>data/gasrespires/gasrespires.json</code> → the <code>Fire</code> profile → <code>aGases[].fConvRate</code></td><td>How much O<sub>2</sub> burns per tick and what proportion comes out as CO/CO<sub>2</sub>/H<sub>2</sub>SO<sub>4</sub>/NH<sub>3</sub>/Smoke.</td></tr>
+<tr><td>Extinguisher charge</td><td><code>ItmToolFireEx01</code> in <code>condowners.json</code> → <code>StatFireChem=1.0x11.0</code></td><td>Number of sprays per extinguisher (11 by default).</td></tr>
+<tr><td>Extinguish-per-spray</td><td><code>data/loot/loot.json</code> → <code>CONDACTFireExtinguishAllowThem</code> (<code>IsExtinguished=0.66x1.0</code>) and <code>CONDACTFireStampAllowThem</code> (<code>0.33x1.0</code>)</td><td>Sprays per fire (2 sprays / 3 stamps to clear at default values).</td></tr>
+<tr><td>AI flee gating</td><td><code>data/condtrigs/condtrigs.json</code> → <code>TIsFireFlee*</code></td><td>Which traits + mood thresholds make crew run from fires instead of fighting them.</td></tr>
+<tr><td>Firefight pledge / priority</td><td><code>data/pledges/pledges.json</code> → <code>AIFirefight.nPriority</code></td><td>Where firefighting sits in the AI's task-pile priority (currently 9, just under combat-join at 10).</td></tr>
+</tbody>
+</table>
+
+<h3>Hard-coded in C# (code)</h3>
+
+<table>
+<thead><tr><th>Constant / behaviour</th><th>Location</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Max simultaneous fires</td><td><code>VFXFire.cs:485</code></td><td><code>170</code></td></tr>
+<tr><td>Fire tick duration</td><td><code>VFXFire.cs:491</code></td><td><code>5.0</code> s</td></tr>
+<tr><td>Fire VFX fade time</td><td><code>VFXFire.cs:488</code></td><td><code>2.0</code> s</td></tr>
+<tr><td><code>GetRoomChance</code> formula</td><td><code>VFXFire.cs:472-482</code></td><td>O<sub>2</sub>² · T / (20 · P · 293)</td></tr>
+<tr><td>Flammability tier multipliers (spread)</td><td><code>VFXFire.cs:367-382</code></td><td>0 / 6.0 / 2.5 / 0.25</td></tr>
+<tr><td>Flammability tier multipliers (combat ignition)</td><td><code>DamageSystem.cs:405-417</code></td><td>0 / 0.9 / 0.5 / 0.25</td></tr>
+<tr><td>Flammability tier multipliers (explosion ignition)</td><td><code>Explosion.cs:178-190</code></td><td>0 / 0.9 / 0.5 / 0.25</td></tr>
+<tr><td>Fire-per-fire spread amplification</td><td><code>VFXFireInstance.cs:104-107</code></td><td><code>× 5.0</code></td></tr>
+<tr><td>Spark-to-fire spread chance modifier</td><td><code>VFXSparks.cs:82</code></td><td><code>× 0.5</code></td></tr>
+<tr><td>Welding-spark spread chance modifier</td><td><code>Crew.cs:790</code></td><td><code>× 0.005</code></td></tr>
+<tr><td>Spark self-damage per spark</td><td><code>Ship.cs:2094</code></td><td><code>min(0.01, StatDamageMax / 800)</code></td></tr>
+<tr><td>Background sparking enable threshold</td><td><code>Ship.cs:2090</code></td><td>only when item ≥50 % broken</td></tr>
+<tr><td>Crew damage attack mode</td><td><code>VFXFireInstance.cs:49-128</code></td><td><code>AModeDefaultFire</code> (3 cut, range 1.5)</td></tr>
+<tr><td>Maintenance-tech welding-spark exemption</td><td><code>Crew.cs:787-791</code></td><td>any CO with <code>IsMaintenanceTechNPC</code></td></tr>
+<tr><td>Fire host blacklist</td><td><code>VFXFire.cs:232-241</code></td><td><code>IsHuman</code>, <code>IsCarried</code>, contained items, tutorial-derelict-hidden ship</td></tr>
+</tbody>
+</table>
+
+<h2>Counter-play and prevention</h2>
+
+<h3>In-game, by the player</h3>
+
+<ul>
+  <li><strong>Fire extinguisher (Halvorson <code>ItmToolFireEx01</code>).</strong> 11 charges of <code>StatFireChem</code>, expends 1 per spray, each spray adds <code>0.66</code> to the fire's <code>IsExtinguished</code> condition. Two sprays clears one fire. <code>ACTFireExtinguishAllow</code> in <code>data/interactions/interactions.json:1183</code> applies <code>CONDACTFireExtinguishAllowThem</code> from <code>data/loot/loot.json:3706-3712</code>. The extinguisher itself is <code>IsFireproof</code>, so it never ignites.</li>
+  <li><strong>Stamp it out (no tool).</strong> <code>ACTFireStamp</code> at <code>data/interactions/interactions.json:1263-1291</code>. Three stamps per fire (<code>IsExtinguished=0.33x1.0</code> per <code>CONDACTFireStampAllowThem</code>). Slower and exposes the crew to <code>AModeDefaultFire</code> wounds.</li>
+  <li><strong>Vent the room.</strong> Cut a wall or open a door to vacuum. Pressure → 0 → room is rejected from the spread candidate list (<code>VFXFire.cs:339-358</code> filters rooms with <code>DcGasPressure01</code>). Fires already burning won't take new spread targets and won't damage adjacent items in that room. They still consume the residual O<sub>2</sub> and self-extinguish.</li>
+  <li><strong>Cut power.</strong> No tile-connected power = no <code>Ship.Sparks()</code> at <code>Ship.cs:2085</code> (<code>aConnectedPowerCOs.Count == 0</code> short-circuits). Doesn't stop fires already burning, but kills the spark-feeds-fire arm of Loop A.</li>
+  <li><strong>Set Flicker Amount to "Off" in the options panel.</strong> The dropdown is on the <em>General</em> tab of the options dialog (not Video), and its three labelled values map to integers: <em>Off</em> = -1, <em>Soft</em> = 1, <em>Full</em> = 2 (default). Choosing <em>Off</em> sends <code>nFlickerAmount = -1</code>, which makes <code>Ship.cs:2062-2065</code> short-circuit all background sparking. Doesn't affect ship-combat ignition (path 1), welding (path 3), or explosions (path 4), but completely removes the continuous spark-on-damaged-conduits arm of Loop A. Side-effect: lights also stop flickering visually (<code>Powered.cs:107-112</code> and <code>Visibility.cs:71-84</code> branch on the same flag). Useful when running a long-haul rust bucket where you can't keep the whole ship powered-down.</li>
+  <li><strong>Don't fight fires with cravens.</strong> See Loop C — crew with <code>IsCraven</code>, <code>IsAgliophobic</code>, or panicking under <code>DcSecurity05</code> will refuse-then-flee. Bring the <code>IsBrave</code> / <code>IsMasochist</code> / <code>IsLeader</code> crew member to the front line, or assign a maintenance-tech NPC if you have one — they auto-extinguish via the <code>AIMaintenanceTechWorkFireExtinguish</code> pledge.</li>
+</ul>
+
+<h3>Modded, in JSON</h3>
+
+<ul>
+  <li><strong>Option F-2 — make derelicts safer to break in.</strong> Lower <code>fBreakInMultiplier</code> at spawn time for the templates you care about, or grant the player <code>IsDueBonusDerelict</code> through a plot edit (<code>Ship.cs:2261-2268</code> divides the multiplier by <code>1 + IsDueBonusDerelict</code> on first board).</li>
+  <li><strong>Option F-3 — make your favourite items fireproof.</strong> Add <code>IsFireproof=1.0x1</code> to <code>aStartingConds</code> on the condowner. The flammability check is strict tiering — <code>IsFireproof</code> short-circuits at the top in both <code>VFXFire.Spread</code> and <code>DamageSystem.ApplyDamageToCell</code>. Useful for protecting reactor cores, fuel-cell drawers, oxygen tanks, etc.</li>
+  <li><strong>Option F-4 — gentler fire-tier coefficients.</strong> The 6× / 2.5× spread multipliers live in C# and can't be edited from JSON. But you <em>can</em> demote items from <code>IsFlammable</code> to <code>IsBurnable</code> (or to neither) in their condowner record — same effective result for that item.</li>
+  <li><strong>Option F-5 — re-key the extinguisher.</strong> Bump <code>StatFireChem=1.0x11</code> to <code>1.0x30</code> for a longer-lasting extinguisher, or raise <code>IsExtinguished=0.66x1.0</code> in <code>CONDACTFireExtinguishAllowThem</code> to <code>1.0x1.0</code> so each spray kills a fire outright.</li>
+  <li><strong>Option F-6 — disable BeatManager part-failures.</strong> Set <code>tension_part_failure</code> chance to <code>0</code> in the BeatManager's event-chance config (lives in <code>data/beat/</code> or equivalent — search for <code>dictEventChances</code> seed file in your install). Kills path 2c without affecting paths 2a/2b.</li>
+</ul>
+
+<h2>What the test saves look like</h2>
+
+<p>Both saves under <code>test-data/save/whole-folders/</code> have <strong>zero active fires</strong>. Verified by parsing every <code>ships/&lt;reg&gt;.json</code> in the zips:</p>
+
+<ul>
+  <li><code>cares catherine ruiz_1778427283.zip</code> — 141 ships, 0 with <code>aFires</code> non-empty, 0 instances of <code>"SysFire"</code> in any aCOs, 0 instances of <code>IsTileBurning</code>.</li>
+  <li><code>cares catherine ruiz_1778371145.zip</code> — same shape (sampled).</li>
+</ul>
+
+<p>That's expected: the player is docked at K-Leg in peacetime. The <strong>rust-buckets you'd find fires on come from one of</strong>:</p>
+
+<ol>
+  <li>a derelict that's already been boarded once (so <code>bPrefill == false</code>) and is now suffering background <code>Ship.Sparks()</code> on its damaged conduits — but our test save's "Used" / "Derelict" ships are nearly all still <code>bPrefill == true</code>, so they haven't run their first-load damage yet;</li>
+  <li>a ship that took ship-vs-ship combat hits recently and rolled a missile/PD fire (path 1);</li>
+  <li>a ship where a tension event triggered <code>PartFailure</code> while it was the player's active ship.</li>
+</ol>
+
+<p>The 127 <code>bPrefill == true</code> derelicts in this save are still "rolled up" — their <code>aCOs</code> arrays are small because PreFillRooms hasn't run. As soon as the player boards one of these, <code>Ship.cs:983-989</code> runs <code>BreakIn()</code>, which heavily damages installed systems. After that, every visit puts these ships in scope for both path 2a and path 1 fires.</p>
+
+<h2>Confidence — what was verified vs. inferred</h2>
+
+<table>
+<thead><tr><th>Claim</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>Fire is a <code>SysFire</code> CondOwner with <code>GasRespire2,Fire</code> and <code>Heater,TIsAirtightNoHuman</code> update commands</td><td><span class="verified ok">verified</span> at <code>data/condowners/condowners.json:34667-34695</code></td></tr>
+<tr><td><code>GetRoomChance</code> formula = O<sub>2</sub>² · T / (20 · P · 293)</td><td><span class="verified ok">verified</span> at <code>VFXFire.cs:472-482</code></td></tr>
+<tr><td>Spread tier coefficients (Fireproof 0, Flammable 6.0, Burnable 2.5, none 0.25)</td><td><span class="verified ok">verified</span> at <code>VFXFire.cs:367-382</code></td></tr>
+<tr><td>Combat-ignition tier coefficients (Fireproof 0, Flammable 0.9, Burnable 0.5, none 0.25)</td><td><span class="verified ok">verified</span> at <code>DamageSystem.cs:405-417</code> and <code>Explosion.cs:178-190</code></td></tr>
+<tr><td><code>fFireChanceCoeff</code> is per-ship-attack, not per-CO-attack</td><td><span class="verified ok">verified</span> at <code>JsonShipAttack.cs:54</code></td></tr>
+<tr><td><code>BreakIn()</code> attack mode <code>AModeDerelictBreakIn</code> doesn't carry a fire-chance coefficient</td><td><span class="verified ok">verified</span> — <code>AModeDerelictBreakIn</code> is a <code>JsonAttackMode</code> consumed by <code>DamageRay</code> at <code>DamageSystem.cs:637-756</code>, which has no fire-roll path; <code>fFireChanceCoeff</code> only exists on <code>JsonShipAttack</code></td></tr>
+<tr><td>Sparks call <code>Spread()</code> at <code>0.5×</code></td><td><span class="verified ok">verified</span> at <code>VFXSparks.cs:82</code></td></tr>
+<tr><td>Welding sparks call <code>Spread()</code> at <code>0.005×</code></td><td><span class="verified ok">verified</span> at <code>Crew.cs:790</code></td></tr>
+<tr><td><code>IsMaintenanceTechNPC</code> exempts welding sparks from fire spread</td><td><span class="verified ok">verified</span> at <code>Crew.cs:787-791</code></td></tr>
+<tr><td><code>TIsSparkable</code> requires damaged but not <code>IsDamaged</code></td><td><span class="verified ok">verified</span> at <code>data/condtrigs/condtrigs.json:2369-2370</code></td></tr>
+<tr><td>User-setting <code>nFlickerAmount &lt; 0</code> disables background sparking entirely</td><td><span class="verified ok">verified</span> at <code>Ship.cs:2062-2065</code></td></tr>
+<tr><td>Flicker dropdown has three labelled options — "Off" (-1) / "Soft" (1) / "Full" (2, default), so "Off" is reachable from the UI without Custom Parameters</td><td><span class="verified ok">verified</span> at <code>GUIOptions.cs:71-85</code> (dictionary literal) + <code>JsonUserSettings.cs:157</code> (default)</td></tr>
+<tr><td>Flicker dropdown lives on the <em>General</em> tab, not Video</td><td><span class="verified ok">verified</span> in-game against the live build pinned in this repo (0.15.0.x). The Video tab carries Resolution / Window Style / FPS / Ambient Occlusion / Parallax / LoS / Screen Shake / Turbo only; the Flicker Amount dropdown is one panel over on General.</td></tr>
+<tr><td>Background sparks emit one per call max, scaled by <code>mapICOs.Count / 1200</code></td><td><span class="verified ok">verified</span> at <code>Ship.cs:2066-2101</code></td></tr>
+<tr><td>Each background spark self-damages its source by <code>min(0.01, StatDamageMax / 800)</code>, eventually pushing the item to <code>IsDamaged</code> and removing it from <code>TIsSparkableConduits</code></td><td><span class="verified ok">verified</span> at <code>Ship.cs:2092-2095</code> + <code>data/condtrigs/condtrigs.json:2369</code></td></tr>
+<tr><td><code>TIsSparkableDmgSys</code> requires only <code>IsInstalled</code> + power, no damage requirement</td><td><span class="verified ok">verified</span> at <code>data/condtrigs/condtrigs.json:2371-2373</code></td></tr>
+<tr><td>Fire's host damage uses <code>1–3 × tier modifier</code> per 5 s tick</td><td><span class="verified ok">verified</span> at <code>VFXFireInstance.cs:141-166</code></td></tr>
+<tr><td>Fire's crew damage uses <code>AModeDefaultFire</code> (3 cut, range 1.5)</td><td><span class="verified ok">verified</span> at <code>VFXFireInstance.cs:119-128</code> and <code>data/attackmodes/coAttacks/attackmodes.json:93-103</code></td></tr>
+<tr><td>Fire respire emits CO/CO<sub>2</sub>/H<sub>2</sub>SO<sub>4</sub>/NH<sub>3</sub>/Smoke from O<sub>2</sub></td><td><span class="verified ok">verified</span> at <code>data/gasrespires/gasrespires.json:360-413</code></td></tr>
+<tr><td><code>MAX_FIRES = 170</code> hard cap</td><td><span class="verified ok">verified</span> at <code>VFXFire.cs:485</code></td></tr>
+<tr><td>Fire tick is 5 s with 2 s fade</td><td><span class="verified ok">verified</span> at <code>VFXFire.cs:488-491</code></td></tr>
+<tr><td>Fires won't spawn on <code>IsHuman</code> / <code>IsCarried</code> / contained items / <code>IsTutorialDerelictHidden</code> ships</td><td><span class="verified ok">verified</span> at <code>VFXFire.cs:232-241</code></td></tr>
+<tr><td>Extinguisher gives <code>IsExtinguished=0.66x1.0</code> per spray; stamp gives <code>0.33x1.0</code></td><td><span class="verified ok">verified</span> at <code>data/loot/loot.json:3706-3717</code></td></tr>
+<tr><td>Vacuum / depressurised rooms are excluded from spread candidates via <code>DcGasPressure01</code></td><td><span class="verified ok">verified</span> at <code>VFXFire.cs:339-358</code></td></tr>
+<tr><td>Heater's heat transfer is Stefan–Boltzmann with <code>StatSolidTemp = 1073 K</code> on <code>SysFire</code></td><td><span class="verified ok">verified</span> at <code>Heater.cs:148-202</code> and <code>data/condowners/condowners.json:34685</code></td></tr>
+<tr><td>Test saves contain zero active fires (<code>aFires</code> empty across 141 ships)</td><td><span class="verified ok">verified</span> by parsing every ship file in <code>cares catherine ruiz_1778427283.zip</code></td></tr>
+<tr><td>"Fires consume room O<sub>2</sub> until the spread chance drops to zero, then go out on their own" is the only self-arrest mechanic for fires</td><td><span class="verified inferred">inferred</span> — derived from the lack of a passive decay timer in <code>SysFire</code>'s starting conds and the structure of <code>ProcessFireEffects</code>. Not directly traced in code as the "no fuel = fire dies" path; consider it the practical result of the spread-chance formula returning 0 once O<sub>2</sub> bottoms out.</td></tr>
+<tr><td><code>tension_part_failure</code> event chance lives in BeatManager's <code>dictEventChances</code> and is editable from data</td><td><span class="verified inferred">inferred</span> — <code>BeatManager.cs:741</code> reads it from <code>dictEventChances</code> but the seed file path wasn't located in this repo's <code>data/</code> tree under that name. Search your install for <code>tension_part_failure</code> to find the actual file before editing.</td></tr>
+<tr><td>Halvorson extinguisher's <code>IsFireproof=1.0x1</code> means it survives being dropped in a burning room</td><td><span class="verified inferred">inferred</span> — the cond is present at <code>condowners.json:28670</code> and <code>VFXFire.Spread</code> hard-zeros the chance for <code>IsFireproof</code> targets, so the extinguisher should never light. Untested live.</td></tr>
+</tbody>
+</table>
+
+<h2>Quick-reference card</h2>
+
+<div class="callout">
+<p><strong>Find active fires in a save:</strong> walk <code>ships/&lt;reg&gt;.json → aFires[]</code> for non-empty arrays. Each entry is a <code>CondOwner.strID</code> string; cross-reference against the same ship's <code>aCOs[]</code> to identify the host.</p>
+<p><strong>Audit a ship's fire risk:</strong> count CO's with <code>IsFlammable</code> / <code>IsBurnable</code> / <code>IsFireproof</code> in <code>aStartingConds</code>. Count <code>IsPowerConduit</code>+<code>IsInstalled</code>+<code>StatDamage</code>&gt;0 entries for sparkability surface area. Check rooms' <code>StatGasPpO2</code> / <code>StatGasPressure</code> / <code>StatGasTemp</code> against the <code>O<sub>2</sub>² · T / (20 · P · 293)</code> formula.</p>
+<p><strong>Stop a fire spreading in your save edit:</strong> set the room's <code>StatGasPressure</code> to <code>0</code> in <code>aConds</code> — the spread loop drops the room from candidates immediately. Or add <code>"IsExtinguished=1.0x1"</code> to the burning <code>SysFire</code> CO's <code>aConds</code>; on load it'll fade on the next tick (<code>VFXFire.cs:121-124</code>).</p>
+<p><strong>The four code paths that ignite fires:</strong> ship-weapon hits (<code>DamageSystem.ApplyDamageToCell</code>, gated by <code>fFireChanceCoeff</code>); damaged powered items / conduits (<code>Ship.Sparks</code> + <code>VFXSparks.AddSparkAt</code> + <code>VFXFire.Spread</code>); crew welding (<code>Crew.Sparks</code> setter at 0.005× rate); explosions (<code>Explosion.cs</code>).</p>
+</div>
+
+</main>
+</body>
+</html>

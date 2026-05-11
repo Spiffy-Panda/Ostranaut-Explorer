@@ -4,6 +4,36 @@ Reverse-chronological. Add an entry before every commit — at minimum a one-lin
 
 ---
 
+## 2026-05-10 — fire-system handoff: flicker dropdown UX correction
+
+Late catch on the Section 2a expansion: the handoff was framing the flicker-disable counter-play as "set `nFlickerAmount < 0`," which sounded like a magic-number / Custom-Parameters trick — and a player who screenshotted the Video settings tab pointed out (correctly) that there's no slider visible. The fix is to lead with the player-facing UI label instead of the raw integer.
+
+`GUIOptions.cs:71-85` builds the dropdown from a three-entry dictionary literal: `{ -1 → "Off", 1 → "Soft", 2 → "Full" }`. Default is `nFlickerAmount = 2` ("Full") per `JsonUserSettings.cs:157`. So the counter-play is "open the options panel, find the Flicker Amount dropdown on the **General** tab (not Video), choose **Off**" — no Custom Parameters editing required. Tab placement confirmed against the live build in this repo (0.15.0.x) by the player after pointing.
+
+Edits in [notes/handoff/fire-system-deep-dive.html](notes/handoff/fire-system-deep-dive.html): rewrote the Section-2a "User has flicker enabled" gate description to lead with the labelled dropdown, added the side-effect note (`Powered.cs:107-112` and `Visibility.cs:71-84` both branch on the same flag, so visual electrical flicker on lights also dies — most fire-averse players will accept the trade); rewrote the matching counter-play bullet under "In-game, by the player" the same way; added two confidence-table rows (dropdown-label mapping verified against `GUIOptions.cs:71-85`, General-tab placement verified in-game). Post-edit counts: 34 verified-ok (was 32), 3 verified-inferred (was 3 net — added two and promoted one).
+
+Same fair-use posture as the prior wave: a new small JSON-style C# dictionary literal (3 keys, 3 string values) is the only new excerpt; everything else is rewording of existing prose.
+
+---
+
+## 2026-05-10 — fire-system handoff: Section 2a expansion + site-wide discoverability fix
+
+Follow-up to the fire-system handoff. Two motivations: (1) the original Section 2a ("Continuous background sparking — `Ship.Sparks()`") was a one-paragraph summary that elided several practically-important behaviours; (2) the handoffs as a section were only discoverable from `explorer.html`'s nav — visitors landing on the root [index.html](src/Ostranauts.Site/index.html), or any of the inspector pages, would never find out the handoffs section existed.
+
+**Section 2a expansion in [notes/handoff/fire-system-deep-dive.html](notes/handoff/fire-system-deep-dive.html).** Broken into six sub-headings: pre-draw gates (with the `nFlickerAmount < 0` user-setting kill switch called out — a player can disable background sparking entirely from the graphics options, and this is worth knowing when troubleshooting "fires keep starting on my fireproofed ship"); the per-frame chance breakdown (`0.02 × time-scale × mapICOs.Count/1200`, so big ships and fast-forward both increase fire risk); the shuffled-candidate-list mechanism (one Sparks() call pops one candidate, list rebuilt from fresh state when drained); the per-candidate check (power-network gate, ≥50 %-damage gate, one-spark-per-call cap); the self-damage death-spiral (each spark adds `min(0.01, StatDamageMax/800)` to its source's StatDamage, eventually pushing it past `IsDamaged` and removing it from `TIsSparkableConduits` — sparks are self-terminating for the item emitting them); and the `break`-on-fail iteration quirk. Added a worked back-of-envelope estimate (~1 fire per ~3 s of walkaround on a damaged-but-pressurised ~1000-CO rust bucket if the room is hot and Earth-mix). Added an Option F-1b modder-troubleshooting callout: if a player reports "I fireproofed everything and fires still start," it's almost always because the spread roll lands on some *other* untagged flammable target in the same room, not because the sparkable source was missed — audit room contents, not just the sparkable.
+
+Three new rows in the confidence table — `nFlickerAmount < 0` disables sparking (verified at `Ship.cs:2062-2065`), one-spark-per-call + ship-size scaling (verified at `Ship.cs:2066-2101`), and the self-damage spiral (verified at `Ship.cs:2092-2095` + `condtrigs.json:2369`). Bumped a row in the counter-play list to add "Disable the flicker setting" as a player-side mitigation that doesn't require modding. Verified counts post-edit: 32 verified-ok, 3 verified-inferred, 9 H4 sub-headings (up from 5), 4 details disclosures, 5 tables. Page is now ~52 KB / ~13 000 px tall.
+
+**Discoverability fix — three site-wide changes:**
+
+1. **Root index card.** Added an 11th tab-card to [src/Ostranauts.Site/index.html](src/Ostranauts.Site/index.html) for "Handoffs" (linking to `handoff/`), at the end of the existing grid. Card summary calls out fire/sprite/OKLG/needs guides as concrete examples and surfaces the verified-vs-inferred tagging convention.
+2. **Sibling-page nav links.** Added `<a href="handoff/">Handoffs</a>` to the `<nav>` of [ship-inspector.html](src/Ostranauts.Site/ship-inspector.html), [save-inspector.html](src/Ostranauts.Site/save-inspector.html), [save-map.html](src/Ostranauts.Site/save-map.html), and [rooms-reference.html](src/Ostranauts.Site/rooms-reference.html). Previously only `explorer.html` had this link, so anyone walking into the site through the inspector flow (the most common path for save-edit work) would never see the handoffs section.
+3. **No layout regressions.** Mirrored all edits into `build/`, verified in preview at `localhost:8765`: root index now has 11 cards with `Handoffs → handoff/` as the last entry; all four inspector pages return their full nav list with the new `Handoffs` entry; the handoff index serves at `/handoff/` with status 200 and renders unchanged.
+
+This is the "the handoffs section needs to be discoverable from the site's actual landing points" follow-up that should have been part of the original fire-system handoff commit but slipped through. Same fair-use posture as the original (factor 1-2-3-4 unchanged — only adds modder-facing prose and nav links, no new game data quoted).
+
+---
+
 ## 2026-05-10 — handoff: fire system deep dive
 
 Added [notes/handoff/fire-system-deep-dive.html](notes/handoff/fire-system-deep-dive.html), a modder-facing reference for everything that controls fire in the game: ignition paths, spread mechanics, host/crew damage, gas + heat side-effects, doom-loops, counter-play, and the JSON-vs-code split for each tunable. Indexed from [notes/handoff/index.html](notes/handoff/index.html). Twenty-one verified claims, three inferred (the "fires self-arrest by running out of O<sub>2</sub>" practical-consequence claim, the BeatManager `dictEventChances` seed-file path, and the extinguisher-survives-burning-room claim). All structural facts (fields, condtriggers, attack-mode JSON shapes, GetRoomChance formula, tier coefficients) cited against either a `data/` JSON path or a `decomp/Assembly-CSharp/` `.cs:line` location.
