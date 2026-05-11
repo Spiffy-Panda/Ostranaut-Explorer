@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script src="theme-toggle.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Save Inspector · Ostranaut Data Explorer</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="inspector.css">
+</head>
+<body>
+
+<header>
+  <h1>Save Inspector <span class="sub">browse ships inside an Ostranauts save zip</span></h1>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="explorer.html">Explorer</a>
+    <a href="ship-inspector.html">Ship inspector</a>
+    <a href="save-map.html">Save map</a>
+    <a href="rooms-reference.html">Rooms reference</a>
+  </nav>
+</header>
+
+<main class="inspector is-empty" id="inspector-root">
+  <p id="inspector-intro" class="intro-prose">
+    Upload an Ostranauts save zip (the <code>&lt;name&gt;_&lt;epoch&gt;.zip</code>
+    file from your <code>Saves/&lt;name&gt;_&lt;epoch&gt;/</code> folder) and
+    pick a ship inside it to inspect. The save-format per-ship JSON is a
+    runtime superset of <code>data/ships/*</code>, so the same component
+    checklist, floor plan, and room-classification cards apply. Component
+    counts reflect the live build state at the moment the save was written,
+    including damaged/uninstalled items.
+  </p>
+</main>
+
+<script src="rooms.js"></script>
+<script src="data/id-friendly-names.js"></script>
+<script src="inspector-core.js"></script>
+<script src="save-zip-reader.js"></script>
+<script src="save-inspector.js"></script>
+</body>
+</html>

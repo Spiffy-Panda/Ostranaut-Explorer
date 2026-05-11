@@ -1,0 +1,803 @@
+/* inspector.css — shared page-local styles for the ship-inspector and
+   save-inspector pages. Reuses tokens from style.css :root (--bg,
+   --bg-elev, --accent, etc.); kept as a separate file rather than inline
+   so both inspector pages share the exact same visual treatment.
+
+   The room-card rules near the bottom intentionally duplicate the page-
+   local styles in rooms-reference.html so the cards produced by
+   window.renderRoomCard render identically here. Consolidating into
+   style.css is the natural follow-up. */
+
+/* Override style.css's global `main { display: grid; grid-template-columns: 240px 1fr; }`
+   (designed for the explorer's sidebar+detail layout) — the inspector is single-column. */
+main.inspector {
+  display: block;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+/* Intro prose. Muted once a ship is loaded (it becomes ambient context);
+   foregrounded in the empty state so a first-time visitor reads it. */
+.intro-prose {
+  margin-top: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+main.inspector.is-empty .intro-prose {
+  color: var(--fg);
+  font-size: 1rem;
+  line-height: 1.5;
+  max-width: 42rem;
+  margin: 1rem auto 1.5rem;
+}
+/* Hide the progress / visual / rooms / components sections when no ship
+   is selected — collapses the page to picker + intro + empty hint. */
+main.inspector.is-empty .progress-wrap,
+main.inspector.is-empty > .section {
+  display: none !important;
+}
+.empty-hint {
+  display: none;
+  margin: 1.5rem auto;
+  max-width: 42rem;
+  padding: 1.5rem;
+  text-align: center;
+  background: var(--bg-elev);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+}
+main.inspector.is-empty .empty-hint { display: block; }
+.empty-hint strong { color: var(--fg); }
+.clear-ship-btn {
+  background: var(--bg-elev-2);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+.clear-ship-btn:hover { border-color: var(--accent-dim); }
+main.inspector.is-empty .clear-ship-btn { display: none; }
+.inspector h2 {
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 1.5rem 0 0.75rem;
+  font-weight: 600;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+.inspector .small { font-size: 0.82rem; }
+.inspector .muted { color: var(--muted); }
+.inspector .section { margin-bottom: 1rem; }
+
+/* ── ship picker ─────────────────────────────────────────────────────── */
+.ship-picker {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem 1rem;
+  align-items: center;
+}
+.ship-select {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  width: 100%;
+  font-family: inherit;
+}
+.ship-upload-label {
+  display: inline-block;
+  background: var(--bg-elev-2);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ship-upload-label:hover { border-color: var(--accent-dim); }
+.ship-upload { display: none; }
+.ship-privacy {
+  margin: 0;
+  grid-column: 1 / -1;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.ship-links {
+  margin: 0;
+  grid-column: 1 / -1;
+  font-size: 0.82rem;
+}
+.ship-links a { margin-right: 1rem; }
+.upload-error {
+  grid-column: 1 / -1;
+  background: rgba(217,94,94,0.08);
+  border: 1px solid var(--bad);
+  border-radius: 3px;
+  padding: 0.5rem 0.75rem;
+  color: var(--bad);
+  font-size: 0.85rem;
+  display: none;
+}
+/* Save-inspector specifics: a row showing which save is loaded above the
+   per-ship dropdown. Only rendered when a save zip is active. */
+.save-summary {
+  grid-column: 1 / -1;
+  font-size: 0.82rem;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+}
+.save-summary strong { color: var(--fg); font-weight: 600; }
+.save-summary code {
+  background: var(--bg);
+  padding: 1px 4px;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+  font-size: 0.78rem;
+}
+
+/* ── progress bar (sticky) ───────────────────────────────────────────── */
+.progress-wrap {
+  position: sticky;
+  top: 53px;  /* mirrors header height in style.css */
+  z-index: 8;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+}
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.progress-label {
+  font-size: 0.92rem;
+  color: var(--fg);
+  font-weight: 500;
+}
+.btn-secondary {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-secondary:hover { border-color: var(--accent-dim); }
+.progress-bar {
+  height: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  transition: width 0.15s;
+}
+.progress-counts {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.4rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ── visual layout ──────────────────────────────────────────────────── */
+.ship-grid {
+  display: block;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  max-width: 100%;
+}
+
+/* ── components section ─────────────────────────────────────────────── */
+.components-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+.comp-search {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+.filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.filter-pill {
+  background: var(--bg-elev);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.1s, border-color 0.1s;
+}
+.filter-pill:hover { border-color: var(--accent-dim); }
+.filter-pill.is-off {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.components-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+details.bucket-foldout {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+details.bucket-foldout[open] {
+  border-color: var(--accent-dim);
+  background: var(--bg-elev-2);
+}
+details.bucket-foldout > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.55rem 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  user-select: none;
+}
+details.bucket-foldout > summary::-webkit-details-marker { display: none; }
+details.bucket-foldout > summary::before {
+  content: "▸";
+  color: var(--muted);
+  font-size: 0.75rem;
+  transition: transform 0.1s;
+  width: 0.6rem;
+  display: inline-block;
+}
+details.bucket-foldout[open] > summary::before { transform: rotate(90deg); }
+.bucket-name {
+  font-weight: 600;
+  color: var(--fg);
+  flex: 1;
+}
+.bucket-count {
+  font-family: ui-monospace, monospace;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.bucket-body {
+  padding: 0.5rem 1rem 0.875rem 2rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.item-line {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+  padding: 0.25rem 0;
+  align-items: center;
+  font-size: 0.86rem;
+}
+.item-label { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.item-friendly { color: var(--fg); }
+.item-strname {
+  font-family: ui-monospace, monospace;
+  font-size: 0.76rem;
+  color: var(--muted);
+  background: var(--bg);
+  padding: 1px 4px;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+}
+.item-qty {
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+}
+.item-mod-tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: rgba(217,167,58,0.12);
+  color: var(--warn);
+  border-radius: 2px;
+  padding: 0 5px;
+  cursor: help;
+}
+.item-counter {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+}
+.item-count {
+  width: 4.5rem;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.2rem 0.4rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+.item-count::-webkit-outer-spin-button,
+.item-count::-webkit-inner-spin-button { margin: 0; }
+.item-count:focus { outline: 1px solid var(--accent-dim); outline-offset: -1px; }
+.item-required {
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.item-all-btn,
+.item-none-btn {
+  background: var(--bg-elev-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.7rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.item-all-btn:hover,
+.item-none-btn:hover { color: var(--fg); border-color: var(--accent-dim); }
+.item-line.is-complete .item-friendly { color: var(--good); }
+.item-line.is-complete .item-count { border-color: var(--good); }
+
+/* Room ×N badge */
+.room-count-badge {
+  color: var(--good) !important;
+  font-weight: 600;
+}
+
+/* ── rooms list ─────────────────────────────────────────────────────── */
+.rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+details.room-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  scroll-margin-top: 4rem;
+}
+details.room-card[open] {
+  border-color: var(--accent-dim);
+  background: var(--bg-elev-2);
+}
+details.room-card > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.6rem 0.875rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.875rem;
+  align-items: center;
+  user-select: none;
+}
+details.room-card > summary > :nth-child(2) { /* friendly-name wrapper */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+details.room-card > summary::-webkit-details-marker { display: none; }
+details.room-card > summary::before {
+  content: "▸";
+  color: var(--muted);
+  font-size: 0.75rem;
+  transition: transform 0.1s;
+  width: 0.6rem; display: inline-block;
+}
+details.room-card[open] > summary::before { transform: rotate(90deg); }
+details.room-card .summary-name {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+details.room-card .summary-friendly {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-left: 0.5rem;
+}
+details.room-card .summary-meta {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-family: ui-monospace, monospace;
+}
+details.room-card .body {
+  padding: 0.5rem 1rem 1rem 2rem;
+  border-top: 1px solid var(--border);
+}
+details.room-card[open] .body { padding-top: 0.875rem; }
+details.room-card .row {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  font-size: 0.875rem;
+}
+details.room-card .row .k {
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding-top: 2px;
+}
+details.room-card .row .v { word-break: break-word; }
+details.room-card .row .v .req-line { display: block; padding: 1px 0; }
+details.room-card .row .v code { white-space: normal; }
+details.room-card .row .none { color: var(--muted); font-style: italic; }
+details.room-card .note {
+  margin-top: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  background: rgba(217,167,58,0.06);
+  border-left: 2px solid var(--warn);
+  border-radius: 0 4px 4px 0;
+  font-size: 0.85rem;
+  color: var(--fg);
+}
+details.room-card .note.gotcha {
+  background: rgba(217,94,94,0.06);
+  border-left-color: var(--bad);
+}
+details.room-card .note .lbl {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--warn);
+  margin-right: 0.5rem;
+}
+details.room-card .note.gotcha .lbl { color: var(--bad); }
+.count-pill {
+  display: inline-block;
+  padding: 0 5px;
+  background: rgba(108,180,255,0.12);
+  color: var(--accent);
+  border-radius: 2px;
+  font-size: 0.75rem;
+  margin-right: 0.4rem;
+  font-family: ui-monospace, monospace;
+}
+.meta-pill {
+  display: inline-block;
+  padding: 0 5px;
+  background: rgba(176,124,224,0.14);
+  color: #b07ce0;
+  border-radius: 2px;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  margin-left: 0.4rem;
+  font-weight: 600;
+}
+.room-pin-btn {
+  margin-left: 0.6rem;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.72rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.room-pin-btn:hover { border-color: var(--accent-dim); }
+details.room-card.is-pinned { border-color: var(--good); }
+
+/* ── save-map page ──────────────────────────────────────────────────── */
+.map-section { margin-bottom: 1rem; }
+.map-progress {
+  font-family: ui-monospace, monospace;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+}
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  align-items: center;
+  margin: 0 0 0.65rem;
+  font-size: 0.82rem;
+  color: var(--fg);
+}
+.map-legend-dot {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  margin-right: 0.4rem;
+  vertical-align: -0.15rem;
+}
+.map-canvas-wrap {
+  position: relative;
+  width: 100%;
+}
+.map-canvas {
+  display: block;
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: crosshair;
+  /* The wheel handler calls preventDefault — this prevents the OS from
+     using touch/pinch gestures for native page zoom on the canvas. */
+  touch-action: none;
+}
+.map-zoom-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 15;
+}
+.map-zoom-btn {
+  width: 28px;
+  height: 28px;
+  background: var(--bg-elev);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 1.05rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.map-zoom-btn:hover { border-color: var(--accent-dim); background: var(--bg-elev-2); }
+.map-zoom-btn:active { background: var(--bg); }
+.map-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.82rem;
+  color: var(--fg);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+  z-index: 20;
+  max-width: 320px;
+  line-height: 1.35;
+}
+.map-tooltip strong { display: inline; color: var(--fg); }
+.map-tooltip > strong:first-child { display: block; margin-bottom: 0.15rem; }
+.map-tooltip .reg {
+  color: var(--accent);
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+}
+.map-tooltip .meta {
+  color: var(--muted);
+  font-size: 0.76rem;
+  margin-top: 0.2rem;
+}
+
+/* Stack-list rows inside the tooltip (when multiple ships overlap). */
+.map-tooltip .stack-row {
+  display: grid;
+  grid-template-columns: 0.7rem 5rem 1fr auto;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.1rem 0;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+.map-tooltip .stack-row:first-of-type { margin-top: 0.3rem; }
+.map-tooltip .stack-row .reg {
+  font-family: ui-monospace, monospace;
+  font-size: 0.74rem;
+}
+.map-tooltip .stack-name {
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.map-tooltip .stack-mass {
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 0.74rem;
+  text-align: right;
+}
+.map-tooltip .stack-more {
+  margin-top: 0.35rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--border);
+}
+/* Visit-state dot used in both tooltip and selection-panel stack lists. */
+.stack-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: #5a6470;     /* unvisited (mirrors COLOR_UNVISITED in JS) */
+  vertical-align: middle;
+}
+.stack-dot.v { background: #6cb4ff; }  /* visited (mirrors COLOR_VISITED) */
+.map-selected {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.85rem 1rem 1rem;
+  margin-top: 0.6rem;
+  display: none;
+  font-size: 0.88rem;
+}
+.map-selected.is-active { display: block; }
+.map-selected .stack-list-head {
+  margin-bottom: 0.4rem;
+  font-size: 0.88rem;
+}
+.map-selected .stack-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 0.85rem;
+  max-height: 12rem;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+.map-selected .stack-list-row {
+  display: grid;
+  grid-template-columns: 0.7rem 5rem 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.3rem 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--fg);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.map-selected .stack-list-row:hover { border-color: var(--accent-dim); background: var(--bg-elev-2); }
+.map-selected .stack-list-row.is-active {
+  border-color: var(--accent);
+  background: var(--bg-elev-2);
+}
+.map-selected .stack-list-row .reg {
+  color: var(--accent);
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+}
+.map-selected .stack-list-row .stack-name {
+  color: var(--fg);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.map-selected .stack-list-row .stack-mass {
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  text-align: right;
+}
+.map-selected h3 {
+  margin: 0 0 0.55rem;
+  font-size: 0.98rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.map-selected h3 .reg {
+  color: var(--accent);
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 1px 5px;
+}
+.map-selected dl {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 0.18rem 0.75rem;
+  margin: 0;
+}
+.map-selected dt {
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  padding-top: 3px;
+}
+.map-selected dd {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.82rem;
+  word-break: break-word;
+}
+.map-selected dd.prose { font-family: inherit; font-size: 0.86rem; }
+.map-selected a.deep-link {
+  display: inline-block;
+  margin-top: 0.75rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--accent-dim);
+  border-radius: 3px;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.84rem;
+}
+.map-selected a.deep-link:hover {
+  background: var(--bg-elev-2);
+  border-color: var(--accent);
+}
+
+/* ── print stylesheet ───────────────────────────────────────────────── */
+@media print {
+  /* Hide chrome: header, picker, search/filter controls, the visual canvas
+     section, the unpinned-rooms list. Show only progress + pinned rooms +
+     component checklist, mirroring the live foldout state. */
+  header,
+  .ship-picker,
+  .components-controls,
+  #rooms-section,
+  .progress-wrap .btn-secondary,
+  main.inspector > .section:has(canvas#ship-grid) {
+    display: none !important;
+  }
+  body { background: white; color: black; }
+  .progress-wrap { position: static; }
+  .components-list, .rooms-list { gap: 0.25rem; }
+  details.bucket-foldout,
+  details.room-card {
+    background: white !important;
+    color: black !important;
+    border: 1px solid #888 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}

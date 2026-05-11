@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script src="theme-toggle.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Save Map · Ostranaut Data Explorer</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="inspector.css">
+</head>
+<body>
+
+<header>
+  <h1>Save Map <span class="sub">ship positions in an Ostranauts save</span></h1>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="explorer.html">Explorer</a>
+    <a href="ship-inspector.html">Ship inspector</a>
+    <a href="save-inspector.html">Save inspector</a>
+    <a href="rooms-reference.html">Rooms reference</a>
+  </nav>
+</header>
+
+<main class="inspector is-empty" id="map-root">
+  <p id="map-intro" class="intro-prose">
+    Upload an Ostranauts save zip and the map plots every ship at its
+    raw <code>objSS</code> position. Icons are mass-scaled
+    (<code>√fShallowMass</code>) and colored by whether you've ever
+    visited that ship (<code>fLastVisit &gt; 0</code> vs. <code>0.0</code>).
+    Ships parked at the same station or moored together share the same
+    <code>vPos</code> (the game stores the body's position in vPos and
+    the tiny ship-vs-body separation in vBOOffset) — so at low zoom
+    they'll stack into a single dot. Hover for a stack list (callsign +
+    mass + visit-state); click to lock the detail panel; zoom in until
+    they spread out. The zoom range is generous — keep scrolling to
+    resolve sub-km separations.
+  </p>
+</main>
+
+<script src="data/id-friendly-names.js"></script>
+<script src="save-zip-reader.js"></script>
+<script src="save-map.js"></script>
+</body>
+</html>
